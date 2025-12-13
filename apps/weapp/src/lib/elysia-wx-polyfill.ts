@@ -170,7 +170,7 @@ export const fetchProxy = async (url: string, options: any = {}) => {
     const cookieStr = getCookieHeaderString();
     if (cookieStr) {
       // 如果已有 Cookie，则追加（注意：如果 header 里原本就有 Cookie，可能需要合并，这里简单覆盖/追加）
-      header["Cookie"] = cookieStr;
+      header.Cookie = cookieStr;
     }
 
     let data = options.body;

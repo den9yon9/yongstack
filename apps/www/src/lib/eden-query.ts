@@ -76,7 +76,7 @@ export class QueryClient {
     if (!this.listeners.has(hash)) {
       this.listeners.set(hash, new Set());
     }
-    this.listeners.get(hash)!.add(listener);
+    this.listeners.get(hash)?.add(listener);
 
     return () => {
       this.listeners.get(hash)?.delete(listener);

@@ -1,6 +1,6 @@
+import path from "node:path";
 import preact from "@preact/preset-vite";
 import tailwindcss from "@tailwindcss/vite";
-import path from "path";
 import { defineConfig } from "vite";
 
 // https://vite.dev/config/

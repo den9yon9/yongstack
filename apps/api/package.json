@@ -14,6 +14,7 @@
   "dependencies": {
     "@elysiajs/cors": "^1.4.0",
     "@epinfresh/db": "workspace:*",
+    "@sinclair/typebox": "^0.34.41",
     "drizzle-orm": "^0.44.7",
     "elysia": "1"
   }

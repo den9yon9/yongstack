@@ -1,4 +1,4 @@
-type ViteTypeOptions = {};
+type ViteTypeOptions = Record<string, never>;
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL: string;

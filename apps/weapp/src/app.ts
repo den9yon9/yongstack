@@ -30,10 +30,10 @@ App({
     } else if (
       reason &&
       typeof reason === "object" &&
-      (reason as any).message
+      (reason as Error).message
     ) {
       // 兼容 Elysia 或其他库返回的对象
-      errorMessage = (reason as any).message;
+      errorMessage = (reason as Error).message;
     }
 
     // 统一弹窗提示

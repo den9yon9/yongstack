@@ -1,13 +1,12 @@
 import cors from "@elysiajs/cors";
 import { Elysia } from "elysia";
+import { env } from "lib/env";
 import { auth } from "./modules/auth";
-
-if (!process.env.COOKIE_SECRET) throw new Error("COOKIE_SECRET not set");
 
 const app = new Elysia({
   cookie: {
     sign: true,
-    secrets: process.env.COOKIE_SECRET,
+    secrets: env.COOKIE_SECRET,
     httpOnly: true,
     sameSite: "lax", // 在 localhost 调试时 lax 通常没问题
     path: "/",
@@ -23,7 +22,7 @@ const app = new Elysia({
   .get("/", () => ({
     hello: "Elysia",
   }))
-  .listen(8080);
+  .listen(env.PORT);
 
 console.log(`Listening on ${app.server?.url}`);
 

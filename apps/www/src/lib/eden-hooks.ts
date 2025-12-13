@@ -1,3 +1,5 @@
+/* biome-ignore-all lint/suspicious/noExplicitAny: library generic constraints require any */
+
 import { useEdenQuery } from "./eden-query";
 
 // --- 类型定义 ---

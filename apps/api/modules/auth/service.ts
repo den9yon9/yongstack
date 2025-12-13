@@ -1,17 +1,14 @@
 import * as schema from "@epinfresh/db/schema";
 import { eq } from "drizzle-orm";
 import { type Static, status } from "elysia";
+import { env } from "lib/env";
 import { db } from "../../lib/db";
 import type { AuthModel } from "./model";
 
 export async function wechatLogin(jscode: string) {
   const url = new URL("https://api.weixin.qq.com/sns/jscode2session");
-  if (!process.env.WECHAT_MINIPROGRAM_APP_ID)
-    throw new Error("WECHAT_MINIPROGRAM_APP_ID not set");
-  if (!process.env.WECHAT_MINIPROGRAM_SECRET)
-    throw new Error("WECHAT_MINIPROGRAM_SECRET not set");
-  url.searchParams.append("appid", process.env.WECHAT_MINIPROGRAM_APP_ID);
-  url.searchParams.append("secret", process.env.WECHAT_MINIPROGRAM_SECRET);
+  url.searchParams.append("appid", env.WECHAT_MINIPROGRAM_APP_ID);
+  url.searchParams.append("secret", env.WECHAT_MINIPROGRAM_SECRET);
   url.searchParams.append("js_code", jscode);
   url.searchParams.append("grant_type", "authorization_code");
 
@@ -19,6 +16,7 @@ export async function wechatLogin(jscode: string) {
 
   const res = await fetch(url.toString());
   if (!res.ok) throw res;
+  // biome-ignore lint/suspicious/noExplicitAny: wechat api response is untyped
   const data: any = await res.json();
   if (data.errcode) throw status(400, data);
   let target = await db.query.user.findFirst({

@@ -3,7 +3,8 @@ import { useLocation } from "wouter-preact";
 
 interface UIErrorProps {
   /** 错误对象 */
-  error?: Error | any;
+  // biome-ignore lint/suspicious/noExplicitAny: UI组件需要处理各种未知结构抛出的错误，使用any是最务实的
+  error?: any;
   /** 重试回调函数 */
   resetErrorBoundary?: () => void;
   /** 自定义类名 */
