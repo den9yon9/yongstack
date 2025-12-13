@@ -1,0 +1,66 @@
+{
+  // -----------------------------------------------------------
+  // 核心格式化配置 (全面接管，使用 Biome)
+  // -----------------------------------------------------------
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "biomejs.biome",
+
+  // 针对特定语言强制使用 Biome，防止被 VS Code 内置功能抢占
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+
+  // -----------------------------------------------------------
+  // 保存时的动作 (Lint + Import 排序)
+  // -----------------------------------------------------------
+  "editor.codeActionsOnSave": {
+    // 使用 Biome 进行 Quick Fix (例如未使用的变量)
+    "source.fixAll.biome": "explicit",
+    // 使用 Biome 进行 import 排序
+    "source.organizeImports.biome": "explicit"
+  },
+
+  // -----------------------------------------------------------
+  // 界面与文件管理 (减少视觉干扰)
+  // -----------------------------------------------------------
+  // 隐藏那些你不应该手动修改的文件或编译产物
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/dist": true
+  },
+
+  // 文件关联：将 .css 当作 PostCSS 或标准 CSS 处理
+  "files.associations": {
+    "*.css": "css"
+  },
+
+  // -----------------------------------------------------------
+  // 搜索优化 (避免搜索到构建产物)
+  // -----------------------------------------------------------
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/pnpm-lock.yaml": true
+  },
+
+  // -----------------------------------------------------------
+  // TypeScript 优化 (使用工作区的 TS 版本)
+  // -----------------------------------------------------------
+  // 确保 VS Code 使用 node_modules 里的 TS 而不是编辑器自带的
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "[scss]": {
+    "editor.defaultFormatter": "vscode.css-language-features"
+  }
+}

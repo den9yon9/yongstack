@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
+    "types": ["miniprogram-api-typings", "weapp-vite/client"],
+
+    "allowJs": true,
+    "checkJs": false,
+
+    "jsx": "preserve",
+
+    "noEmit": true,
+
+    "lib": ["ESNext", "DOM", "DOM.Iterable"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js",
+    "src/**/*.d.ts",
+    "vite-env.d.ts",
+    "auto-import-components.json"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

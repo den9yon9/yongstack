@@ -1,0 +1,43 @@
+{
+  "name": "weapp-vite-tailwindcss-template",
+  "type": "module",
+  "version": "1.0.2",
+  "private": true,
+  "description": "原生微信小程序 weapp-vite + tailwindcss 模板",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "templates/weapp-vite-tailwindcss-template"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [],
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "open": "weapp-vite open",
+    "g": "weapp-vite generate",
+    "postinstall": "weapp-tw patch"
+  },
+  "dependencies": {
+    "@elysiajs/eden": "^1.4.5",
+    "@epinfresh/api": "workspace:*"
+  },
+  "devDependencies": {
+    "@egoist/tailwindcss-icons": "^1.9.0",
+    "@iconify-json/mdi": "^1.2.3",
+    "@tailwindcss/postcss": "^4.1.17",
+    "autoprefixer": "^10.4.22",
+    "miniprogram-api-typings": "^4.1.0",
+    "postcss": "^8.5.6",
+    "sass": "^1.94.2",
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.9.3",
+    "weapp-tailwindcss": "^4.8.6",
+    "weapp-vite": "5.10.0"
+  }
+}

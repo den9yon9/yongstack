@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "composite": true,
+
+    /* 构建脚本运行环境 */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+
+    /* 这里的 types 可以是 node，不需要 vite/client */
+    "types": ["node"],
+
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts"]
+}

@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json", // <--- 关键：继承基础配置
+  "compilerOptions": {
+    // 这里只写该项目特有的，比如路径别名
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src/**/*", "test/**/*", "main.ts"]
+}

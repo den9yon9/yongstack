@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Client (Chrome)",
+      "request": "launch",
+      "type": "chrome",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/apps/www",
+      "sourceMaps": true,
+      "preLaunchTask": "npm: dev" // 需要配合 tasks.json 使用，或者你手动启动 dev server 后直接 F5
+    }
+  ]
+}

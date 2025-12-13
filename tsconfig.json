@@ -1,0 +1,17 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/api"
+    },
+    {
+      "path": "./packages/db"
+    },
+    {
+      "path": "./apps/weapp"
+    },
+    {
+      "path": "./apps/www"
+    }
+  ]
+}

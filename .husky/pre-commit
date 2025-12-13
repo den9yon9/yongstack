@@ -1,0 +1,5 @@
+echo "🔍 Running Lint-staged..."
+pnpm lint-staged
+
+echo "🛡️  Running Type Check..."
+pnpm typecheck

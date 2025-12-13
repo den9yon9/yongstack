@@ -1,0 +1,20 @@
+{
+  "name": "@epinfresh/api",
+  "type": "module",
+  "scripts": {
+    "start": "bun run main.ts",
+    "dev": "bun run main.ts",
+    "typecheck": "tsc"
+  },
+  "types": "./main.ts",
+  "devDependencies": {
+    "@types/bun": "1",
+    "typescript": "5"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "^1.4.0",
+    "@epinfresh/db": "workspace:*",
+    "drizzle-orm": "^0.44.7",
+    "elysia": "1"
+  }
+}

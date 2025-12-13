@@ -1,0 +1,32 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "composite": true,
+
+    /* 浏览器环境配置 */
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+
+    /* 覆盖 Base 配置中的类型，避免引入 Bun 的类型定义 */
+    "types": ["vite/client"],
+
+    /* Preact 配置 */
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+
+    /* 路径别名 (推荐配置，方便后续引用) */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "react": ["./node_modules/preact/compat/"],
+      "react-dom": ["./node_modules/preact/compat/"]
+    },
+
+    /* Vite 默认的一些严格检查 */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}
