@@ -1,4 +1,5 @@
 import cors from "@elysiajs/cors";
+import swagger from "@elysiajs/swagger";
 import { Elysia } from "elysia";
 import { env } from "./lib/env";
 import { auth } from "./modules/auth";
@@ -12,6 +13,7 @@ const app = new Elysia({
     path: "/",
   },
 })
+  .use(swagger())
   .use(
     cors({
       origin: ["http://localhost:5173"],
