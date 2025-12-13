@@ -1,6 +1,6 @@
 import cors from "@elysiajs/cors";
 import { Elysia } from "elysia";
-import { env } from "lib/env";
+import { env } from "./lib/env";
 import { auth } from "./modules/auth";
 
 const app = new Elysia({

@@ -1,8 +1,8 @@
 import * as schema from "@epinfresh/db/schema";
 import { eq } from "drizzle-orm";
 import { type Static, status } from "elysia";
-import { env } from "lib/env";
 import { db } from "../../lib/db";
+import { env } from "../../lib/env";
 import type { AuthModel } from "./model";
 
 export async function wechatLogin(jscode: string) {

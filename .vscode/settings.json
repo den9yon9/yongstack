@@ -62,5 +62,7 @@
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "[scss]": {
     "editor.defaultFormatter": "vscode.css-language-features"
-  }
+  },
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "typescript.preferences.importModuleSpecifier": "relative"
 }
