@@ -3,6 +3,7 @@ import swagger from "@elysiajs/swagger";
 import { Elysia } from "elysia";
 import { env } from "./lib/env";
 import { auth } from "./modules/auth";
+import { user } from "./modules/user";
 
 const app = new Elysia({
   cookie: {
@@ -14,13 +15,9 @@ const app = new Elysia({
   },
 })
   .use(swagger())
-  .use(
-    cors({
-      origin: ["http://localhost:5173"],
-      credentials: true,
-    }),
-  )
+  .use(cors({ origin: ["http://localhost:5173"], credentials: true }))
   .use(auth)
+  .use(user)
   .get("/", () => ({
     hello: "Elysia",
   }))
