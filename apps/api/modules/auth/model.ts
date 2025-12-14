@@ -1,7 +1,8 @@
 import { db } from "@epinfresh/db/model";
 import Elysia, { t } from "elysia";
+import type { InferModelsMap } from "../../lib/InferModel";
 
-export const AuthModel = {
+export const authModel = new Elysia().model({
   WechatLogin: t.Object({
     code: t.String(),
   }),
@@ -15,6 +16,6 @@ export const AuthModel = {
     password: t.String(),
   }),
   User: t.Omit(db.select.user, ["password", "phone"]),
-};
+});
 
-export const authModel = new Elysia().model(AuthModel);
+export type AuthModel = InferModelsMap<typeof authModel>;

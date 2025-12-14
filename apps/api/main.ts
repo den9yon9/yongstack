@@ -28,4 +28,4 @@ const app = new Elysia({
 
 console.log(`Listening on ${app.server?.url}`);
 
-export type App = typeof app;
+export type App = typeof app; // 辅助类型：从 ModelValidator<S> 中解包出 S

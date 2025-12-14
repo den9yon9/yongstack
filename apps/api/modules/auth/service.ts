@@ -1,6 +1,6 @@
 import * as schema from "@epinfresh/db/schema";
 import { eq } from "drizzle-orm";
-import { type Static, status } from "elysia";
+import { status } from "elysia";
 import { db } from "../../lib/db";
 import { env } from "../../lib/env";
 import type { AuthModel } from "./model";
@@ -33,9 +33,7 @@ export async function wechatLogin(jscode: string) {
   return target;
 }
 
-export async function registerWithPassword(
-  data: Static<typeof AuthModel.RegisterDTO>,
-) {
+export async function registerWithPassword(data: AuthModel["RegisterDTO"]) {
   // 1. 检查用户名是否已存在
   const existing = await db.query.user.findFirst({
     where: eq(schema.user.username, data.username),
@@ -62,9 +60,7 @@ export async function registerWithPassword(
   return newUser;
 }
 
-export async function loginWithPassword(
-  data: Static<typeof AuthModel.LoginDTO>,
-) {
+export async function loginWithPassword(data: AuthModel["LoginDTO"]) {
   // 1. 查找用户
   const user = await db.query.user.findFirst({
     where: eq(schema.user.username, data.username),
