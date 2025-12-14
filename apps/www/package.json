@@ -11,6 +11,7 @@
   "dependencies": {
     "@elysiajs/eden": "^1.4.5",
     "@epinfresh/api": "workspace:*",
+    "eden-preact-query": "workspace:*",
     "@tailwindcss/vite": "^4.1.18",
     "preact": "^10.27.2",
     "tailwindcss": "^4.1.17",

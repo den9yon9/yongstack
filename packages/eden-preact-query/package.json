@@ -1,0 +1,35 @@
+{
+  "name": "eden-preact-query",
+  "version": "1.0.0",
+  "description": "A Preact Suspense Query layer for Eden type-safe API clients, inspired by React Query.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "preact",
+    "eden",
+    "query",
+    "suspense",
+    "typescript",
+    "hooks"
+  ],
+  "author": "yong",
+  "license": "MIT",
+  "peerDependencies": {
+    "preact": "^10.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "rollup": "^4.9.6",
+    "rollup-plugin-dts": "^6.1.0",
+    "typescript": "^5.3.3"
+  }
+}

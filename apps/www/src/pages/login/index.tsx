@@ -1,7 +1,7 @@
+import { useQueryClient } from "eden-preact-query";
 import { useState } from "preact/hooks";
 import { useLocation } from "wouter-preact";
 import { api } from "@/lib/api";
-import { useQueryClient } from "@/lib/eden-query";
 
 export default function Login() {
   const [, setLocation] = useLocation();
