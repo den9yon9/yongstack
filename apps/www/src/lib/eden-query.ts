@@ -7,7 +7,7 @@ type QueryKey = string | readonly unknown[];
 
 interface QueryState<T> {
   data?: T;
-  error?: any;
+  error?: unknown;
   status: "pending" | "success" | "error";
   promise?: Promise<any>;
 }
@@ -126,7 +126,7 @@ export function useQueryClient() {
 
 // --- The Suspense Hook ---
 
-export function useEdenQuery<T, E = Error>(
+export function useEdenSuspenseQuery<T, E = Error>(
   key: QueryKey,
   fetcher: () => Promise<{ data: T | null; error: E | null }>,
 ): T {

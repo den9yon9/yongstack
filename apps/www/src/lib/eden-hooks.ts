@@ -1,24 +1,24 @@
 /* biome-ignore-all lint/suspicious/noExplicitAny: library generic constraints require any */
 
-import { useEdenQuery } from "./eden-query";
+import { useEdenSuspenseQuery } from "./eden-query";
 
 // --- 类型定义 ---
 
 // 提取 Eden Promise 中的 Data 类型
 type UnwrapEdenData<T> = T extends Promise<infer R>
-  ? R extends { data: infer D; error: any }
+  ? R extends { data: infer D; error: unknown }
     ? NonNullable<D>
     : never
   : never;
 
-// 定义混合类型：既是函数(接收参数) 也是对象(包含 useQuery)
+// 定义混合类型：既是函数(接收参数) 也是对象(包含 useSuspenseQuery)
 type MethodWithQuery<Args extends any[], Data> = {
-  // 1. 无参调用: api.get.useQuery()
-  useQuery: () => Data;
+  // 1. 无参调用: api.get.useSuspenseQuery()
+  useSuspenseQuery: () => Data;
 
-  // 2. 带参调用: api.get({ query }).useQuery()
-  // 返回一个只有 useQuery 的对象
-  (...args: Args): { useQuery: () => Data };
+  // 2. 带参调用: api.get({ query }).useSuspenseQuery()
+  // 返回一个只有 useSuspenseQuery 的对象
+  (...args: Args): { useSuspenseQuery: () => Data };
 };
 
 // 递归映射 Eden Client 类型
@@ -42,9 +42,9 @@ type Operation =
 function createEdenHooksRuntime(edenClient: any) {
   function createProxy(ops: Operation[] = []): any {
     return new Proxy(() => {}, {
-      // 拦截属性访问: .user, .get, .useQuery
+      // 拦截属性访问: .user, .get, .useSuspenseQuery
       get: (_target, prop) => {
-        if (prop === "useQuery") {
+        if (prop === "useSuspenseQuery") {
           // --- 触发 Hook ---
           return () => {
             // 1. 生成唯一 Key (包含路径和所有参数)
@@ -68,7 +68,7 @@ function createEdenHooksRuntime(edenClient: any) {
               return typeof current === "function" ? current() : current;
             };
 
-            return useEdenQuery(key, fetcher);
+            return useEdenSuspenseQuery(key, fetcher);
           };
         }
 

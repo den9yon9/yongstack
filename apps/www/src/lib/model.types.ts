@@ -16,4 +16,4 @@ type InferModelsMap<TApp extends AnyElysia> = {
   [K in keyof TApp["models"]]: InferModel<TApp, K>;
 };
 
-export type Models = InferModelsMap<App>;
+export type Model = InferModelsMap<App>;
