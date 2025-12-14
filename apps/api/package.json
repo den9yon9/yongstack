@@ -15,8 +15,8 @@
     "@elysiajs/cors": "^1.4.0",
     "@elysiajs/swagger": "^1.3.1",
     "@epinfresh/db": "workspace:*",
-    "@sinclair/typebox": "^0.34.41",
     "drizzle-orm": "^0.44.7",
-    "elysia": "1"
+    "elysia": "1",
+    "typebox": "^1.0.62"
   }
 }

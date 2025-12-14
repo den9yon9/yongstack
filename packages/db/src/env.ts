@@ -5,24 +5,6 @@ import { Value } from "typebox/value";
 const EnvSchema = t.Object({
   // 核心配置
   DATABASE_URL: t.String({ minLength: 1, error: "缺少 DATABASE_URL" }),
-
-  COOKIE_SECRET: t.String({
-    minLength: 10,
-    error: "COOKIE_SECRET 长度至少需要 10 位",
-  }),
-
-  // 这里的 t.Number 配合下面的 Convert，会自动处理字符串转数字
-  PORT: t.Number({ default: 8080 }),
-
-  // 微信配置
-  WECHAT_MINIPROGRAM_APP_ID: t.String({
-    minLength: 1,
-    error: "缺少 微信 AppID",
-  }),
-  WECHAT_MINIPROGRAM_SECRET: t.String({
-    minLength: 1,
-    error: "缺少 微信 Secret",
-  }),
 });
 
 // 导出类型，供 TS 提示使用
