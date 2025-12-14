@@ -3,9 +3,22 @@ import { useContext, useEffect, useState } from "preact/hooks";
 
 // --- Types ---
 
+/**
+ * 查询键，用于缓存的唯一标识。可以是字符串或只读数组（包含参数和路径）。
+ */
 type QueryKey = string | readonly unknown[];
+
+/**
+ * Eden 风格的异步数据获取函数签名。
+ * @template T 成功时返回的数据类型。
+ * @template E 失败时返回的错误类型。
+ */
 type EdenFetcher<T, E> = () => Promise<{ data: T | null; error: E | null }>;
 
+/**
+ * 缓存中存储的查询状态。
+ * @template T 数据的类型。
+ */
 interface QueryState<T> {
   data?: T;
   error?: unknown;
@@ -13,35 +26,56 @@ interface QueryState<T> {
   promise?: Promise<T>;
 }
 
-// useQuery 的返回类型
+/**
+ * useQuery Hook 的返回结果。
+ * @template T 数据的类型。
+ * @template E 错误的类型。
+ */
 interface UseQueryResult<T, E = unknown> extends QueryState<T> {
-  isLoading: boolean; // status === 'pending'
-  isSuccess: boolean; // status === 'success'
-  isError: boolean; // status === 'error'
-  // 保持与 QueryState 一致，但更明确地暴露出 data 和 error
+  isLoading: boolean;
+  isSuccess: boolean;
+  isError: boolean;
   data?: T;
   error?: E;
 }
 
+/**
+ * 状态监听器签名。
+ * @template T 数据的类型。
+ */
 type QueryObserver<T> = (state: QueryState<T>) => void;
 
 // --- Query Client (The Brain) ---
 
+/**
+ * 核心查询客户端，负责缓存、数据获取、请求去重和状态通知。
+ */
 export class QueryClient {
-  // 使用 unknown 来表示缓存中的值类型是任意的
   private cache = new Map<string, QueryState<unknown>>();
   private listeners = new Map<string, Set<QueryObserver<unknown>>>();
 
-  // 简单的序列化 key
+  /**
+   * 简单的序列化 key。
+   */
   private serializeKey(key: QueryKey): string {
     return JSON.stringify(key);
   }
 
+  /**
+   * 从缓存中获取特定 key 的查询状态。
+   * @template T 数据的类型。
+   * @param key 查询键。
+   */
   getQueryState<T>(key: QueryKey): QueryState<T> | undefined {
     return this.cache.get(this.serializeKey(key)) as QueryState<T> | undefined;
   }
 
-  // 核心 Fetch 逻辑
+  /**
+   * 核心 Fetch 逻辑。处理请求去重，并更新状态。
+   * @template T 数据的类型。
+   * @param key 查询键。
+   * @param fetcher 实际执行数据请求的函数。
+   */
   fetch<T>(key: QueryKey, fetcher: () => Promise<T>): Promise<T> {
     // 如果已经在请求中，直接返回现有的 Promise (请求去重)
     const existing = this.getQueryState<T>(key);
@@ -61,14 +95,16 @@ export class QueryClient {
 
     this.setQueryState(key, {
       status: "pending",
-      promise,
+      promise: promise as Promise<unknown>,
       data: existing?.data,
     }); // 保留旧数据以支持 optimistic UI
 
     return promise;
   }
 
-  // 更新状态并通知监听者
+  /**
+   * 更新状态并通知所有监听者。
+   */
   private setQueryState(key: QueryKey, state: Partial<QueryState<unknown>>) {
     const hash = this.serializeKey(key);
     const current = this.cache.get(hash) || { status: "pending" };
@@ -81,6 +117,12 @@ export class QueryClient {
     this.notify(hash, next);
   }
 
+  /**
+   * 订阅特定 key 的状态变化。
+   * @param key 查询键。
+   * @param listener 状态变化时触发的回调函数。
+   * @returns 取消订阅函数。
+   */
   subscribe(key: QueryKey, listener: QueryObserver<unknown>) {
     const hash = this.serializeKey(key);
     if (!this.listeners.has(hash)) {
@@ -96,17 +138,25 @@ export class QueryClient {
     };
   }
 
+  /**
+   * 通知特定 key 的所有监听者。
+   */
   private notify(hash: string, state: QueryState<unknown>) {
     this.listeners.get(hash)?.forEach((cb) => void cb(state));
   }
 
-  // 手动失效/重新获取
+  /**
+   * 手动使特定 key 的缓存失效（清除缓存）。
+   * @param key 查询键。
+   */
   invalidate(key: QueryKey) {
     const hash = this.serializeKey(key);
     this.cache.delete(hash);
   }
 
-  // 清空所有缓存 (用于登录/退出时)
+  /**
+   * 清空所有缓存和监听者 (用于登录/退出时)。
+   */
   clear() {
     this.cache.clear();
     this.listeners.clear();
@@ -117,6 +167,9 @@ export class QueryClient {
 
 const QueryContext = createContext<QueryClient | null>(null);
 
+/**
+ * 根 Provider 组件，用于将 QueryClient 实例注入到组件树。
+ */
 export const EdenQueryProvider = ({
   client,
   children,
@@ -127,8 +180,11 @@ export const EdenQueryProvider = ({
   return h(QueryContext.Provider, { value: client }, children);
 };
 
-// 导出 Hook 以便在组件中获取 client 实例
-export function useQueryClient() {
+/**
+ * 用于在组件中获取 QueryClient 实例的 Hook。
+ * @returns QueryClient 实例。
+ */
+export function useQueryClient(): QueryClient {
   const client = useContext(QueryContext);
   if (!client) throw new Error("No EdenQueryProvider found");
   return client;
@@ -147,6 +203,17 @@ const wrapEdenFetcher =
 
 // --- The Suspense Hook ---
 
+/**
+ * Suspense 模式的查询 Hook。
+ * - 成功时返回数据。
+ * - 加载中时抛出 Promise。
+ * - 错误时抛出 Error。
+ * @template T 数据的类型。
+ * @template E 错误的类型。
+ * @param key 查询键。
+ * @param fetcher Eden 风格的数据获取函数。
+ * @returns T 成功获取的数据。
+ */
 export function useEdenSuspenseQuery<T, E = unknown>(
   key: QueryKey,
   fetcher: EdenFetcher<T, E>,
@@ -191,6 +258,16 @@ export function useEdenSuspenseQuery<T, E = unknown>(
 
 // --- The Standard Hook ---
 
+/**
+ * 标准（非 Suspense）查询 Hook。
+ * - 手动处理 isLoading, isError, data 状态。
+ * - 错误状态下不会自动重试，等待手动操作或组件重挂载。
+ * @template T 数据的类型。
+ * @template E 错误的类型。
+ * @param key 查询键。
+ * @param fetcher Eden 风格的数据获取函数。
+ * @returns UseQueryResult<T, E> 包含状态信息的对象。
+ */
 export function useEdenQuery<T, E = unknown>(
   key: QueryKey,
   fetcher: EdenFetcher<T, E>,
@@ -210,11 +287,14 @@ export function useEdenQuery<T, E = unknown>(
     });
   }, [client, key]);
 
-  // 3. 如果没有状态或状态已失效，发起请求
+  // 3. 只有在没有状态或状态不是 'pending' 且不是 'success' 时，才发起请求。
+  //    如果状态是 'error'，它将直接返回错误结果，防止自动无限重试。
   if (!state || (state.status !== "pending" && state.status !== "success")) {
-    client.fetch(key, wrappedFetcher);
-    // 立即设置一个 'pending' 状态作为初始值
-    state = { status: "pending" };
+    if (state?.status !== "error") {
+      client.fetch(key, wrappedFetcher);
+      // 立即设置一个 'pending' 状态作为初始值
+      state = { status: "pending" };
+    }
   }
 
   // 4. 组合并返回结果对象

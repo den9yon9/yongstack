@@ -1,14 +1,13 @@
-import { render } from "preact";
 import "./main.css";
 import { EdenQueryProvider, QueryClient } from "eden-preact-query";
+import { render } from "preact";
 import { Suspense } from "preact/compat";
 import { Route, Router, Switch } from "wouter-preact";
 import { useHashLocation } from "wouter-preact/use-hash-location";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Fallback from "./components/Fallback";
-// 引入页面组件
 import Home from "./pages/home";
-import Login from "./pages/login"; // <--- 引入 Login
+import Login from "./pages/login";
 
 const queryClient = new QueryClient();
 
