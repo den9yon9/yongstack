@@ -64,5 +64,7 @@
     "editor.defaultFormatter": "vscode.css-language-features"
   },
   "javascript.preferences.importModuleSpecifier": "relative",
-  "typescript.preferences.importModuleSpecifier": "relative"
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "emmet.showSuggestionsAsSnippets": true,
+  "editor.snippetSuggestions": "bottom"
 }

@@ -12,6 +12,9 @@
     },
     {
       "path": "./apps/www"
+    },
+    {
+      "path": "./apps/admin"
     }
   ]
 }
