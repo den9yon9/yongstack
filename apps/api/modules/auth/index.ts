@@ -18,7 +18,7 @@ export const auth = new Elysia({
       return user;
     },
     {
-      body: "WechatLogin",
+      body: "WechatLoginDTO",
       response: "User",
     },
   )
@@ -42,7 +42,7 @@ export const auth = new Elysia({
       return user;
     },
     {
-      body: "LoginDTO",
+      body: "PasswordLoginDTO",
       response: "User",
     },
   )

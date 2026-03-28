@@ -1,22 +1,32 @@
 {
   "compilerOptions": {
-    "lib": ["ESNext"],
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleDetection": "force",
+    /* ================= 严格的类型检查控制 ================= */
+    "strict": true, // 开启所有严格的类型检查（核心）
+    "noImplicitAny": true, // 禁止隐式的 any 类型
+    "strictNullChecks": true, // 严格的 null 检查
+    "noUnusedLocals": true, // 警告未使用的局部变量
+    "noUnusedParameters": true, // 警告未使用的参数
+    "noFallthroughCasesInSwitch": true, // 防止 switch 语句贯穿
+    "forceConsistentCasingInFileNames": true, // 强制区分大小写（兼容 Windows/Linux）
+
+    /* ================= 模块解析与互操作性 ================= */
+    "esModuleInterop": true, // 允许默认导入 CommonJS 模块 (如 import fs from 'fs')
+    "allowSyntheticDefaultImports": true, // 配合 esModuleInterop 使用
+    "resolveJsonModule": true, // 允许通过 import 引入 .json 文件
     "moduleResolution": "bundler",
+    "module": "esnext",
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "noEmit": true,
 
-    "strict": true,
-    "noUncheckedIndexedAccess": false,
-    "skipLibCheck": true,
+    /* ================= 编译与性能优化 ================= */
+    "skipLibCheck": true, // 跳过 node_modules 中 .d.ts 文件的类型检查（极大地提升编译速度）
+    "isolatedModules": true, // 确保每个文件都可以安全地单独转译（前端 Vite/ESBuild 和后端 SWC 的标配）
 
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "forceConsistentCasingInFileNames": true,
+    /* ================= Monorepo 项目引用支持 ================= */
+    "composite": true, // 配合 references 使用，允许被其他子项目引用
+    "declaration": true, // 自动生成 .d.ts 文件（跨包引用的基础）
+    "declarationMap": true, // 生成 .d.ts.map，方便在 IDE 中跨包跳转到源码而不是声明文件,
 
-    "types": ["bun"]
+    "types": [],
+    "noEmit": true
   }
 }

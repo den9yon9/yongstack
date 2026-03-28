@@ -1,11 +1,12 @@
 {
-  "extends": "../../tsconfig.base.json", // <--- 关键：继承基础配置
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // 这里只写该项目特有的，比如路径别名
+    "lib": ["ESNext"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./*"]
     }
   },
-  "include": ["src/**/*", "test/**/*", "main.ts"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist"]
 }

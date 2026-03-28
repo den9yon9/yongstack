@@ -60,7 +60,7 @@ export async function registerWithPassword(data: AuthModel["RegisterDTO"]) {
   return newUser;
 }
 
-export async function loginWithPassword(data: AuthModel["LoginDTO"]) {
+export async function loginWithPassword(data: AuthModel["PasswordLoginDTO"]) {
   // 1. 查找用户
   const user = await db.query.user.findFirst({
     where: eq(schema.user.username, data.username),

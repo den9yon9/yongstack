@@ -1,6 +1,0 @@
-{
-  "$schema": "https://vite.icebreaker.top/component.json",
-  "component": true,
-  "styleIsolation": "apply-shared",
-  "usingComponents": {}
-}

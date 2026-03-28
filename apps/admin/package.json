@@ -1,5 +1,5 @@
 {
-  "name": "admin",
+  "name": "@yongstack/admin",
   "private": true,
   "type": "module",
   "scripts": {

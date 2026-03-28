@@ -1,5 +1,5 @@
 {
-  "name": "epinfresh",
+  "name": "yongstack",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -39,6 +39,6 @@
     }
   },
   "dependencies": {
-    "@types/bun": "^1.3.3"
+    "@types/bun": "^1.3.11"
   }
 }

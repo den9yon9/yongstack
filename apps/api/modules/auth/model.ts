@@ -3,7 +3,7 @@ import Elysia, { t } from "elysia";
 import type { InferModelsMap } from "../../lib/InferModel";
 
 export const authModel = new Elysia().model({
-  WechatLogin: t.Object({
+  WechatLoginDTO: t.Object({
     code: t.String(),
   }),
   RegisterDTO: t.Object({
@@ -11,7 +11,7 @@ export const authModel = new Elysia().model({
     password: t.String({ minLength: 6 }),
     nickname: t.Optional(t.String()),
   }),
-  LoginDTO: t.Object({
+  PasswordLoginDTO: t.Object({
     username: t.String(),
     password: t.String(),
   }),

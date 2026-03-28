@@ -7,9 +7,9 @@
     {
       "path": "./packages/db"
     },
-    {
-      "path": "./apps/weapp"
-    },
+    // {
+    //   "path": "./apps/weapp"
+    // },
     {
       "path": "./apps/www"
     },

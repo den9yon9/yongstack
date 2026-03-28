@@ -1,5 +1,5 @@
 // 引用刚才暴露的工厂函数
-import { createDb } from "@epinfresh/db/client";
+import { createDb } from "@yongstack/db/client";
 import { env } from "./env";
 
 // 创建并导出单例 db 对象

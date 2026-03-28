@@ -1,32 +1,22 @@
-import "./main.css";
-import { EdenQueryProvider, QueryClient } from "eden-preact-query";
-import { render } from "preact";
-import { Suspense } from "preact/compat";
-import { Route, Router, Switch } from "wouter-preact";
-import { useHashLocation } from "wouter-preact/use-hash-location";
-import ErrorBoundary from "./components/ErrorBoundary";
-import Fallback from "./components/Fallback";
-import Home from "./pages/home";
-import Login from "./pages/login";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
+import ReactDOM from "react-dom/client";
+import { routeTree } from "./routeTree.gen";
 
-const queryClient = new QueryClient();
+const router = createRouter({
+  routeTree,
+  defaultPreload: "intent",
+  scrollRestoration: true,
+});
 
-function App() {
-  return (
-    <Router hook={useHashLocation}>
-      <ErrorBoundary>
-        <Suspense fallback={<Fallback />}>
-          <EdenQueryProvider client={queryClient}>
-            <Switch>
-              <Route path="/" component={Home} />
-              <Route path="/login" component={Login} />
-              <Route>404 Not Found</Route>
-            </Switch>
-          </EdenQueryProvider>
-        </Suspense>
-      </ErrorBoundary>
-    </Router>
-  );
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router;
+  }
 }
 
-render(<App />, document.getElementById("app") as HTMLElement);
+const rootElement = document.getElementById("app")!;
+
+if (!rootElement.innerHTML) {
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(<RouterProvider router={router} />);
+}
