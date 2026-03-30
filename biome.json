@@ -17,11 +17,7 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "a11y": {
-        "noLabelWithoutControl": "off",
-        "useButtonType": "off",
-        "noSvgWithoutTitle": "off"
-      }
+      "a11y": "warn"
     }
   },
   "javascript": {
