@@ -1,6 +1,6 @@
+import type { paths } from "@yongstack/openapi";
 import createClient from "openapi-fetch";
-import { type WxResponse, wxFetch } from "../wxFetch";
-import type { paths } from "./schema";
+import { type WxResponse, wxFetch } from "./wxFetch";
 
 /** 本地存储 Cookie 的 Key */
 const COOKIE_STORAGE_KEY = "app_api_cookies";

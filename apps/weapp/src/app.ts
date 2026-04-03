@@ -1,4 +1,4 @@
-import { api } from "./libs/openapi";
+import { api } from "./libs";
 
 App({
   globalData: {},

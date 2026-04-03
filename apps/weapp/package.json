@@ -21,12 +21,10 @@
     "build": "weapp-vite build",
     "open": "weapp-vite open",
     "g": "weapp-vite generate",
-    "postinstall": "weapp-tw patch",
-    "openapi": "openapi-typescript http://localhost:8080/swagger/json -o src/libs/openapi/schema.d.ts"
+    "postinstall": "weapp-tw patch"
   },
   "dependencies": {
-    "@elysiajs/eden": "^1.4.5",
-    "@yongstack/api": "workspace:*",
+    "@yongstack/openapi": "workspace:*",
     "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {
@@ -35,7 +33,6 @@
     "@tailwindcss/postcss": "^4.1.17",
     "autoprefixer": "^10.4.22",
     "miniprogram-api-typings": "^4.1.0",
-    "openapi-typescript": "^7.13.0",
     "postcss": "^8.5.6",
     "sass": "^1.94.2",
     "tailwindcss": "^4.1.17",
