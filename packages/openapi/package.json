@@ -2,9 +2,9 @@
   "name": "@yongstack/openapi",
   "version": "1.0.0",
   "description": "",
-  "main": "lib/schema.d.ts",
+  "main": "lib/schema.gen.d.ts",
   "scripts": {
-    "openapi": "openapi-typescript http://localhost:8080/swagger/json -o lib/schema.d.ts",
+    "openapi": "openapi-typescript http://localhost:8080/swagger/json -o lib/schema.gen.d.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
