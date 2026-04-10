@@ -23,14 +23,14 @@ export const auth = new Elysia({
     },
   )
   .post(
-    "/register",
+    "/signup",
     async ({ body, cookie }) => {
       const user = await registerWithPassword(body);
       cookie.userId.value = user.id.toString();
       return user;
     },
     {
-      body: "RegisterDTO",
+      body: "SignupDTO",
       response: "User",
     },
   )

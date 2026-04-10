@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@elysiajs/cors": "^1.4.0",
-    "@elysiajs/swagger": "^1.3.1",
+    "@elysiajs/openapi": "^1.4.14",
     "@yongstack/db": "workspace:*",
     "drizzle-orm": "^0.44.7",
     "elysia": "1",

@@ -12,8 +12,6 @@ export async function wechatLogin(jscode: string) {
   url.searchParams.append("js_code", jscode);
   url.searchParams.append("grant_type", "authorization_code");
 
-  console.log(url.toString(), process.env);
-
   const res = await fetch(url.toString());
   if (!res.ok) throw res;
   // biome-ignore lint/suspicious/noExplicitAny: wechat api response is untyped
@@ -33,7 +31,7 @@ export async function wechatLogin(jscode: string) {
   return target;
 }
 
-export async function registerWithPassword(data: AuthModel["RegisterDTO"]) {
+export async function registerWithPassword(data: AuthModel["SignupDTO"]) {
   // 1. 检查用户名是否已存在
   const existing = await db.query.user.findFirst({
     where: eq(schema.user.username, data.username),

@@ -20,7 +20,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/auth/register": {
+  "/auth/signup": {
     parameters: {
       query?: never;
       header?: never;
@@ -29,7 +29,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    post: operations["postAuthRegister"];
+    post: operations["postAuthSignup"];
     delete?: never;
     options?: never;
     head?: never;
@@ -107,9 +107,10 @@ export interface components {
     WechatLoginDTO: {
       code: string;
     };
-    RegisterDTO: {
+    SignupDTO: {
       username: string;
       password: string;
+      /** @description 用户昵称 */
       nickname?: string;
     };
     PasswordLoginDTO: {
@@ -148,24 +149,32 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["WechatLoginDTO"];
+        "application/x-www-form-urlencoded": components["schemas"]["WechatLoginDTO"];
         "multipart/form-data": components["schemas"]["WechatLoginDTO"];
-        "text/plain": components["schemas"]["WechatLoginDTO"];
       };
     };
     responses: {
+      /** @description Response for status 200 */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["User"];
-          "multipart/form-data": components["schemas"]["User"];
-          "text/plain": components["schemas"]["User"];
+        };
+      };
+      /** @description 错误信息 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/plain": string;
         };
       };
     };
   };
-  postAuthRegister: {
+  postAuthSignup: {
     parameters: {
       query?: never;
       header?: never;
@@ -174,20 +183,48 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["RegisterDTO"];
-        "multipart/form-data": components["schemas"]["RegisterDTO"];
-        "text/plain": components["schemas"]["RegisterDTO"];
+        "application/json": components["schemas"]["SignupDTO"];
+        "application/x-www-form-urlencoded": components["schemas"]["SignupDTO"];
+        "multipart/form-data": components["schemas"]["SignupDTO"];
       };
     };
     responses: {
+      /** @description Response for status 200 */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["User"];
-          "multipart/form-data": components["schemas"]["User"];
-          "text/plain": components["schemas"]["User"];
+        };
+      };
+      /** @description 错误信息 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/plain": string;
+        };
+      };
+      /** @description Response for status 401 */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/plain": boolean;
+        };
+      };
+      /** @description Response for status 409 */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            name: string;
+          };
         };
       };
     };
@@ -202,19 +239,27 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["PasswordLoginDTO"];
+        "application/x-www-form-urlencoded": components["schemas"]["PasswordLoginDTO"];
         "multipart/form-data": components["schemas"]["PasswordLoginDTO"];
-        "text/plain": components["schemas"]["PasswordLoginDTO"];
       };
     };
     responses: {
+      /** @description Response for status 200 */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["User"];
-          "multipart/form-data": components["schemas"]["User"];
-          "text/plain": components["schemas"]["User"];
+        };
+      };
+      /** @description 错误信息 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/plain": string;
         };
       };
     };
@@ -228,11 +273,14 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      200: {
+      /** @description 错误信息 */
+      400: {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          "text/plain": string;
+        };
       };
     };
   };
@@ -245,14 +293,22 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
+      /** @description Response for status 200 */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["User"];
-          "multipart/form-data": components["schemas"]["User"];
-          "text/plain": components["schemas"]["User"];
+        };
+      };
+      /** @description 错误信息 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/plain": string;
         };
       };
     };
@@ -267,19 +323,27 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["UpdateUserDTO"];
+        "application/x-www-form-urlencoded": components["schemas"]["UpdateUserDTO"];
         "multipart/form-data": components["schemas"]["UpdateUserDTO"];
-        "text/plain": components["schemas"]["UpdateUserDTO"];
       };
     };
     responses: {
+      /** @description Response for status 200 */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": components["schemas"]["User"];
-          "multipart/form-data": components["schemas"]["User"];
-          "text/plain": components["schemas"]["User"];
+        };
+      };
+      /** @description 错误信息 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/plain": string;
         };
       };
     };
@@ -293,11 +357,14 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      200: {
+      /** @description 错误信息 */
+      400: {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          "text/plain": string;
+        };
       };
     };
   };

@@ -6,10 +6,10 @@ export const authModel = new Elysia().model({
   WechatLoginDTO: t.Object({
     code: t.String(),
   }),
-  RegisterDTO: t.Object({
+  SignupDTO: t.Object({
     username: t.String({ minLength: 3, maxLength: 50 }),
     password: t.String({ minLength: 6 }),
-    nickname: t.Optional(t.String()),
+    nickname: t.Optional(t.String({ description: "用户昵称" })),
   }),
   PasswordLoginDTO: t.Object({
     username: t.String(),

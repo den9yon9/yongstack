@@ -4,7 +4,7 @@
   "description": "",
   "main": "lib/schema.gen.d.ts",
   "scripts": {
-    "openapi": "openapi-typescript http://localhost:8080/swagger/json -o lib/schema.gen.d.ts",
+    "gen": "openapi-typescript http://localhost:8080/openapi/json -o lib/schema.gen.d.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

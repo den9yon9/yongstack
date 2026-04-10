@@ -1,6 +1,6 @@
 import cors from "@elysiajs/cors";
-import swagger from "@elysiajs/swagger";
-import { Elysia } from "elysia";
+import openapi from "@elysiajs/openapi";
+import { Elysia, t } from "elysia";
 import { env } from "./lib/env";
 import { auth } from "./modules/auth";
 import { user } from "./modules/user";
@@ -14,7 +14,12 @@ const app = new Elysia({
     path: "/",
   },
 })
-  .use(swagger())
+  .use(openapi())
+  .guard({
+    response: {
+      400: t.String({ description: "错误信息" }),
+    },
+  })
   .use(cors({ origin: ["http://localhost:5173"], credentials: true }))
   .use(auth)
   .use(user)
