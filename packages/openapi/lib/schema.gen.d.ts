@@ -84,6 +84,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/common/upload": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["postCommonUpload"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/": {
     parameters: {
       query?: never;
@@ -130,6 +146,28 @@ export interface components {
       username?: string | null;
       avatarUrl?: string | null;
     };
+    UploadDTO:
+      | {
+          /** @constant */
+          scene: "avatar";
+          /**
+           * Format: binary
+           * @default File
+           */
+          file: string;
+        }
+      | {
+          /** @constant */
+          scene: "chat";
+          /**
+           * Format: binary
+           * @default File
+           */
+          file: string;
+        };
+    UploadResponse: {
+      url: string;
+    };
   };
   responses: never;
   parameters: never;
@@ -163,15 +201,6 @@ export interface operations {
           "application/json": components["schemas"]["User"];
         };
       };
-      /** @description 错误信息 */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/plain": string;
-        };
-      };
     };
   };
   postAuthSignup: {
@@ -196,35 +225,6 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["User"];
-        };
-      };
-      /** @description 错误信息 */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/plain": string;
-        };
-      };
-      /** @description Response for status 401 */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/plain": boolean;
-        };
-      };
-      /** @description Response for status 409 */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            name: string;
-          };
         };
       };
     };
@@ -253,15 +253,6 @@ export interface operations {
           "application/json": components["schemas"]["User"];
         };
       };
-      /** @description 错误信息 */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/plain": string;
-        };
-      };
     };
   };
   postAuthLogout: {
@@ -272,17 +263,7 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
-    responses: {
-      /** @description 错误信息 */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/plain": string;
-        };
-      };
-    };
+    responses: never;
   };
   getUserMine: {
     parameters: {
@@ -300,15 +281,6 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["User"];
-        };
-      };
-      /** @description 错误信息 */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/plain": string;
         };
       };
     };
@@ -337,13 +309,30 @@ export interface operations {
           "application/json": components["schemas"]["User"];
         };
       };
-      /** @description 错误信息 */
-      400: {
+    };
+  };
+  postCommonUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UploadDTO"];
+        "application/x-www-form-urlencoded": components["schemas"]["UploadDTO"];
+        "multipart/form-data": components["schemas"]["UploadDTO"];
+      };
+    };
+    responses: {
+      /** @description Response for status 200 */
+      200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "text/plain": string;
+          "application/json": components["schemas"]["UploadResponse"];
         };
       };
     };
@@ -356,16 +345,6 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
-    responses: {
-      /** @description 错误信息 */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/plain": string;
-        };
-      };
-    };
+    responses: never;
   };
 }

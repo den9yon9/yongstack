@@ -3,6 +3,7 @@ import openapi from "@elysiajs/openapi";
 import { Elysia } from "elysia";
 import { env } from "./lib/env";
 import { auth } from "./modules/auth";
+import { file } from "./modules/file";
 import { user } from "./modules/user";
 
 const app = new Elysia({
@@ -18,6 +19,7 @@ const app = new Elysia({
   .use(cors({ origin: ["http://localhost:5173"], credentials: true }))
   .use(auth)
   .use(user)
+  .use(file)
   .get("/", () => ({
     hello: "Elysia",
   }))
