@@ -4,10 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "typecheck": "tsc -b",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck && tsc -b",
+    "test": "turbo run test",
     "check": "biome check --write --diagnostic-level=error .",
     "repomix": "pnpx repomix",
-    "prepare": "husky"
+    "prepare": "husky",
+    "gen": "turbo run gen"
   },
   "lint-staged": {
     "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc,css,scss,less}": [
@@ -25,6 +29,7 @@
     "@commitlint/config-conventional": "^20.2.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "turbo": "^2.9.6",
     "typescript": "^5.9.3"
   },
   "overrides": {
