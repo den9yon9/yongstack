@@ -201,6 +201,15 @@ export interface operations {
           "application/json": components["schemas"]["User"];
         };
       };
+      /** @description Response for status 500 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
     };
   };
   postAuthSignup: {
@@ -225,6 +234,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["User"];
+        };
+      };
+      /** @description Response for status 500 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
         };
       };
     };
@@ -253,6 +271,15 @@ export interface operations {
           "application/json": components["schemas"]["User"];
         };
       };
+      /** @description Response for status 500 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
     };
   };
   postAuthLogout: {
@@ -263,7 +290,17 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
-    responses: never;
+    responses: {
+      /** @description Response for status 500 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
   };
   getUserMine: {
     parameters: {
@@ -281,6 +318,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["User"];
+        };
+      };
+      /** @description Response for status 500 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
         };
       };
     };
@@ -309,6 +355,15 @@ export interface operations {
           "application/json": components["schemas"]["User"];
         };
       };
+      /** @description Response for status 500 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
     };
   };
   postCommonUpload: {
@@ -335,6 +390,15 @@ export interface operations {
           "application/json": components["schemas"]["UploadResponse"];
         };
       };
+      /** @description Response for status 500 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
     };
   };
   getIndex: {
@@ -345,6 +409,16 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
-    responses: never;
+    responses: {
+      /** @description Response for status 500 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
   };
 }

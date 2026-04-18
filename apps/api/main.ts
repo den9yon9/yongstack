@@ -1,6 +1,6 @@
 import cors from "@elysiajs/cors";
 import openapi from "@elysiajs/openapi";
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { env } from "./lib/env";
 import { auth } from "./modules/auth";
 import { file } from "./modules/file";
@@ -16,6 +16,11 @@ const app = new Elysia({
   },
 })
   .use(openapi())
+  .guard({
+    response: {
+      500: t.Unknown(),
+    },
+  })
   .use(cors({ origin: ["http://localhost:5173"], credentials: true }))
   .use(auth)
   .use(user)

@@ -1,7 +1,12 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { minLength, object, parse, pipe, string } from "valibot";
 import { api } from "../libs/api";
-import { parseError } from "../libs/error";
+
+const loginSchema = object({
+  username: pipe(string(), minLength(1, "用户名不能为空")),
+  password: pipe(string(), minLength(6, "密码至少6个字符")),
+});
 
 export const Route = createFileRoute("/signin")({
   component: RouteComponent,
@@ -14,23 +19,16 @@ function RouteComponent() {
     e.preventDefault();
 
     const formData = new FormData(e.currentTarget);
-    const username = formData.get("username") as string;
-    const password = formData.get("password") as string;
+    const rawData = {
+      username: formData.get("username") as string,
+      password: formData.get("password") as string,
+    };
 
-    try {
-      const res = await api.POST("/auth/login", {
-        body: { username, password },
-      });
-
-      if (res.error) {
-        throw res.error;
-      }
-
-      toast.success("登录成功");
-      router.navigate({ to: "/" });
-    } catch (err) {
-      toast.error("登录失败", { description: parseError(err) });
-    }
+    const data = parse(loginSchema, rawData);
+    const res = await api.POST("/auth/login", { body: data });
+    if (res.error) throw res.error;
+    toast.success("登录成功");
+    router.navigate({ to: "/" });
   };
 
   return (
