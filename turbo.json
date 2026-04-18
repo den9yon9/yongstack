@@ -20,6 +20,11 @@
     },
     "gen": {
       "cache": false
+    },
+    "watch": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["@yongstack/api#dev"]
     }
   }
 }

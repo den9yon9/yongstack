@@ -5,6 +5,8 @@
   "main": "lib/schema.gen.d.ts",
   "scripts": {
     "gen": "openapi-typescript http://localhost:8080/openapi/json -o lib/schema.gen.d.ts",
+    "watch": "node watch.js",
+    "dev": "node watch.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
