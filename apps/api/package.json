@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "start": "bun run main.ts",
-    "dev": "bun run main.ts",
+    "dev": "bun --watch run main.ts",
     "typecheck": "tsc"
   },
   "types": "./main.ts",

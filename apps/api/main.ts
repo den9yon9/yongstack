@@ -21,7 +21,12 @@ const app = new Elysia({
       500: t.Unknown(),
     },
   })
-  .use(cors({ origin: ["http://localhost:5173"], credentials: true }))
+  .use(
+    cors({
+      origin: ["http://localhost:5173", "http://localhost:3000"],
+      credentials: true,
+    }),
+  )
   .use(auth)
   .use(user)
   .use(file)
