@@ -2,7 +2,9 @@ import Elysia from "elysia";
 import { authModel } from "./model";
 import {
   loginWithPassword,
+  loginWithPhone,
   registerWithPassword,
+  sendSmsCode,
   wechatLogin,
 } from "./service";
 
@@ -49,4 +51,25 @@ export const auth = new Elysia({
   .post("/logout", ({ cookie }) => {
     cookie.userId.remove();
     return { success: true };
-  });
+  })
+  .post(
+    "/phone/code",
+    async ({ body }) => {
+      await sendSmsCode(body.phone);
+    },
+    {
+      body: "SendSmsCodeDTO",
+    },
+  )
+  .post(
+    "/phone/login",
+    async ({ body, cookie }) => {
+      const user = await loginWithPhone(body);
+      cookie.userId.value = user.id.toString();
+      return user;
+    },
+    {
+      body: "PhoneLoginDTO",
+      response: "User",
+    },
+  );

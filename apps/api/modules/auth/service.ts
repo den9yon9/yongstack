@@ -5,6 +5,64 @@ import { db } from "../../lib/db";
 import { env } from "../../lib/env";
 import type { AuthModel } from "./model";
 
+// 内存存储验证码 (生产环境建议使用 Redis)
+const smsCodeStore = new Map<string, { code: string; expiresAt: number }>();
+
+// 生成6位随机验证码
+function generateCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// 发送短信验证码
+export async function sendSmsCode(phone: string) {
+  // 检查是否频繁发送 (60秒内)
+  const existing = smsCodeStore.get(phone);
+  if (existing && Date.now() < existing.expiresAt - 4 * 60 * 1000) {
+    throw status(429, "发送过于频繁，请稍后再试");
+  }
+
+  const code = generateCode();
+  const expiresAt = Date.now() + 5 * 60 * 1000; // 5分钟有效期
+
+  // TODO: 接入实际短信服务 (如阿里云、腾讯云等)
+  // 目前仅打印到控制台，用于开发测试
+  console.log(`[SMS] 发送验证码到 ${phone}: ${code}`);
+
+  smsCodeStore.set(phone, { code, expiresAt });
+}
+
+// 验证短信验证码并登录/注册
+export async function loginWithPhone(data: AuthModel["PhoneLoginDTO"]) {
+  const { phone, code } = data;
+
+  // 验证验证码
+  const stored = smsCodeStore.get(phone);
+  if (!stored || stored.code !== code || Date.now() > stored.expiresAt) {
+    throw status(400, "验证码错误或已过期");
+  }
+
+  // 验证成功后删除验证码
+  smsCodeStore.delete(phone);
+
+  // 查找或创建用户
+  let user = await db.query.user.findFirst({
+    where: eq(schema.user.phone, phone),
+  });
+
+  if (!user) {
+    // 新用户，自动注册
+    [user] = await db
+      .insert(schema.user)
+      .values({
+        phone,
+        nickname: `用户_${phone.slice(-4)}`,
+      })
+      .returning();
+  }
+
+  return user;
+}
+
 export async function wechatLogin(jscode: string) {
   const url = new URL("https://api.weixin.qq.com/sns/jscode2session");
   url.searchParams.append("appid", env.WECHAT_MINIPROGRAM_APP_ID);

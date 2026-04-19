@@ -15,6 +15,13 @@ export const authModel = new Elysia().model({
     username: t.String(),
     password: t.String(),
   }),
+  PhoneLoginDTO: t.Object({
+    phone: t.String({ pattern: "^1[3-9]\\d{9}$", description: "手机号" }),
+    code: t.String({ minLength: 4, maxLength: 6, description: "短信验证码" }),
+  }),
+  SendSmsCodeDTO: t.Object({
+    phone: t.String({ pattern: "^1[3-9]\\d{9}$", description: "手机号" }),
+  }),
   User: t.Omit(db.select.user, ["password", "phone"]),
 });
 
