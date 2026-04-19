@@ -310,3 +310,50 @@ function RouteComponent() {
     </div>
   );
 }
+
+import type { FetchResponse, ParseAsResponse } from "openapi-fetch";
+import type {
+  ErrorStatus,
+  FilterKeys,
+  MediaType,
+  OkStatus,
+  ResponseContent,
+  ResponseObjectMap,
+} from "openapi-typescript-helpers";
+
+export const isStatus = <
+  T extends Record<string | number, any>,
+  Options,
+  Media extends MediaType,
+  Status extends Extract<keyof ResponseObjectMap<T>, ErrorStatus | OkStatus>,
+  Result extends FilterKeys<
+    ResponseContent<ResponseObjectMap<T>[Status]>,
+    Media
+  > = FilterKeys<ResponseContent<ResponseObjectMap<T>[Status]>, Media>,
+>(
+  result: FetchResponse<T, Options, Media>,
+  status: Status,
+): result is Status extends ErrorStatus
+  ? {
+      data?: never;
+      error: Result;
+      response: Response;
+    }
+  : {
+      data: ParseAsResponse<Result, Options>;
+      error?: never;
+      response: Response;
+    } => {
+  switch (status) {
+    case "5XX":
+      return result.response.status >= 500 && result.response.status < 600;
+    case "4XX":
+      return result.response.status >= 400 && result.response.status < 500;
+    case "2XX":
+      return result.response.ok;
+    case "default":
+      return !result.response.ok;
+    default:
+      return result.response.status === status;
+  }
+};

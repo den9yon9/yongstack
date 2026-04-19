@@ -18,7 +18,7 @@ const app = new Elysia({
   .use(openapi())
   .guard({
     response: {
-      500: t.Unknown(),
+      500: t.String(),
     },
   })
   .use(

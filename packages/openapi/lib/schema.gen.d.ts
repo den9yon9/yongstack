@@ -68,6 +68,38 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/auth/phone/code": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["postAuthPhoneCode"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/phone/login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["postAuthPhoneLogin"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/user/mine": {
     parameters: {
       query?: never;
@@ -133,12 +165,26 @@ export interface components {
       username: string;
       password: string;
     };
+    PhoneLoginDTO: {
+      /** @description 手机号 */
+      phone: string;
+      /** @description 短信验证码 */
+      code: string;
+    };
+    SendSmsCodeDTO: {
+      /** @description 手机号 */
+      phone: string;
+    };
+    RemainingSecondsDTO: {
+      /** @description 剩余可发送秒数 */
+      remainingSeconds?: number;
+    };
     User: {
       id: number;
       wechatOpenId: string | null;
       nickname: string | null;
-      avatarUrl: string | null;
       username: string | null;
+      avatarUrl: string | null;
       createdAt: Record<string, never>;
       updatedAt: Record<string, never> | null;
     };
@@ -207,7 +253,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": unknown;
+          "text/plain": string;
         };
       };
     };
@@ -242,7 +288,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": unknown;
+          "text/plain": string;
         };
       };
     };
@@ -277,7 +323,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": unknown;
+          "text/plain": string;
         };
       };
     };
@@ -297,7 +343,86 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": unknown;
+          "text/plain": string;
+        };
+      };
+    };
+  };
+  postAuthPhoneCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SendSmsCodeDTO"];
+        "application/x-www-form-urlencoded": components["schemas"]["SendSmsCodeDTO"];
+        "multipart/form-data": components["schemas"]["SendSmsCodeDTO"];
+      };
+    };
+    responses: {
+      /** @description Response for status 200 */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          type: unknown;
+        };
+      };
+      /** @description Response for status 429 */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RemainingSecondsDTO"];
+        };
+      };
+      /** @description Response for status 500 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/plain": string;
+        };
+      };
+    };
+  };
+  postAuthPhoneLogin: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PhoneLoginDTO"];
+        "application/x-www-form-urlencoded": components["schemas"]["PhoneLoginDTO"];
+        "multipart/form-data": components["schemas"]["PhoneLoginDTO"];
+      };
+    };
+    responses: {
+      /** @description Response for status 200 */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["User"];
+        };
+      };
+      /** @description Response for status 500 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/plain": string;
         };
       };
     };
@@ -326,7 +451,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": unknown;
+          "text/plain": string;
         };
       };
     };
@@ -361,7 +486,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": unknown;
+          "text/plain": string;
         };
       };
     };
@@ -396,7 +521,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": unknown;
+          "text/plain": string;
         };
       };
     };
@@ -416,7 +541,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": unknown;
+          "text/plain": string;
         };
       };
     };
