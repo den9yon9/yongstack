@@ -11,17 +11,9 @@ function DefaultErrorComponent({ error }: { error: Error }) {
   toast.error(error.name || "Error", { description: message });
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 to-red-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
-        <ErrorUI error={error} />
-        <div className="mt-4 text-center">
-          <button
-            onClick={() => window.location.reload()}
-            className="rounded-lg bg-red-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
-          >
-            刷新页面
-          </button>
-        </div>
+        <ErrorUI error={error} onRetry={() => window.location.reload()} />
       </div>
     </div>
   );
