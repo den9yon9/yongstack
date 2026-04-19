@@ -44,6 +44,7 @@ function RouteComponent() {
       });
 
       const res = await api.POST("/auth/login", { body: data });
+
       if (res.error) throw res.error;
 
       toast.success("登录成功", { description: "欢迎回来" });
@@ -70,20 +71,8 @@ function RouteComponent() {
     }
   };
 
-  const sendCode = async () => {
-    if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
-      toast.error("请输入正确的手机号");
-      return;
-    }
-
-    const res = await api.POST("/auth/phone/code", { body: { phone } });
-    if (res.error) {
-      toast.error("发送失败");
-      return;
-    }
-
-    toast.success("验证码已发送");
-    setCountdown(60);
+  const startCountdown = (seconds: number) => {
+    setCountdown(seconds);
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -93,6 +82,26 @@ function RouteComponent() {
         return prev - 1;
       });
     }, 1000);
+  };
+
+  const sendCode = async () => {
+    if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
+      toast.error("请输入正确的手机号");
+      return;
+    }
+
+    const res = await api.POST("/auth/phone/code", { body: { phone } });
+
+    // 处理 429 错误 - 获取剩余秒数
+    if (res.response.status === 429) {
+      const errorData = res.error as { remainingSeconds?: number } | undefined;
+      const remainingSeconds = errorData?.remainingSeconds ?? 60;
+      startCountdown(remainingSeconds);
+      return;
+    }
+    if (res.error) throw res.error;
+    toast.success("验证码已发送");
+    startCountdown(60);
   };
 
   return (

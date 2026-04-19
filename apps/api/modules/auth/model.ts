@@ -22,6 +22,9 @@ export const authModel = new Elysia().model({
   SendSmsCodeDTO: t.Object({
     phone: t.String({ pattern: "^1[3-9]\\d{9}$", description: "手机号" }),
   }),
+  RemainingSecondsDTO: t.Object({
+    remainingSeconds: t.Optional(t.Number({ description: "剩余可发送秒数" })),
+  }),
   User: t.Omit(db.select.user, ["password", "phone"]),
 });
 

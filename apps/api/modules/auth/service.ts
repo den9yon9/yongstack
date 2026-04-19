@@ -17,12 +17,17 @@ function generateCode(): string {
 export async function sendSmsCode(phone: string) {
   // 检查是否频繁发送 (60秒内)
   const existing = smsCodeStore.get(phone);
-  if (existing && Date.now() < existing.expiresAt - 4 * 60 * 1000) {
-    throw status(429, "发送过于频繁，请稍后再试");
+  const now = Date.now();
+  if (existing && now < existing.expiresAt - 4 * 60 * 1000) {
+    // 返回剩余秒数
+    const remainingSeconds = Math.ceil(
+      (existing.expiresAt - 4 * 60 * 1000 - now) / 1000,
+    );
+    return { remainingSeconds };
   }
 
   const code = generateCode();
-  const expiresAt = Date.now() + 5 * 60 * 1000; // 5分钟有效期
+  const expiresAt = now + 5 * 60 * 1000; // 5分钟有效期
 
   // TODO: 接入实际短信服务 (如阿里云、腾讯云等)
   // 目前仅打印到控制台，用于开发测试

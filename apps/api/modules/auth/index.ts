@@ -1,4 +1,4 @@
-import Elysia from "elysia";
+import Elysia, { status, t } from "elysia";
 import { authModel } from "./model";
 import {
   loginWithPassword,
@@ -55,10 +55,16 @@ export const auth = new Elysia({
   .post(
     "/phone/code",
     async ({ body }) => {
-      await sendSmsCode(body.phone);
+      const data = await sendSmsCode(body.phone);
+      if (data?.remainingSeconds)
+        return status(429, { remainingSeconds: data.remainingSeconds });
     },
     {
       body: "SendSmsCodeDTO",
+      response: {
+        200: t.Void(),
+        429: "RemainingSecondsDTO",
+      },
     },
   )
   .post(
