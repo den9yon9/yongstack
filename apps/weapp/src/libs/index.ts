@@ -1,5 +1,5 @@
 import type { paths } from "@yongstack/openapi";
-import createClient from "openapi-fetch";
+import createClient from "@yongstack/openapi-fetch";
 import { type WxResponse, wxFetch } from "./wxFetch";
 
 /** 本地存储 Cookie 的 Key */

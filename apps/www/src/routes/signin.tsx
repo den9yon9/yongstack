@@ -311,15 +311,16 @@ function RouteComponent() {
   );
 }
 
-import type { FetchResponse, ParseAsResponse } from "openapi-fetch";
 import type {
   ErrorStatus,
+  FetchResponse,
   FilterKeys,
   MediaType,
   OkStatus,
+  ParseAsResponse,
   ResponseContent,
   ResponseObjectMap,
-} from "openapi-typescript-helpers";
+} from "@yongstack/openapi-fetch";
 
 export const isStatus = <
   T extends Record<string | number, any>,
@@ -333,17 +334,18 @@ export const isStatus = <
 >(
   result: FetchResponse<T, Options, Media>,
   status: Status,
-): result is Status extends ErrorStatus
-  ? {
-      data?: never;
-      error: Result;
-      response: Response;
-    }
-  : {
-      data: ParseAsResponse<Result, Options>;
-      error?: never;
-      response: Response;
-    } => {
+): result is FetchResponse<T, Options, Media> &
+  (Status extends ErrorStatus
+    ? {
+        data?: undefined;
+        error: Result;
+        status: Status;
+      }
+    : {
+        data: ParseAsResponse<Result, Options>;
+        error?: undefined;
+        status: Status;
+      }) => {
   switch (status) {
     case "5XX":
       return result.response.status >= 500 && result.response.status < 600;
