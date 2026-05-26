@@ -1,4 +1,4 @@
-import { db } from "@epinfresh/db/model";
+import { db } from "@yongstack/db/model";
 import Elysia, { t } from "elysia";
 import type { InferModelsMap } from "../../lib/InferModel";
 

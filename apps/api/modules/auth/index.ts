@@ -50,18 +50,17 @@ export const auth = new Elysia({
   )
   .post("/logout", ({ cookie }) => {
     cookie.userId.remove();
-    return { success: true };
   })
   .post(
     "/phone/code",
     async ({ body }) => {
-      const data = await sendSmsCode(body.phone);
-      if (data?.remainingSeconds)
-        return status(429, { remainingSeconds: data.remainingSeconds });
+      const remainingSeconds = await sendSmsCode(body.phone);
+      if (remainingSeconds) return status(429, { remainingSeconds });
     },
     {
       body: "SendSmsCodeDTO",
       response: {
+        400: t.String(),
         200: t.Void(),
         429: "RemainingSecondsDTO",
       },

@@ -177,7 +177,7 @@ export interface components {
     };
     RemainingSecondsDTO: {
       /** @description 剩余可发送秒数 */
-      remainingSeconds?: number;
+      remainingSeconds: number;
     };
     User: {
       id: number;
@@ -370,6 +370,15 @@ export interface operations {
         };
         content: {
           type: unknown;
+        };
+      };
+      /** @description Response for status 400 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/plain": string;
         };
       };
       /** @description Response for status 429 */

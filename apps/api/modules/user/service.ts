@@ -1,4 +1,4 @@
-import * as schema from "@epinfresh/db/schema";
+import * as schema from "@yongstack/db/schema";
 import { eq } from "drizzle-orm";
 import { status } from "elysia";
 import { db } from "../../lib/db";

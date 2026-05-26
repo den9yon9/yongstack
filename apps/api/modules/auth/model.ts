@@ -1,4 +1,4 @@
-import { db } from "@epinfresh/db/model";
+import { db } from "@yongstack/db/model";
 import Elysia, { t } from "elysia";
 import type { InferModelsMap } from "../../lib/InferModel";
 
@@ -23,7 +23,7 @@ export const authModel = new Elysia().model({
     phone: t.String({ pattern: "^1[3-9]\\d{9}$", description: "手机号" }),
   }),
   RemainingSecondsDTO: t.Object({
-    remainingSeconds: t.Optional(t.Number({ description: "剩余可发送秒数" })),
+    remainingSeconds: t.Number({ description: "剩余可发送秒数" }),
   }),
   User: t.Omit(db.select.user, ["password", "phone"]),
 });

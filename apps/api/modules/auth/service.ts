@@ -1,4 +1,4 @@
-import * as schema from "@epinfresh/db/schema";
+import * as schema from "@yongstack/db/schema";
 import { eq } from "drizzle-orm";
 import { status } from "elysia";
 import { db } from "../../lib/db";
@@ -23,7 +23,7 @@ export async function sendSmsCode(phone: string) {
     const remainingSeconds = Math.ceil(
       (existing.expiresAt - 4 * 60 * 1000 - now) / 1000,
     );
-    return { remainingSeconds };
+    return remainingSeconds;
   }
 
   const code = generateCode();
