@@ -21,6 +21,7 @@
     "build": "weapp-vite build",
     "open": "weapp-vite open",
     "g": "weapp-vite generate",
+    "typecheck": "tsc -b",
     "postinstall": "weapp-tw patch"
   },
   "dependencies": {

@@ -7,12 +7,16 @@
     "gen": "openapi-typescript http://localhost:8080/openapi/json -o lib/schema.gen.d.ts",
     "watch": "node watch.js",
     "dev": "node watch.js",
+    "typecheck": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.17.0",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
   "dependencies": {
     "openapi-typescript": "^7.13.0"
   }
