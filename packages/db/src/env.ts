@@ -11,8 +11,7 @@ const EnvSchema = t.Object({
 export type Env = Static<typeof EnvSchema>;
 
 // 2. 校验逻辑
-// Bun.env (或 process.env) 包含了所有环境变量
-const rawEnv = Bun.env;
+const rawEnv = import.meta.env;
 
 // 步骤 A: 转换 (Convert)
 // 这一步会把字符串 "8080" 转成数字 8080，把 "true" 转成布尔值 true，并应用 default 值
