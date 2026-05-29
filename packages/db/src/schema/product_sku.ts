@@ -12,11 +12,9 @@ export const productSku = pgTable("product_sku", {
   id: serial("id").primaryKey(),
   productId: integer("product_id")
     .notNull()
-    .references(() => product.id),
+    .references(() => product.id, { onDelete: "cascade" }),
   // 硬规格属性键值对，如 {"颜色":"红","尺码":"M"}
   attrs: jsonb("attrs").notNull().$type<Record<string, string>>(),
-  // 规格组合文本标识，如 "颜色:红|尺码:M"
-  attrsText: varchar("attrs_text", { length: 255 }).notNull(),
   // 售价（单位：分）
   price: integer("price").notNull(),
   // 原价/划线价（单位：分）

@@ -13,7 +13,7 @@ export const orderLog = pgTable("order_log", {
   id: serial("id").primaryKey(),
   orderId: integer("order_id")
     .notNull()
-    .references(() => order.id),
+    .references(() => order.id, { onDelete: "cascade" }),
   // 变更前状态，null 表示初始创建
   fromStatus: orderStatus("from_status"),
   // 变更后状态

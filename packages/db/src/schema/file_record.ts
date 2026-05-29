@@ -6,6 +6,7 @@ import {
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
+import { user } from "./user";
 
 export const fileRecord = pgTable(
   "file_record",
@@ -14,7 +15,9 @@ export const fileRecord = pgTable(
     // 文件访问 URL
     url: varchar("url", { length: 512 }).unique().notNull(),
     // 上传者用户 ID
-    uploaderId: integer("uploader_id").notNull(),
+    uploaderId: integer("uploader_id")
+      .notNull()
+      .references(() => user.id),
     // 上传场景：avatar 头像 / product 商品 / order 订单评价等
     scene: varchar("scene", { length: 50 }).notNull(),
     // 文件大小（单位：字节）

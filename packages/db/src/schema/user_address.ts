@@ -12,7 +12,7 @@ export const userAddress = pgTable("user_address", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
     .notNull()
-    .references(() => user.id),
+    .references(() => user.id, { onDelete: "cascade" }),
   receiverName: varchar("receiver_name", { length: 50 }).notNull(),
   receiverPhone: varchar("receiver_phone", { length: 20 }).notNull(),
   province: varchar("province", { length: 50 }).notNull(),

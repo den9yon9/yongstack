@@ -20,7 +20,7 @@ export const product = pgTable("product", {
   // 商品状态：offline 下架 / online 上架
   status: productStatus("status").notNull().default("offline"),
   // 商品扩展信息（软规格、参数等），JSON 格式
-  info: jsonb("info").$type<Record<string, string>>().default({}),
+  info: jsonb("info").$type<Record<string, unknown>>().default({}),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

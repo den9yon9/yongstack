@@ -15,7 +15,7 @@ export const order = pgTable("order", {
   orderNo: varchar("order_no", { length: 32 }).unique().notNull(),
   userId: integer("user_id")
     .notNull()
-    .references(() => user.id),
+    .references(() => user.id, { onDelete: "cascade" }),
   // 收货地址快照（下单时记录，防止地址后续变更影响订单）
   addressSnapshot: jsonb("address_snapshot").notNull(),
   // 订单总金额（单位：分）

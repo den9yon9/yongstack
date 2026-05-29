@@ -13,10 +13,10 @@ export const afterSale = pgTable("after_sale", {
   id: serial("id").primaryKey(),
   orderItemId: integer("order_item_id")
     .notNull()
-    .references(() => orderItem.id),
+    .references(() => orderItem.id, { onDelete: "cascade" }),
   userId: integer("user_id")
     .notNull()
-    .references(() => user.id),
+    .references(() => user.id, { onDelete: "cascade" }),
   // 售后类型：refund_only 仅退款 / return_refund 退货退款
   type: afterSaleType("type").notNull(),
   // 退款/退货原因

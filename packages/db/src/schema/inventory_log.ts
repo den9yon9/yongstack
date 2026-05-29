@@ -12,7 +12,7 @@ export const inventoryLog = pgTable("inventory_log", {
   id: serial("id").primaryKey(),
   skuId: integer("sku_id")
     .notNull()
-    .references(() => productSku.id),
+    .references(() => productSku.id, { onDelete: "cascade" }),
   // 变更数量：正数入库，负数出库
   change: integer("change").notNull(),
   // 变更后的库存数量

@@ -1,5 +1,4 @@
 import {
-  index,
   pgTable,
   serial,
   text,
@@ -14,13 +13,13 @@ export const user = pgTable(
   {
     id: serial("id").primaryKey(),
     // 微信开放平台 OpenID，用于微信登录
-    wechatOpenId: varchar("wechat_open_id", { length: 256 }).unique(),
+    wechatOpenId: varchar("wechat_open_id", { length: 256 }),
     // 手机号，可用于登录
     phone: varchar("phone", { length: 20 }).unique(),
     // 用户昵称，允许重复
     nickname: varchar("nickname", { length: 256 }),
     // 用户名，不可重复，可用于登录系统
-    username: varchar("username", { length: 50 }).unique(),
+    username: varchar("username", { length: 50 }),
     // 头像 URL
     avatarUrl: text("avatar_url"),
     // 密码（bcrypt 哈希后存储），允许为空因为用户可能通过第三方登录
@@ -36,7 +35,6 @@ export const user = pgTable(
   },
   (table) => [
     uniqueIndex("user_wechat_open_id_idx").on(table.wechatOpenId),
-    index("user_phone_idx").on(table.phone),
     uniqueIndex("user_username_idx").on(table.username),
   ],
 );

@@ -15,10 +15,10 @@ export const cart = pgTable(
     id: serial("id").primaryKey(),
     userId: integer("user_id")
       .notNull()
-      .references(() => user.id),
+      .references(() => user.id, { onDelete: "cascade" }),
     skuId: integer("sku_id")
       .notNull()
-      .references(() => productSku.id),
+      .references(() => productSku.id, { onDelete: "cascade" }),
     quantity: integer("quantity").notNull().default(1),
     // 是否选中，用于结算时批量操作
     selected: boolean("selected").notNull().default(true),
