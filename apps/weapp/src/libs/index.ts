@@ -1,5 +1,5 @@
 import type { paths } from "@yongstack/openapi";
-import createClient from "@yongstack/openapi-fetch";
+import createClient from "openapi-fetch";
 import { type WxResponse, wxFetch } from "./wxFetch";
 
 /** 本地存储 Cookie 的 Key */
@@ -10,7 +10,7 @@ const COOKIE_STORAGE_KEY = "app_api_cookies";
  */
 export const api = createClient<paths>({
   baseUrl: "https://your-api-server.com/api", // 替换为你的真实 API 域名
-  fetch: wxFetch as any, // 强制注入微信适配器
+  fetch: wxFetch, // 强制注入微信适配器
 });
 
 /**

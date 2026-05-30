@@ -85,16 +85,17 @@ function RouteComponent() {
     setErrors({});
     setSmsLoading(true);
     try {
-      const res = await api.POST("/auth/phone/code", { body: { phone } });
-      if (res.response.status === 429) {
-        const remaining =
-          (res.error as { remainingSeconds?: number })?.remainingSeconds ?? 60;
-        startCountdown(remaining);
-        return;
-      }
+      const res = await api.auth.phone.code.post({ phone });
       if (res.error) {
+        if (res.error.status === 429) {
+          startCountdown(res.error.value.remainingSeconds);
+          return;
+        }
         toast.error("发送失败", {
-          description: typeof res.error === "string" ? res.error : "请稍后重试",
+          description:
+            typeof res.error.value === "string"
+              ? res.error.value
+              : "请稍后重试",
         });
         return;
       }
@@ -127,8 +128,9 @@ function RouteComponent() {
 
       setLoading(true);
       try {
-        const { error } = await api.POST("/auth/login", {
-          body: { username, password },
+        const { error } = await api.auth.login.post({
+          username,
+          password,
         });
         if (error) {
           toast.error("登录失败", {
@@ -159,8 +161,9 @@ function RouteComponent() {
 
       setLoading(true);
       try {
-        const { error } = await api.POST("/auth/phone/login", {
-          body: { phone, code },
+        const { error } = await api.auth.phone.login.post({
+          phone,
+          code,
         });
         if (error) {
           toast.error("登录失败", {

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "typecheck": "turbo run typecheck && tsc -b",
+    "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "check": "biome check --write --diagnostic-level=error .",
     "repomix": "pnpx repomix",

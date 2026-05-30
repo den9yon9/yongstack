@@ -1,3 +1,3 @@
-import type { paths } from "@yongstack/openapi";
-import createClient from "@yongstack/openapi-fetch";
-export const api = createClient<paths>({ baseUrl: "http://localhost:8080" });
+import type { App } from "@yongstack/api";
+import { createEdenQuery } from "eden-tanstack-query";
+export const api = createEdenQuery<App>("http://localhost:8080");

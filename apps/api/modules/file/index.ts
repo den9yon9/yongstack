@@ -11,7 +11,7 @@ export const file = new Elysia({ prefix: "/common" })
     "/upload",
     async ({ userId, body }) => {
       // 调用 Service 处理上传
-      const url = await processUpload(userId, body.file, body.scene as any);
+      const url = await processUpload(userId, body.file, body.scene);
 
       return { url };
     },

@@ -77,8 +77,12 @@ export async function wechatLogin(jscode: string) {
 
   const res = await fetch(url.toString());
   if (!res.ok) throw res;
-  // biome-ignore lint/suspicious/noExplicitAny: wechat api response is untyped
-  const data: any = await res.json();
+  const data = (await res.json()) as {
+    openid: string;
+    session_key: string;
+    errcode: number;
+    errmsg?: string;
+  };
   if (data.errcode) throw status(400, data);
   let target = await db.query.user.findFirst({
     where: (user, op) => op.eq(user.wechatOpenId, data.openid),

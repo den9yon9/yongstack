@@ -49,6 +49,7 @@ export const wxFetch = async (
       url: requestUrl,
       method: (init?.method ||
         "GET") as WechatMiniprogram.RequestOption["method"],
+      // biome-ignore lint/suspicious/noExplicitAny: fetch BodyInit 与 wx.data 类型边界
       data: init?.body as any,
       header: wxHeaders,
       success: (res) => {

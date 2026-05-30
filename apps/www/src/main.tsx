@@ -1,6 +1,6 @@
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
-import { toast } from "sonner";
+import { Toaster, toast } from "sonner";
 import { ErrorUI } from "./components/ErrorUI";
 import { parseError } from "./libs/error";
 import { routeTree } from "./routeTree.gen";
@@ -36,5 +36,10 @@ const rootElement = document.getElementById("app")!;
 
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
-  root.render(<RouterProvider router={router} />);
+  root.render(
+    <>
+      <RouterProvider router={router} />
+      <Toaster position="top-center" />
+    </>,
+  );
 }

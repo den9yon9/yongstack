@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/dist"]
+    "includes": ["**", "!**/dist", "!**/routeTree.gen.ts"]
   },
   "formatter": {
     "enabled": true,
@@ -17,7 +17,10 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "a11y": "warn"
+      "a11y": "warn",
+      "suspicious": {
+        "noExplicitAny": "error"
+      }
     }
   },
   "javascript": {

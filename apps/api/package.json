@@ -6,6 +6,7 @@
     "dev": "bun --watch run main.ts",
     "typecheck": "tsc"
   },
+  "exports": "./main.ts",
   "types": "./main.ts",
   "devDependencies": {
     "@types/bun": "1",

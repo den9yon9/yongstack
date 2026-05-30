@@ -61,7 +61,7 @@ const parseErrorDetails = (err: unknown): ParsedError => {
 
   // 5. Plain Objects (e.g., throw { code: -1, message: "..." })
   if (typeof err === "object") {
-    const objErr = err as Record<string, any>;
+    const objErr = err as { code?: number; message?: string; msg?: string };
     return {
       title: objErr.code ? `Error Code: ${objErr.code}` : "Unknown Error",
       message:
@@ -79,7 +79,7 @@ const parseErrorDetails = (err: unknown): ParsedError => {
 };
 
 // Safe JSON stringify to prevent circular reference crashes
-const safeStringify = (obj: any): string | null => {
+const safeStringify = (obj: unknown): string | null => {
   try {
     return JSON.stringify(obj, null, 2);
   } catch (e) {

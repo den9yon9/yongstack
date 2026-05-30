@@ -1,8 +1,6 @@
-import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRoute, Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { useEffect } from "react";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import { parseError } from "../libs/error";
 
 import "../styles.css";
@@ -35,18 +33,6 @@ function RootComponent() {
   return (
     <>
       <Outlet />
-      <Toaster position="top-center" />
-      <TanStackDevtools
-        config={{
-          position: "bottom-right",
-        }}
-        plugins={[
-          {
-            name: "TanStack Router",
-            render: <TanStackRouterDevtoolsPanel />,
-          },
-        ]}
-      />
     </>
   );
 }

@@ -1,5 +1,5 @@
 import Elysia, { t } from "elysia";
-import type { InferModelsMap } from "@/lib/InferModel";
+import type { InferModelsMap } from "../../lib/InferModel";
 
 export const fileModel = new Elysia().model({
   UploadDTO: t.Union([
