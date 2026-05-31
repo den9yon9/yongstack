@@ -1,5 +1,5 @@
 {
-  "name": "@yongstack/www",
+  "name": "@yongstack/admin",
   "private": true,
   "type": "module",
   "imports": {

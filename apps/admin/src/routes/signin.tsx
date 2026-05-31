@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import {
   Eye,
   EyeOff,
@@ -11,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import * as v from "valibot";
 import { api } from "../libs/api";
+import { queryClient } from "../libs/queryClient";
 
 const PasswordSchema = v.object({
   username: v.pipe(
@@ -35,12 +40,15 @@ const PhoneSchema = v.object({
 });
 
 export const Route = createFileRoute("/signin")({
+  staticData: { title: "登录", showInNav: false },
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"password" | "phone">("password");
+
+  const router = useRouter();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -139,7 +147,9 @@ function RouteComponent() {
           return;
         }
         toast.success("登录成功");
-        navigate({ to: "/" });
+        router.invalidate();
+        queryClient.invalidateQueries();
+        navigate({ to: "/dashboard" });
       } catch (err) {
         toast.error("登录失败", {
           description: err instanceof Error ? err.message : "网络错误，请重试",
@@ -173,7 +183,9 @@ function RouteComponent() {
           return;
         }
         toast.success("登录成功");
-        navigate({ to: "/" });
+        router.invalidate();
+        queryClient.invalidateQueries();
+        navigate({ to: "/dashboard" });
       } catch (err) {
         toast.error("登录失败", {
           description: err instanceof Error ? err.message : "网络错误，请重试",

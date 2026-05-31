@@ -17,7 +17,7 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "a11y": "warn",
+      "a11y": "off",
       "suspicious": {
         "noExplicitAny": "error"
       }

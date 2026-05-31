@@ -1,3 +1,4 @@
+import { EdenFetchError } from "@elysiajs/eden";
 import { useState } from "react";
 
 interface ParsedError {
@@ -20,11 +21,10 @@ const parseErrorDetails = (err: unknown): ParsedError => {
   }
 
   // 2. Fetch Response Object (Handling HTTP errors natively)
-  if (err instanceof Response) {
-    const statusText = err.statusText || "Unknown Status";
-    const detailInfo = `Status: ${err.status} ${statusText}\nURL: ${err.url}`;
+  if (err instanceof EdenFetchError) {
+    const detailInfo = err.value;
 
-    // Auth errors (401 Unauthorized, 403 Forbidden)
+    // Auth errors (401 Unauthorized)
     if (err.status === 401 || err.status === 403) {
       return {
         title: "Session Expired",
