@@ -1,4 +1,5 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { Breadcrumb } from "../../components/Breadcrumb";
 
 export const Route = createFileRoute("/_studio/dashboard")({
   staticData: { title: "仪表盘", icon: "LayoutDashboard" },
@@ -6,7 +7,10 @@ export const Route = createFileRoute("/_studio/dashboard")({
 });
 
 function Dashboard() {
-  const router = useRouter();
-  console.log(router, 889);
-  return <main>welcome</main>;
+  return (
+    <div className="p-6">
+      <Breadcrumb />
+      <p className="text-gray-500">welcome</p>
+    </div>
+  );
 }

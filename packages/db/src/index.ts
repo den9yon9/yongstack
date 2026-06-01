@@ -8,5 +8,6 @@ export * from "./schema/order_log";
 export * from "./schema/product";
 export * from "./schema/product_category";
 export * from "./schema/product_sku";
+export * from "./schema/relations";
 export * from "./schema/user";
 export * from "./schema/user_address";

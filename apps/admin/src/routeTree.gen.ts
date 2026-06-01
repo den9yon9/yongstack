@@ -13,6 +13,10 @@ import { Route as SigninRouteImport } from './routes/signin'
 import { Route as StudioRouteRouteImport } from './routes/_studio/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudioDashboardRouteImport } from './routes/_studio/dashboard'
+import { Route as StudioProductsRouteRouteImport } from './routes/_studio/products/route'
+import { Route as StudioProductsIndexRouteImport } from './routes/_studio/products/index'
+import { Route as StudioProductsNewRouteImport } from './routes/_studio/products/new'
+import { Route as StudioProductsIdRouteImport } from './routes/_studio/products/$id'
 
 const SigninRoute = SigninRouteImport.update({
   id: '/signin',
@@ -33,30 +37,83 @@ const StudioDashboardRoute = StudioDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => StudioRouteRoute,
 } as any)
+const StudioProductsRouteRoute = StudioProductsRouteRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => StudioRouteRoute,
+} as any)
+const StudioProductsIndexRoute = StudioProductsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StudioProductsRouteRoute,
+} as any)
+const StudioProductsNewRoute = StudioProductsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => StudioProductsRouteRoute,
+} as any)
+const StudioProductsIdRoute = StudioProductsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => StudioProductsRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/signin': typeof SigninRoute
+  '/products': typeof StudioProductsRouteRouteWithChildren
   '/dashboard': typeof StudioDashboardRoute
+  '/products/$id': typeof StudioProductsIdRoute
+  '/products/new': typeof StudioProductsNewRoute
+  '/products/': typeof StudioProductsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/signin': typeof SigninRoute
   '/dashboard': typeof StudioDashboardRoute
+  '/products/$id': typeof StudioProductsIdRoute
+  '/products/new': typeof StudioProductsNewRoute
+  '/products': typeof StudioProductsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_studio': typeof StudioRouteRouteWithChildren
   '/signin': typeof SigninRoute
+  '/_studio/products': typeof StudioProductsRouteRouteWithChildren
   '/_studio/dashboard': typeof StudioDashboardRoute
+  '/_studio/products/$id': typeof StudioProductsIdRoute
+  '/_studio/products/new': typeof StudioProductsNewRoute
+  '/_studio/products/': typeof StudioProductsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/signin' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/signin'
+    | '/products'
+    | '/dashboard'
+    | '/products/$id'
+    | '/products/new'
+    | '/products/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/signin' | '/dashboard'
-  id: '__root__' | '/' | '/_studio' | '/signin' | '/_studio/dashboard'
+  to:
+    | '/'
+    | '/signin'
+    | '/dashboard'
+    | '/products/$id'
+    | '/products/new'
+    | '/products'
+  id:
+    | '__root__'
+    | '/'
+    | '/_studio'
+    | '/signin'
+    | '/_studio/products'
+    | '/_studio/dashboard'
+    | '/_studio/products/$id'
+    | '/_studio/products/new'
+    | '/_studio/products/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -95,14 +152,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudioDashboardRouteImport
       parentRoute: typeof StudioRouteRoute
     }
+    '/_studio/products': {
+      id: '/_studio/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof StudioProductsRouteRouteImport
+      parentRoute: typeof StudioRouteRoute
+    }
+    '/_studio/products/': {
+      id: '/_studio/products/'
+      path: '/'
+      fullPath: '/products/'
+      preLoaderRoute: typeof StudioProductsIndexRouteImport
+      parentRoute: typeof StudioProductsRouteRoute
+    }
+    '/_studio/products/new': {
+      id: '/_studio/products/new'
+      path: '/new'
+      fullPath: '/products/new'
+      preLoaderRoute: typeof StudioProductsNewRouteImport
+      parentRoute: typeof StudioProductsRouteRoute
+    }
+    '/_studio/products/$id': {
+      id: '/_studio/products/$id'
+      path: '/$id'
+      fullPath: '/products/$id'
+      preLoaderRoute: typeof StudioProductsIdRouteImport
+      parentRoute: typeof StudioProductsRouteRoute
+    }
   }
 }
 
+interface StudioProductsRouteRouteChildren {
+  StudioProductsIdRoute: typeof StudioProductsIdRoute
+  StudioProductsNewRoute: typeof StudioProductsNewRoute
+  StudioProductsIndexRoute: typeof StudioProductsIndexRoute
+}
+
+const StudioProductsRouteRouteChildren: StudioProductsRouteRouteChildren = {
+  StudioProductsIdRoute: StudioProductsIdRoute,
+  StudioProductsNewRoute: StudioProductsNewRoute,
+  StudioProductsIndexRoute: StudioProductsIndexRoute,
+}
+
+const StudioProductsRouteRouteWithChildren =
+  StudioProductsRouteRoute._addFileChildren(StudioProductsRouteRouteChildren)
+
 interface StudioRouteRouteChildren {
+  StudioProductsRouteRoute: typeof StudioProductsRouteRouteWithChildren
   StudioDashboardRoute: typeof StudioDashboardRoute
 }
 
 const StudioRouteRouteChildren: StudioRouteRouteChildren = {
+  StudioProductsRouteRoute: StudioProductsRouteRouteWithChildren,
   StudioDashboardRoute: StudioDashboardRoute,
 }
 

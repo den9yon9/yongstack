@@ -42,7 +42,7 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
   interface StaticDataRouteOption {
-    title: string;
+    title?: string;
     icon?: string;
     showInNav?: boolean;
     order?: number;
