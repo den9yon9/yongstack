@@ -72,6 +72,13 @@ export const productModel = new Elysia().model({
     parentId: t.Optional(t.Numeric()),
     sortOrder: t.Optional(t.Numeric()),
   }),
+
+  UploadCoverDTO: t.Object({
+    file: t.File({
+      maxSize: 10 * 1024 * 1024,
+      type: ["image/jpeg", "image/png", "image/webp"],
+    }),
+  }),
 });
 
 export type ProductModel = InferModelsMap<typeof productModel>;

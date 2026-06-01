@@ -1,5 +1,9 @@
+import * as schema from "@yongstack/db/schema";
+import { eq } from "drizzle-orm";
 import Elysia, { t } from "elysia";
+import { db } from "../../lib/db";
 import { isAuthenticated } from "../../lib/guard";
+import { processUpload } from "../file/service";
 import { productModel } from "./model";
 import {
   createCategory,
@@ -39,7 +43,6 @@ export const product = new Elysia({ prefix: "/product" })
     ({ params: { id } }) => deleteCategory(Number(id)),
     {
       params: t.Object({ id: t.String() }),
-      response: t.Object({ success: t.Boolean() }),
     },
   )
 
@@ -73,5 +76,30 @@ export const product = new Elysia({ prefix: "/product" })
   )
   .delete("/:id", ({ params: { id } }) => deleteProduct(Number(id)), {
     params: t.Object({ id: t.String() }),
-    response: t.Object({ success: t.Boolean() }),
-  });
+  })
+  .post(
+    "/:id/cover",
+    async ({ params: { id }, body, userId }) => {
+      const url = await processUpload(userId, body.file, "product");
+      await db
+        .update(schema.product)
+        .set({ coverUrl: url })
+        .where(eq(schema.product.id, Number(id)));
+      return { url };
+    },
+    {
+      body: "UploadCoverDTO",
+      params: t.Object({ id: t.String() }),
+    },
+  )
+  .post(
+    "/upload-cover",
+    async ({ body, userId }) => {
+      const url = await processUpload(userId, body.file, "product");
+      return { url };
+    },
+    {
+      body: "UploadCoverDTO",
+      response: t.Object({ url: t.String() }),
+    },
+  );

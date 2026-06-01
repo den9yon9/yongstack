@@ -3,7 +3,6 @@ import openapi from "@elysiajs/openapi";
 import { Elysia, t } from "elysia";
 import { env } from "./lib/env";
 import { auth } from "./modules/auth";
-import { file } from "./modules/file";
 import { product } from "./modules/product";
 import { user } from "./modules/user";
 
@@ -34,7 +33,6 @@ const app = new Elysia({
   )
   .use(auth)
   .use(user)
-  .use(file)
   .use(product)
   .get("/", () => ({
     hello: "Elysia",

@@ -22,6 +22,13 @@
       "when": 1779978296470,
       "tag": "0002_windy_silvermane",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780277440908,
+      "tag": "0003_nervous_lifeguard",
+      "breakpoints": true
     }
   ]
 }

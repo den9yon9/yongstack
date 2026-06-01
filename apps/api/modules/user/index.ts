@@ -3,6 +3,7 @@
 import Elysia from "elysia";
 import { isAuthenticated } from "../../lib/guard";
 import { authModel } from "../auth/model"; // 引入 auth 的 User Model
+import { processUpload } from "../file/service";
 import { userModel } from "./model";
 import { getMine, updateMine } from "./service";
 
@@ -18,4 +19,14 @@ export const user = new Elysia({
   .put("/mine", ({ userId, body }) => updateMine(userId, body), {
     body: "UpdateUserDTO",
     response: "User",
-  });
+  })
+  .post(
+    "/mine/avatar",
+    async ({ userId, body }) => {
+      const url = await processUpload(userId, body.file, "avatar");
+      return { url };
+    },
+    {
+      body: "UploadAvatarDTO",
+    },
+  );

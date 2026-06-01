@@ -2,7 +2,6 @@ import * as schema from "@yongstack/db/schema";
 import { and, eq, ilike, sql } from "drizzle-orm";
 import { status } from "elysia";
 import { db } from "../../lib/db";
-import { decrementFileRef, incrementFileRef } from "../file/service";
 import type { ProductModel, SKUBody } from "./model";
 
 // ─── Product ────────────────────────────────────────────────
@@ -63,6 +62,12 @@ function mapSkus(productId: number, skus: SKUBody[]) {
   }));
 }
 
+function cleanUndefined<T extends Record<string, unknown>>(obj: T) {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as T;
+}
+
 export async function createProduct(data: ProductModel["CreateProductDTO"]) {
   const { skus, ...productData } = data;
 
@@ -80,16 +85,12 @@ export async function createProduct(data: ProductModel["CreateProductDTO"]) {
     if (skus && skus.length > 0) {
       skuRecords = await tx
         .insert(schema.productSku)
-        .values(mapSkus(product.id, skus))
+        .values(mapSkus(product.id, skus).map(cleanUndefined))
         .returning();
     }
 
     return { ...product, skus: skuRecords };
   });
-
-  if (data.coverUrl) {
-    await incrementFileRef([data.coverUrl]);
-  }
 
   return result;
 }
@@ -128,7 +129,7 @@ export async function updateProduct(
       if (skus.length > 0) {
         skuRecords = await tx
           .insert(schema.productSku)
-          .values(mapSkus(id, skus))
+          .values(mapSkus(id, skus).map(cleanUndefined))
           .returning();
       }
     } else {
@@ -140,11 +141,6 @@ export async function updateProduct(
 
     return { ...updated, skus: skuRecords };
   });
-
-  if (data.coverUrl !== undefined && data.coverUrl !== old.coverUrl) {
-    if (data.coverUrl) await incrementFileRef([data.coverUrl]);
-    if (old.coverUrl) await decrementFileRef([old.coverUrl]);
-  }
 
   return result;
 }
@@ -170,43 +166,19 @@ export async function deleteProduct(id: number) {
 
   await db.delete(schema.product).where(eq(schema.product.id, id));
 
-  if (old.coverUrl) {
-    await decrementFileRef([old.coverUrl]);
-  }
-
   return { success: true as const };
 }
 
 // ─── Category ───────────────────────────────────────────────
 
-type CategoryRow = typeof schema.productCategory.$inferSelect;
-type CategoryTreeNode = CategoryRow & { children: CategoryTreeNode[] };
-
-export async function listCategories(): Promise<CategoryTreeNode[]> {
-  const all = await db
+export async function listCategories() {
+  return db
     .select()
     .from(schema.productCategory)
     .orderBy(
       sql`${schema.productCategory.sortOrder} asc nulls last`,
       sql`${schema.productCategory.id} asc`,
     );
-
-  const map = new Map<number, CategoryTreeNode>();
-  const roots: CategoryTreeNode[] = [];
-
-  for (const cat of all) {
-    map.set(cat.id, { ...cat, children: [] });
-  }
-  for (const cat of all) {
-    const node = map.get(cat.id)!;
-    if (cat.parentId && map.has(cat.parentId)) {
-      map.get(cat.parentId)!.children.push(node);
-    } else {
-      roots.push(node);
-    }
-  }
-
-  return roots;
 }
 
 export async function createCategory(data: ProductModel["CreateCategoryDTO"]) {
