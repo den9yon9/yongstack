@@ -3,14 +3,7 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import {
-  Eye,
-  EyeOff,
-  KeyRound,
-  Loader2,
-  LogIn,
-  Smartphone,
-} from "lucide-react";
+import { Eye, EyeOff, KeyRound, LogIn, Smartphone } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import * as v from "valibot";
@@ -205,157 +198,172 @@ function RouteComponent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-base-200 px-4">
       <div className="w-full max-w-sm">
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-6"
-        >
-          <div className="text-center">
-            <div className="w-12 h-12 bg-gray-900 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <LogIn className="w-6 h-6 text-white" />
+        <div className="card bg-base-100 card-border">
+          <form onSubmit={handleSubmit} className="card-body gap-6">
+            <div className="text-center">
+              <div className="bg-primary text-primary-content w-12 h-12 rounded-btn flex items-center justify-center mx-auto mb-4">
+                <LogIn className="w-6 h-6" />
+              </div>
+              <h1 className="text-xl font-semibold text-base-content">
+                欢迎回来
+              </h1>
+              <p className="text-sm text-base-content/60 mt-1">
+                请登录你的账号
+              </p>
             </div>
-            <h1 className="text-xl font-semibold text-gray-900">欢迎回来</h1>
-            <p className="text-sm text-gray-500 mt-1">请登录你的账号</p>
-          </div>
 
-          <div className="flex border-b border-gray-100">
-            <button
-              type="button"
-              onClick={() => switchMode("password")}
-              className={`flex-1 pb-3 flex items-center justify-center gap-2 text-sm font-medium border-b-2 transition-colors ${
-                mode === "password"
-                  ? "text-gray-900 border-gray-900"
-                  : "text-gray-400 border-transparent"
-              }`}
-            >
-              <KeyRound className="w-4 h-4" />
-              密码登录
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode("phone")}
-              className={`flex-1 pb-3 flex items-center justify-center gap-2 text-sm font-medium border-b-2 transition-colors ${
-                mode === "phone"
-                  ? "text-gray-900 border-gray-900"
-                  : "text-gray-400 border-transparent"
-              }`}
-            >
-              <Smartphone className="w-4 h-4" />
-              手机登录
-            </button>
-          </div>
-
-          {mode === "password" && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  用户名
-                </label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="输入用户名"
-                  className="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors"
-                />
-                {errors.username && (
-                  <p className="text-xs text-red-500 mt-1">{errors.username}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  密码
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="输入密码"
-                    className="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors pr-11"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="text-xs text-red-500 mt-1">{errors.password}</p>
-                )}
-              </div>
+            <div className="tabs tabs-bordered">
+              <button
+                type="button"
+                onClick={() => switchMode("password")}
+                className={`tab gap-2 ${mode === "password" ? "tab-active" : ""}`}
+              >
+                <KeyRound className="w-4 h-4" />
+                密码登录
+              </button>
+              <button
+                type="button"
+                onClick={() => switchMode("phone")}
+                className={`tab gap-2 ${mode === "phone" ? "tab-active" : ""}`}
+              >
+                <Smartphone className="w-4 h-4" />
+                手机登录
+              </button>
             </div>
-          )}
 
-          {mode === "phone" && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  手机号
-                </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                  placeholder="输入手机号"
-                  maxLength={11}
-                  className="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors"
-                />
-                {errors.phone && (
-                  <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  验证码
-                </label>
-                <div className="flex gap-3">
+            {mode === "password" && (
+              <div className="space-y-4">
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">用户名</span>
+                  </div>
                   <input
                     type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="输入验证码"
-                    maxLength={6}
-                    className="flex-1 h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-colors"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="输入用户名"
+                    className="input input-bordered w-full"
                   />
-                  <button
-                    type="button"
-                    onClick={handleSendCode}
-                    disabled={smsLoading || smsCountdown > 0}
-                    className="h-11 px-5 rounded-xl text-sm font-medium whitespace-nowrap transition-all shrink-0 disabled:cursor-not-allowed bg-gray-900 hover:bg-gray-800 disabled:bg-gray-100 text-white disabled:text-gray-400"
-                  >
-                    {smsLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                    ) : smsCountdown > 0 ? (
-                      `${smsCountdown}s`
-                    ) : (
-                      "发送验证码"
-                    )}
-                  </button>
-                </div>
-                {errors.code && (
-                  <p className="text-xs text-red-500 mt-1">{errors.code}</p>
-                )}
+                  {errors.username && (
+                    <div className="label">
+                      <span className="label-text-alt text-error">
+                        {errors.username}
+                      </span>
+                    </div>
+                  )}
+                </label>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">密码</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="输入密码"
+                      className="input input-bordered w-full pr-11"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <div className="label">
+                      <span className="label-text-alt text-error">
+                        {errors.password}
+                      </span>
+                    </div>
+                  )}
+                </label>
               </div>
-            </div>
-          )}
+            )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-11 flex items-center justify-center bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 text-white text-sm font-medium rounded-xl transition-all active:scale-[0.98] disabled:cursor-not-allowed"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "登录"}
-          </button>
-        </form>
+            {mode === "phone" && (
+              <div className="space-y-4">
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">手机号</span>
+                  </div>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) =>
+                      setPhone(e.target.value.replace(/\D/g, ""))
+                    }
+                    placeholder="输入手机号"
+                    maxLength={11}
+                    className="input input-bordered w-full"
+                  />
+                  {errors.phone && (
+                    <div className="label">
+                      <span className="label-text-alt text-error">
+                        {errors.phone}
+                      </span>
+                    </div>
+                  )}
+                </label>
+                <label className="form-control w-full">
+                  <div className="label">
+                    <span className="label-text">验证码</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={code}
+                      onChange={(e) =>
+                        setCode(e.target.value.replace(/\D/g, ""))
+                      }
+                      placeholder="输入验证码"
+                      maxLength={6}
+                      className="input input-bordered flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSendCode}
+                      disabled={smsLoading || smsCountdown > 0}
+                      className="btn btn-primary"
+                    >
+                      {smsLoading ? (
+                        <span className="loading loading-spinner loading-sm" />
+                      ) : smsCountdown > 0 ? (
+                        `${smsCountdown}s`
+                      ) : (
+                        "发送验证码"
+                      )}
+                    </button>
+                  </div>
+                  {errors.code && (
+                    <div className="label">
+                      <span className="label-text-alt text-error">
+                        {errors.code}
+                      </span>
+                    </div>
+                  )}
+                </label>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary w-full"
+            >
+              {loading ? <span className="loading loading-spinner" /> : "登录"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

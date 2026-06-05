@@ -10,7 +10,32 @@ function Dashboard() {
   return (
     <div className="p-6">
       <Breadcrumb />
-      <p className="text-gray-500">welcome</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="card bg-base-100 card-border">
+          <div className="card-body gap-2">
+            <h3 className="text-base-content/60 text-sm">总商品数</h3>
+            <p className="text-2xl font-bold text-base-content">--</p>
+          </div>
+        </div>
+        <div className="card bg-base-100 card-border">
+          <div className="card-body gap-2">
+            <h3 className="text-base-content/60 text-sm">上架商品</h3>
+            <p className="text-2xl font-bold text-success">--</p>
+          </div>
+        </div>
+        <div className="card bg-base-100 card-border">
+          <div className="card-body gap-2">
+            <h3 className="text-base-content/60 text-sm">下架商品</h3>
+            <p className="text-2xl font-bold text-base-content/60">--</p>
+          </div>
+        </div>
+        <div className="card bg-base-100 card-border">
+          <div className="card-body gap-2">
+            <h3 className="text-base-content/60 text-sm">类目数</h3>
+            <p className="text-2xl font-bold text-base-content">--</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

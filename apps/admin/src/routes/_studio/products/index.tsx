@@ -83,7 +83,7 @@ function ProductsPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4">
       <Breadcrumb>
         <form
           onSubmit={(e) => {
@@ -99,18 +99,18 @@ function ProductsPage() {
           className="flex items-center gap-2"
         >
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/40" />
             <input
               name="keyword"
               defaultValue={search.keyword ?? ""}
               placeholder="搜索..."
-              className="w-40 h-9 pl-9 pr-3 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+              className="input input-bordered input-sm w-40 pl-9"
             />
           </div>
           <select
             name="status"
             defaultValue={search.status ?? ""}
-            className="h-9 px-3 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+            className="select select-bordered select-sm"
           >
             <option value="">全部状态</option>
             <option value="online">上架</option>
@@ -119,7 +119,7 @@ function ProductsPage() {
           <select
             name="categoryId"
             defaultValue={search.categoryId ?? ""}
-            className="h-9 px-3 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+            className="select select-bordered select-sm"
           >
             <option value="">全部分类</option>
             {categories?.map((c) => (
@@ -128,132 +128,116 @@ function ProductsPage() {
               </option>
             ))}
           </select>
-          <button
-            type="submit"
-            className="h-9 px-4 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all"
-          >
-            筛选
-          </button>
-          <button
-            type="reset"
-            onClick={() => navigate({ search: {} })}
-            className="h-9 px-3 border border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50 text-sm font-medium rounded-lg transition-all"
-          >
-            重置
-          </button>
+          <div className="join shrink-0">
+            <button type="submit" className="btn btn-neutral btn-sm join-item">
+              筛选
+            </button>
+            <button
+              type="reset"
+              onClick={() => navigate({ search: {} })}
+              className="btn btn-ghost btn-sm join-item"
+            >
+              重置
+            </button>
+          </div>
         </form>
-        <Link
-          to="/products/new"
-          className="flex items-center gap-1.5 h-9 px-4 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all"
-        >
+        <Link to="/products/new" className="btn btn-primary btn-sm">
           <Plus className="w-4 h-4" /> 新建
         </Link>
       </Breadcrumb>
 
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/50">
-              <th className="text-left px-4 py-3 font-medium text-gray-500">
-                封面
-              </th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500">
-                名称
-              </th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500">
-                分类
-              </th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500">
-                状态
-              </th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500">
-                创建时间
-              </th>
-              <th className="text-right px-4 py-3 font-medium text-gray-500">
-                操作
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.items.length === 0 ? (
+      <div className="card bg-base-100 card-border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="table">
+            <thead>
               <tr>
-                <td colSpan={6} className="text-center py-12 text-gray-400">
-                  暂无商品
-                </td>
+                <th>封面</th>
+                <th>名称</th>
+                <th>分类</th>
+                <th>状态</th>
+                <th>创建时间</th>
+                <th className="text-right">操作</th>
               </tr>
-            ) : (
-              data.items.map((p) => (
-                <tr
-                  key={p.id}
-                  className="border-b border-gray-50 hover:bg-gray-50/50"
-                >
-                  <td className="px-4 py-3">
-                    {p.coverUrl ? (
-                      <img
-                        src={p.coverUrl}
-                        alt=""
-                        className="w-10 h-10 rounded-lg object-cover bg-gray-100"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-gray-100" />
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link
-                      to="/products/$id"
-                      params={{ id: p.id.toString() }}
-                      className="text-gray-900 hover:text-gray-600"
-                    >
-                      {p.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
-                    {p.categoryId ? (catMap.get(p.categoryId) ?? "—") : "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        p.status === "online"
-                          ? "bg-green-50 text-green-700"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {p.status === "online" ? "上架" : "下架"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
-                    {new Date(p.createdAt).toLocaleDateString("zh-CN")}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link
-                        to={"/products/$id"}
-                        params={{ id: p.id.toString() }}
-                        className="text-xs text-gray-500 hover:text-gray-900"
-                      >
-                        编辑
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => handleToggle(p.id, p.status)}
-                        className="text-xs text-gray-500 hover:text-gray-900"
-                      >
-                        {p.status === "online" ? "下架" : "上架"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(p.id)}
-                        className="text-xs text-red-400 hover:text-red-600"
-                      >
-                        删除
-                      </button>
-                    </div>
+            </thead>
+            <tbody>
+              {data.items.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="text-center py-12 text-base-content/40"
+                  >
+                    暂无商品
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                data.items.map((p) => (
+                  <tr key={p.id} className="hover">
+                    <td>
+                      {p.coverUrl ? (
+                        <img
+                          src={p.coverUrl}
+                          alt=""
+                          className="w-10 h-10 rounded-btn object-cover bg-base-200"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-btn bg-base-200" />
+                      )}
+                    </td>
+                    <td>
+                      <Link
+                        to="/products/$id"
+                        params={{ id: p.id.toString() }}
+                        className="link link-hover text-base-content"
+                      >
+                        {p.name}
+                      </Link>
+                    </td>
+                    <td className="text-base-content/60 text-xs">
+                      {p.categoryId ? (catMap.get(p.categoryId) ?? "—") : "—"}
+                    </td>
+                    <td>
+                      {p.status === "online" ? (
+                        <span className="badge badge-success badge-soft">
+                          上架
+                        </span>
+                      ) : (
+                        <span className="badge badge-ghost">下架</span>
+                      )}
+                    </td>
+                    <td className="text-base-content/60 text-xs">
+                      {new Date(p.createdAt).toLocaleDateString("zh-CN")}
+                    </td>
+                    <td>
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          to={"/products/$id"}
+                          params={{ id: p.id.toString() }}
+                          className="btn btn-ghost btn-xs"
+                        >
+                          编辑
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleToggle(p.id, p.status)}
+                          className="btn btn-ghost btn-xs"
+                        >
+                          {p.status === "online" ? "下架" : "上架"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(p.id)}
+                          className="btn btn-ghost btn-xs text-error"
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="flex items-center justify-center gap-2 mt-4">
@@ -263,11 +247,11 @@ function ProductsPage() {
           onClick={() =>
             navigate({ search: (prev) => ({ ...prev, page: data.page - 1 }) })
           }
-          className="h-8 px-3 rounded-lg text-sm border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+          className="btn btn-sm btn-ghost"
         >
           上一页
         </button>
-        <span className="text-sm text-gray-500">
+        <span className="btn btn-sm btn-ghost no-animation cursor-default">
           {data.page} / {data.totalPage}
         </span>
         <button
@@ -276,7 +260,7 @@ function ProductsPage() {
           onClick={() =>
             navigate({ search: (prev) => ({ ...prev, page: data.page + 1 }) })
           }
-          className="h-8 px-3 rounded-lg text-sm border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+          className="btn btn-sm btn-ghost"
         >
           下一页
         </button>

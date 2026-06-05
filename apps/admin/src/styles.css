@@ -1,1 +1,15 @@
 @import "tailwindcss";
+@plugin "daisyui" {
+  /* biome-ignore lint/correctness/noUnknownProperty: daisyui plugin syntax */
+  themes:
+    light --default,
+    dark,
+    corporate,
+    synthwave,
+    retro,
+    cyberpunk,
+    forest,
+    dracula,
+    nord,
+    dim;
+}

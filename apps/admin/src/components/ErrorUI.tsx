@@ -104,9 +104,8 @@ export function ErrorUI({ error, onRetry }: ErrorUIProps) {
   };
 
   return (
-    <div className="w-full px-6 py-10 flex flex-col items-center text-center max-w-md mx-auto font-sans selection:bg-gray-200">
-      {/* Icon Area: Lock icon for Auth errors, Warning icon for others */}
-      <div className="w-16 h-16 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center mb-5">
+    <div className="w-full px-6 py-10 flex flex-col items-center text-center max-w-md mx-auto">
+      <div className="w-16 h-16 bg-base-200 text-base-content/40 rounded-full flex items-center justify-center mb-5">
         {parsed.isAuthError ? (
           <svg
             className="w-7 h-7"
@@ -138,42 +137,41 @@ export function ErrorUI({ error, onRetry }: ErrorUIProps) {
         )}
       </div>
 
-      {/* Text Area */}
-      <h3 className="text-[17px] font-medium text-gray-900 mb-1.5 break-words">
+      <h3 className="text-lg font-medium text-base-content mb-1.5 break-words">
         {parsed.title}
       </h3>
-      <p className="text-[14px] text-gray-500 leading-relaxed break-words line-clamp-3">
+      <p className="text-sm text-base-content/60 leading-relaxed break-words line-clamp-3">
         {parsed.message}
       </p>
 
-      {/* Action Area */}
       <div className="mt-8 w-full flex flex-col items-center gap-3">
         {onRetry && (
           <button
+            type="button"
             onClick={onRetry}
-            className="w-full sm:w-auto sm:min-w-[160px] h-12 flex items-center justify-center bg-gray-900 active:bg-gray-800 text-white text-[15px] font-medium rounded-2xl transition-transform active:scale-[0.98]"
+            className="btn btn-primary w-full sm:w-auto sm:min-w-[160px]"
           >
             {parsed.isAuthError ? "Sign In" : "Try Again"}
           </button>
         )}
 
-        {/* Minimalist toggle button */}
         {parsed.details && (
           <button
+            type="button"
             onClick={() => setShowDetails(!showDetails)}
-            className="h-10 px-4 flex items-center justify-center text-[13px] text-gray-400 active:text-gray-600 transition-colors"
+            className="btn btn-ghost btn-sm text-base-content/60"
           >
             {showDetails ? "Hide details" : "Show details"}
           </button>
         )}
       </div>
 
-      {/* Details Block (Expanded state) */}
       {showDetails && parsed.details && (
-        <div className="w-full mt-4 text-left relative animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="w-full mt-4 text-left relative">
           <button
+            type="button"
             onClick={handleCopy}
-            className="absolute top-2.5 right-2.5 p-1.5 text-gray-400 active:text-gray-700 bg-white/80 backdrop-blur rounded-lg shadow-sm border border-gray-100"
+            className="absolute top-2.5 right-2.5 btn btn-ghost btn-xs btn-square"
             aria-label="Copy to clipboard"
           >
             <svg
@@ -190,7 +188,7 @@ export function ErrorUI({ error, onRetry }: ErrorUIProps) {
               />
             </svg>
           </button>
-          <pre className="p-4 bg-gray-50 border border-gray-100 rounded-2xl text-[11px] sm:text-xs text-gray-500 font-mono overflow-x-auto overflow-y-auto max-h-64 leading-relaxed whitespace-pre-wrap">
+          <pre className="p-4 bg-base-200 border border-base-300 rounded-box text-[11px] sm:text-xs text-base-content/60 font-mono overflow-x-auto overflow-y-auto max-h-64 leading-relaxed whitespace-pre-wrap">
             <code>{parsed.details}</code>
           </pre>
         </div>

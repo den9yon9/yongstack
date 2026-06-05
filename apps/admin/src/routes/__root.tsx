@@ -24,17 +24,21 @@ function Component() {
     <>
       <Outlet />
       {isAuthError && !matchSigninRoute && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-lg">
-          <LogIn className="h-5 w-5 shrink-0 text-gray-400" />
-          <div className="text-sm">
-            <p className="text-gray-500">未登录</p>
-            <Link
-              to="/signin"
-              replace
-              className="font-medium text-gray-900 underline underline-offset-2 hover:text-gray-600"
-            >
-              去登录
-            </Link>
+        <div className="fixed bottom-6 right-6 z-50 card card-border bg-base-100 shadow-lg px-0 py-0">
+          <div className="card-body p-4">
+            <div className="flex items-center gap-3">
+              <LogIn className="h-5 w-5 shrink-0 text-base-content/40" />
+              <div className="text-sm">
+                <p className="text-base-content/60">未登录</p>
+                <Link
+                  to="/signin"
+                  replace
+                  className="link link-primary font-medium"
+                >
+                  去登录
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       )}

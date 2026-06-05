@@ -1,5 +1,4 @@
 import { Link, useMatches } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface Props {
@@ -29,41 +28,37 @@ export function Breadcrumb({ children }: Props) {
 
   if (crumbs.length === 0 && !children) return null;
 
-  const nav = (
-    <nav className="flex items-center gap-1.5 text-sm text-gray-500">
-      {crumbs.length === 0 ? (
-        <span className="font-medium text-gray-900">首页</span>
-      ) : (
-        crumbs.map((crumb, i) => (
-          <span
-            key={crumb.path ?? "last"}
-            className="flex items-center gap-1.5"
-          >
-            {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-gray-300" />}
-            {crumb.path ? (
-              <Link
-                to={crumb.path}
-                className="hover:text-gray-900 transition-colors"
-              >
-                {crumb.title}
-              </Link>
+  return (
+    <div className="navbar min-h-0 p-3 rounded-lg mb-1 bg-base-100 border-b border-base-300">
+      <div className="navbar-start">
+        <div className="breadcrumbs text-sm">
+          <ul>
+            {crumbs.length === 0 ? (
+              <li>
+                <span className="font-medium text-base-content">首页</span>
+              </li>
             ) : (
-              <span className="font-medium text-gray-900">{crumb.title}</span>
+              crumbs.map((crumb, i) => (
+                <li key={crumb.path ?? i}>
+                  {crumb.path ? (
+                    <Link
+                      to={crumb.path}
+                      className="link link-hover text-base-content/60"
+                    >
+                      {crumb.title}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-base-content">
+                      {crumb.title}
+                    </span>
+                  )}
+                </li>
+              ))
             )}
-          </span>
-        ))
-      )}
-    </nav>
-  );
-
-  if (children) {
-    return (
-      <div className="flex items-center justify-between gap-4 px-6 pt-4 pb-2">
-        {nav}
-        <div className="flex items-center gap-3">{children}</div>
+          </ul>
+        </div>
       </div>
-    );
-  }
-
-  return <div className="px-6 pt-4 pb-2">{nav}</div>;
+      {children && <div className="navbar-end grow gap-2">{children}</div>}
+    </div>
+  );
 }
