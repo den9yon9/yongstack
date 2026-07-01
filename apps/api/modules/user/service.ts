@@ -8,7 +8,7 @@ export async function getMine(userId: number) {
   const user = await db.query.user.findFirst({
     where: eq(schema.user.id, userId),
   });
-  if (!user) throw status("Not Found", "User not found");
+  if (!user) throw status(404, "User not found");
   return user;
 }
 

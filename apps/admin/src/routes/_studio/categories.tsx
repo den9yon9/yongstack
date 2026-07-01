@@ -49,7 +49,7 @@ function CategoriesPage() {
   const { data: flatCategories, isLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const res = await api.product.categories.get();
+      const res = await api.categories.get();
       return (res.data ?? []) as {
         id: number;
         name: string;
@@ -81,7 +81,7 @@ function CategoriesPage() {
   async function handleCreate() {
     if (!createName.trim() || !createTarget) return;
     setSaving(true);
-    const res = await api.product.categories.post({
+    const res = await api.categories.post({
       name: createName.trim(),
       parentId: createTarget.parentId ?? undefined,
     });
@@ -104,7 +104,7 @@ function CategoriesPage() {
   async function handleUpdate() {
     if (!editingId || !editName.trim()) return;
     setSaving(true);
-    const res = await api.product
+    const res = await api
       .categories({ id: editingId })
       .put({ name: editName.trim() });
     setSaving(false);
@@ -119,7 +119,7 @@ function CategoriesPage() {
 
   async function handleDelete(id: number) {
     if (!confirm("确定删除该类目？")) return;
-    const res = await api.product.categories({ id }).delete();
+    const res = await api.categories({ id }).delete();
     if (res.error) {
       toast.error("删除失败");
       return;

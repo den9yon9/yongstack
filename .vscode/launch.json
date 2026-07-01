@@ -6,7 +6,7 @@
       "request": "launch",
       "type": "chrome",
       "url": "http://localhost:5173",
-      "webRoot": "${workspaceFolder}/apps/www",
+      "webRoot": "${workspaceFolder}/apps/admin",
       "sourceMaps": true,
       "preLaunchTask": "npm: dev" // 需要配合 tasks.json 使用，或者你手动启动 dev server 后直接 F5
     }

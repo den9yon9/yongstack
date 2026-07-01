@@ -50,7 +50,7 @@ function ProductsPage() {
   const { data: categories } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const res = await api.product.categories.get();
+      const res = await api.categories.get();
       return (res.data ?? []) as {
         id: number;
         name: string;

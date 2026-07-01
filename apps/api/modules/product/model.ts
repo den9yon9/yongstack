@@ -1,9 +1,8 @@
 import { db } from "@yongstack/db/model";
-import type { Static } from "elysia";
 import Elysia, { t } from "elysia";
 import type { InferModelsMap } from "../../lib/InferModel";
 
-export const SKUBodySchema = t.Object({
+const skuBodySchema = t.Object({
   attrs: t.Record(t.String(), t.String()),
   price: t.Number({ minimum: 0 }),
   originalPrice: t.Optional(t.Number({ minimum: 0 })),
@@ -11,9 +10,10 @@ export const SKUBodySchema = t.Object({
   sales: t.Optional(t.Number({ default: 0, minimum: 0 })),
   image: t.Optional(t.String()),
 });
-export type SKUBody = Static<typeof SKUBodySchema>;
 
 export const productModel = new Elysia().model({
+  SKUBodySchema: skuBodySchema,
+
   ProductQueryDTO: t.Object({
     page: t.Optional(t.Numeric({ default: 1, minimum: 1 })),
     pageSize: t.Optional(t.Numeric({ default: 20, minimum: 1, maximum: 100 })),
@@ -29,7 +29,7 @@ export const productModel = new Elysia().model({
     coverUrl: t.Optional(t.String()),
     status: t.Optional(t.Union([t.Literal("online"), t.Literal("offline")])),
     info: t.Optional(t.Record(t.String(), t.Unknown())),
-    skus: t.Optional(t.Array(SKUBodySchema)),
+    skus: t.Optional(t.Array(skuBodySchema)),
   }),
 
   UpdateProductDTO: t.Object({
@@ -39,7 +39,7 @@ export const productModel = new Elysia().model({
     coverUrl: t.Optional(t.String()),
     status: t.Optional(t.Union([t.Literal("online"), t.Literal("offline")])),
     info: t.Optional(t.Record(t.String(), t.Unknown())),
-    skus: t.Optional(t.Array(SKUBodySchema)),
+    skus: t.Optional(t.Array(skuBodySchema)),
   }),
 
   UpdateProductStatusDTO: t.Object({
@@ -59,18 +59,10 @@ export const productModel = new Elysia().model({
     skus: t.Array(db.select.productSku),
   }),
 
-  // ─── Category ─────────────────────────────────────────────
+  ProductResponse: db.select.product,
 
-  CreateCategoryDTO: t.Object({
-    name: t.String({ minLength: 1, maxLength: 50 }),
-    parentId: t.Optional(t.Numeric()),
-    sortOrder: t.Optional(t.Numeric({ default: 0 })),
-  }),
-
-  UpdateCategoryDTO: t.Object({
-    name: t.Optional(t.String({ minLength: 1, maxLength: 50 })),
-    parentId: t.Optional(t.Numeric()),
-    sortOrder: t.Optional(t.Numeric()),
+  UploadCoverResponseDTO: t.Object({
+    url: t.String(),
   }),
 
   UploadCoverDTO: t.Object({
