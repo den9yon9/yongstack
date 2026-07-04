@@ -26,10 +26,14 @@ export const productModel = new Elysia().model({
   CreateProductDTO: t.Object({
     name: t.String({ minLength: 1, maxLength: 200 }),
     description: t.Optional(t.String()),
-    categoryId: t.Optional(t.Number()),
-    coverUrl: t.Optional(t.String()),
+    categoryId: t.Optional(t.String()),
+    cover: t.Optional(
+      t.File({
+        maxSize: 10 * 1024 * 1024,
+        type: ["image/jpeg", "image/png", "image/webp"],
+      }),
+    ),
     status: t.Optional(t.Union([t.Literal("online"), t.Literal("offline")])),
-    info: t.Optional(t.Record(t.String(), t.Unknown())),
     skus: t.Optional(t.Array(skuBodySchema)),
   }),
 

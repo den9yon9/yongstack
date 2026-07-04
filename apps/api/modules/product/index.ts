@@ -23,7 +23,7 @@ export const product = new Elysia({ prefix: "/products" })
     params: "ProductIdParams",
     response: "ProductWithSkusResponse",
   })
-  .post("", ({ body }) => createProduct(body), {
+  .post("", async ({ body, userId }) => createProduct(body, userId), {
     body: "CreateProductDTO",
     response: "ProductWithSkusResponse",
   })

@@ -2,6 +2,7 @@ import * as schema from "@yongstack/db/schema";
 import { and, eq, ilike, sql } from "drizzle-orm";
 import { status } from "elysia";
 import { db } from "../../lib/db";
+import { processUpload } from "../file/service";
 import type { ProductModel } from "./model";
 
 // ─── Product ────────────────────────────────────────────────
@@ -68,16 +69,25 @@ function cleanUndefined<T extends Record<string, unknown>>(obj: T) {
   ) as T;
 }
 
-export async function createProduct(data: ProductModel["CreateProductDTO"]) {
-  const { skus, ...productData } = data;
+export async function createProduct(
+  data: ProductModel["CreateProductDTO"],
+  userId?: number,
+) {
+  const { cover, skus, categoryId, ...productData } = data;
+
+  let coverUrl: string | undefined;
+  if (cover && userId) {
+    coverUrl = await processUpload(userId, cover, "product");
+  }
 
   const result = await db.transaction(async (tx) => {
     const [product] = await tx
       .insert(schema.product)
       .values({
         ...productData,
+        categoryId: categoryId ? Number(categoryId) : null,
         status: productData.status ?? "offline",
-        info: (productData.info ?? {}) as Record<string, unknown>,
+        coverUrl,
       })
       .returning();
 
