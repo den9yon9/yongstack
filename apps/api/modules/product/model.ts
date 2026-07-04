@@ -4,15 +4,16 @@ import type { InferModelsMap } from "../../lib/InferModel";
 
 const skuBodySchema = t.Object({
   attrs: t.Record(t.String(), t.String()),
-  price: t.Number({ minimum: 0 }),
-  originalPrice: t.Optional(t.Number({ minimum: 0 })),
+  price: t.Integer({ minimum: 0 }),
+  originalPrice: t.Optional(t.Integer({ minimum: 0 })),
   stock: t.Optional(t.Number({ default: 0, minimum: 0 })),
   sales: t.Optional(t.Number({ default: 0, minimum: 0 })),
   image: t.Optional(t.String()),
 });
 
 export const productModel = new Elysia().model({
-  SKUBodySchema: skuBodySchema,
+  ProductIdParams: t.Object({ id: t.Numeric() }),
+  CreateSKUDTO: skuBodySchema,
 
   ProductQueryDTO: t.Object({
     page: t.Optional(t.Numeric({ default: 1, minimum: 1 })),

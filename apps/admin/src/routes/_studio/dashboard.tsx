@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Breadcrumb } from "../../components/Breadcrumb";
 
 export const Route = createFileRoute("/_studio/dashboard")({
-  staticData: { title: "仪表盘", icon: "LayoutDashboard" },
+  staticData: { title: "仪表盘", icon: "LayoutDashboard", order: 0 },
   component: Dashboard,
 });
 

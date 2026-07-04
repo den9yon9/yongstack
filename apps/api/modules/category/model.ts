@@ -3,6 +3,7 @@ import Elysia, { t } from "elysia";
 import type { InferModelsMap } from "../../lib/InferModel";
 
 export const categoryModel = new Elysia().model({
+  CategoryIdParams: t.Object({ id: t.Numeric() }),
   CreateCategoryDTO: t.Object({
     name: t.String({ minLength: 1, maxLength: 50 }),
     parentId: t.Optional(t.Numeric()),

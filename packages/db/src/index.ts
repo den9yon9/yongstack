@@ -1,6 +1,5 @@
 export * from "./schema/after_sale";
 export * from "./schema/cart";
-export * from "./schema/cart";
 export * from "./schema/enums";
 export * from "./schema/file_record";
 export * from "./schema/inventory_log";

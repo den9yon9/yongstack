@@ -21,7 +21,7 @@ export const auth = new Elysia({
     },
     {
       body: "WechatLoginDTO",
-      response: "User",
+      response: "UserResponse",
     },
   )
   .post(
@@ -33,7 +33,7 @@ export const auth = new Elysia({
     },
     {
       body: "SignupDTO",
-      response: "User",
+      response: "UserResponse",
     },
   )
   .post(
@@ -45,12 +45,16 @@ export const auth = new Elysia({
     },
     {
       body: "PasswordLoginDTO",
-      response: "User",
+      response: "UserResponse",
     },
   )
-  .post("/logout", ({ cookie }) => {
-    cookie.userId.remove();
-  })
+  .post(
+    "/logout",
+    ({ cookie }) => {
+      cookie.userId.remove();
+    },
+    { response: "LogoutResponse" },
+  )
   .post(
     "/phone/code",
     async ({ body }) => {
@@ -61,7 +65,7 @@ export const auth = new Elysia({
       body: "SendSmsCodeDTO",
       response: {
         400: t.String(),
-        200: t.Void(),
+        200: "LogoutResponse",
         429: "RemainingSecondsDTO",
       },
     },
@@ -75,6 +79,6 @@ export const auth = new Elysia({
     },
     {
       body: "PhoneLoginDTO",
-      response: "User",
+      response: "UserResponse",
     },
   );

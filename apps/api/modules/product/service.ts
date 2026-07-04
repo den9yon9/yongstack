@@ -50,7 +50,7 @@ export async function getProductById(id: number) {
   return product;
 }
 
-function mapSkus(productId: number, skus: ProductModel["SKUBodySchema"][]) {
+function mapSkus(productId: number, skus: ProductModel["CreateSKUDTO"][]) {
   return skus.map((sku) => ({
     productId,
     attrs: sku.attrs as Record<string, string>,
@@ -165,4 +165,14 @@ export async function deleteProduct(id: number) {
   if (!old) throw status(404, "商品不存在");
 
   await db.delete(schema.product).where(eq(schema.product.id, id));
+}
+
+export async function updateProductCover(id: number, url: string) {
+  const [updated] = await db
+    .update(schema.product)
+    .set({ coverUrl: url })
+    .where(eq(schema.product.id, id))
+    .returning();
+  if (!updated) throw status(404, "商品不存在");
+  return { url };
 }

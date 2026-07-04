@@ -14,11 +14,11 @@ export const user = new Elysia({
   .use(authModel)
   .use(isAuthenticated)
   .get("/mine", ({ userId }) => getMine(userId), {
-    response: "User",
+    response: "UserResponse",
   })
   .put("/mine", ({ userId, body }) => updateMine(userId, body), {
     body: "UpdateUserDTO",
-    response: "User",
+    response: "UserResponse",
   })
   .post(
     "/mine/avatar",

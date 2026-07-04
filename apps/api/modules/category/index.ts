@@ -1,4 +1,5 @@
-import Elysia, { t } from "elysia";
+import Elysia from "elysia";
+import { isAuthenticated } from "../../lib/guard";
 import { categoryModel } from "./model";
 import {
   createCategory,
@@ -9,6 +10,7 @@ import {
 
 export const category = new Elysia({ prefix: "/categories" })
   .use(categoryModel)
+  .use(isAuthenticated)
   .get("", () => listCategories(), {
     response: "CategoriesResponse",
   })
@@ -19,7 +21,7 @@ export const category = new Elysia({ prefix: "/categories" })
   .put("/:id", ({ params: { id }, body }) => updateCategory(id, body), {
     body: "UpdateCategoryDTO",
     response: "CategoryResponse",
-    params: t.Object({ id: t.Numeric() }),
+    params: "CategoryIdParams",
   })
   .delete(
     "/:id",
@@ -28,6 +30,6 @@ export const category = new Elysia({ prefix: "/categories" })
       set.status = 204;
     },
     {
-      params: t.Object({ id: t.Numeric() }),
+      params: "CategoryIdParams",
     },
   );

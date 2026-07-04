@@ -5,8 +5,14 @@ import {
   useLocation,
   useRouter,
 } from "@tanstack/react-router";
-import * as icons from "lucide-react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  FolderTree,
+  LayoutDashboard,
+  type LucideIcon,
+  Package,
+} from "lucide-react";
 import { useState } from "react";
 import { ThemeSwitcher } from "../../components/ThemeSwitcher";
 
@@ -73,6 +79,12 @@ function entryToNavItem(
   );
 }
 
+const iconRegistry: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  Package,
+  FolderTree,
+};
+
 function LeafItem({
   item,
   pathname,
@@ -83,8 +95,7 @@ function LeafItem({
   level: number;
 }) {
   const active = isActive(item.path, pathname);
-  // biome-ignore lint/suspicious/noExplicitAny: dynamic lucide icon lookup
-  const IconComp = item.icon ? (icons as any)[item.icon] : null;
+  const IconComp = item.icon ? iconRegistry[item.icon] : null;
   return (
     <Link
       to={item.path}
@@ -113,8 +124,7 @@ function SectionItem({
   const active = isActive(section.path, pathname);
   const childActive = hasActiveChild(section, pathname);
   const [expanded, setExpanded] = useState(active || childActive);
-  // biome-ignore lint/suspicious/noExplicitAny: dynamic lucide icon lookup
-  const IconComp = section.icon ? (icons as any)[section.icon] : null;
+  const IconComp = section.icon ? iconRegistry[section.icon] : null;
   return (
     <div>
       <button

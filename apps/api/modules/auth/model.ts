@@ -25,7 +25,8 @@ export const authModel = new Elysia().model({
   RemainingSecondsDTO: t.Object({
     remainingSeconds: t.Number({ description: "剩余可发送秒数" }),
   }),
-  User: t.Omit(db.select.user, ["password", "phone"]),
+  UserResponse: t.Omit(db.select.user, ["password", "phone"]),
+  LogoutResponse: t.Void(),
 });
 
 export type AuthModel = InferModelsMap<typeof authModel>;

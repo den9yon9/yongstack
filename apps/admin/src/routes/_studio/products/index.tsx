@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_studio/products/")({
   loaderDeps: ({ search }) => search,
   loader: async ({ deps }) => {
     const { categoryId, ...rest } = deps;
-    const result = await api.product.get({
+    const result = await api.products.get({
       query: {
         ...rest,
         ...(categoryId ? { categoryId: Number(categoryId) } : {}),
@@ -63,7 +63,7 @@ function ProductsPage() {
 
   async function handleDelete(id: number) {
     if (!confirm("确定删除该商品？")) return;
-    const res = await api.product({ id }).delete();
+    const res = await api.products({ id }).delete();
     if (res.error) {
       toast.error("删除失败");
       return;
@@ -74,7 +74,7 @@ function ProductsPage() {
 
   async function handleToggle(id: number, current: "online" | "offline") {
     const next = current === "online" ? "offline" : "online";
-    const res = await api.product({ id }).status.patch({ status: next });
+    const res = await api.products({ id }).status.patch({ status: next });
     if (res.error) {
       toast.error("操作失败");
       return;

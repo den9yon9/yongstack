@@ -7,7 +7,7 @@ import { Breadcrumb } from "../../components/Breadcrumb";
 import { api } from "../../libs/api";
 
 export const Route = createFileRoute("/_studio/categories")({
-  staticData: { title: "类目管理", icon: "FolderTree" },
+  staticData: { title: "类目管理", icon: "FolderTree", order: 20 },
   component: CategoriesPage,
 });
 

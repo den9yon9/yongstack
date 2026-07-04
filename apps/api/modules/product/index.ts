@@ -1,7 +1,4 @@
-import * as schema from "@yongstack/db/schema";
-import { eq } from "drizzle-orm";
-import Elysia, { t } from "elysia";
-import { db } from "../../lib/db";
+import Elysia from "elysia";
 import { isAuthenticated } from "../../lib/guard";
 import { processUpload } from "../file/service";
 import { productModel } from "./model";
@@ -11,10 +8,11 @@ import {
   getProductById,
   listProducts,
   updateProduct,
+  updateProductCover,
   updateProductStatus,
 } from "./service";
 
-export const product = new Elysia({ prefix: "/product" })
+export const product = new Elysia({ prefix: "/products" })
   .use(productModel)
   .use(isAuthenticated)
   .get("", ({ query }) => listProducts(query), {
@@ -22,7 +20,7 @@ export const product = new Elysia({ prefix: "/product" })
     response: "PaginatedProductResponse",
   })
   .get("/:id", ({ params: { id } }) => getProductById(id), {
-    params: t.Object({ id: t.Numeric() }),
+    params: "ProductIdParams",
     response: "ProductWithSkusResponse",
   })
   .post("", ({ body }) => createProduct(body), {
@@ -32,7 +30,7 @@ export const product = new Elysia({ prefix: "/product" })
   .put("/:id", ({ params: { id }, body }) => updateProduct(id, body), {
     body: "UpdateProductDTO",
     response: "ProductWithSkusResponse",
-    params: t.Object({ id: t.Numeric() }),
+    params: "ProductIdParams",
   })
   .patch(
     "/:id/status",
@@ -40,7 +38,7 @@ export const product = new Elysia({ prefix: "/product" })
     {
       body: "UpdateProductStatusDTO",
       response: "ProductResponse",
-      params: t.Object({ id: t.Numeric() }),
+      params: "ProductIdParams",
     },
   )
   .delete(
@@ -50,23 +48,19 @@ export const product = new Elysia({ prefix: "/product" })
       set.status = 204;
     },
     {
-      params: t.Object({ id: t.Numeric() }),
+      params: "ProductIdParams",
     },
   )
   .post(
     "/:id/cover",
     async ({ params: { id }, body, userId }) => {
       const url = await processUpload(userId, body.file, "product");
-      await db
-        .update(schema.product)
-        .set({ coverUrl: url })
-        .where(eq(schema.product.id, id));
-      return { url };
+      return updateProductCover(id, url);
     },
     {
       body: "UploadCoverDTO",
       response: "UploadCoverResponseDTO",
-      params: t.Object({ id: t.Numeric() }),
+      params: "ProductIdParams",
     },
   )
   .post(
