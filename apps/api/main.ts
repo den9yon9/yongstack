@@ -1,5 +1,6 @@
 import cors from "@elysiajs/cors";
 import openapi from "@elysiajs/openapi";
+import staticPlugin from "@elysiajs/static";
 import { Elysia, t } from "elysia";
 import { env } from "./lib/env";
 import { auth } from "./modules/auth";
@@ -30,6 +31,12 @@ const app = new Elysia({
         "http://localhost:3001",
       ],
       credentials: true,
+    }),
+  )
+  .use(
+    staticPlugin({
+      prefix: env.UPLOAD_PREFIX,
+      assets: env.STORE_PATH,
     }),
   )
   .use(auth)

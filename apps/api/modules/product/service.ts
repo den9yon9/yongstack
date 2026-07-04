@@ -108,24 +108,30 @@ export async function createProduct(
 export async function updateProduct(
   id: number,
   data: ProductModel["UpdateProductDTO"],
+  userId?: number,
 ) {
   const old = await db.query.product.findFirst({
     where: eq(schema.product.id, id),
   });
   if (!old) throw status(404, "商品不存在");
 
-  const { skus, ...productData } = data;
+  const { cover, skus, categoryId, ...productData } = data;
+
+  let coverUrl: string | undefined;
+  if (cover && userId) {
+    coverUrl = await processUpload(userId, cover, "product");
+  }
 
   const result = await db.transaction(async (tx) => {
+    const updateData: Record<string, unknown> = {
+      ...productData,
+      categoryId: categoryId ? Number(categoryId) : null,
+    };
+    if (coverUrl !== undefined) updateData.coverUrl = coverUrl;
+
     const [updated] = await tx
       .update(schema.product)
-      .set({
-        ...productData,
-        info:
-          productData.info !== undefined
-            ? (productData.info as Record<string, unknown>)
-            : undefined,
-      })
+      .set(updateData)
       .where(eq(schema.product.id, id))
       .returning();
     if (!updated) throw status(404, "商品不存在");

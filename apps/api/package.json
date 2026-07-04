@@ -16,6 +16,7 @@
   "dependencies": {
     "@elysiajs/cors": "^1.4.0",
     "@elysiajs/openapi": "^1.4.14",
+    "@elysiajs/static": "^1.4.10",
     "@yongstack/db": "workspace:*",
     "drizzle-orm": "^0.44.7",
     "elysia": "1",

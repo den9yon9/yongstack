@@ -27,11 +27,15 @@ export const product = new Elysia({ prefix: "/products" })
     body: "CreateProductDTO",
     response: "ProductWithSkusResponse",
   })
-  .put("/:id", ({ params: { id }, body }) => updateProduct(id, body), {
-    body: "UpdateProductDTO",
-    response: "ProductWithSkusResponse",
-    params: "ProductIdParams",
-  })
+  .put(
+    "/:id",
+    async ({ params: { id }, body, userId }) => updateProduct(id, body, userId),
+    {
+      body: "UpdateProductDTO",
+      response: "ProductWithSkusResponse",
+      params: "ProductIdParams",
+    },
+  )
   .patch(
     "/:id/status",
     ({ params: { id }, body }) => updateProductStatus(id, body),
