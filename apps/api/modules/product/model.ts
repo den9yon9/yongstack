@@ -1,6 +1,12 @@
 import { db } from "@yongstack/db/model";
 import Elysia, { t } from "elysia";
 import type { InferModelsMap } from "../../lib/InferModel";
+import { AssetUrl } from "../../lib/oss";
+
+const productResponseProps = {
+  ...db.select.product.properties,
+  coverUrl: AssetUrl,
+};
 
 const skuBodySchema = t.Object({
   attrs: t.Record(t.String(), t.String()),
@@ -56,7 +62,7 @@ export const productModel = new Elysia().model({
   }),
 
   PaginatedProductResponse: t.Object({
-    items: t.Array(db.select.product),
+    items: t.Array(t.Object(productResponseProps)),
     total: t.Number(),
     totalPage: t.Number(),
     page: t.Number(),
@@ -64,14 +70,14 @@ export const productModel = new Elysia().model({
   }),
 
   ProductWithSkusResponse: t.Object({
-    ...db.select.product.properties,
+    ...productResponseProps,
     skus: t.Array(db.select.productSku),
   }),
 
-  ProductResponse: db.select.product,
+  ProductResponse: t.Object(productResponseProps),
 
   UploadCoverResponseDTO: t.Object({
-    url: t.String(),
+    url: AssetUrl,
   }),
 
   UploadCoverDTO: t.Object({

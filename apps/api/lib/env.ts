@@ -15,8 +15,9 @@ const EnvSchema = t.Object({
   PORT: t.Number({ default: 8080 }),
 
   // 文件存储
-  STORE_PATH: t.String({ default: "/tmp/yongstack" }),
-  UPLOAD_PREFIX: t.String({ default: "/uploads" }),
+  STORE_PATH: t.String(),
+  UPLOAD_PREFIX: t.String(),
+  API_PUBLIC_URL: t.String(),
 
   // 微信配置
   WECHAT_MINIPROGRAM_APP_ID: t.String({
