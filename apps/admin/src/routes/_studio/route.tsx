@@ -11,9 +11,11 @@ import {
   FolderTree,
   LayoutDashboard,
   type LucideIcon,
+  Menu,
   Package,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ThemeSwitcher } from "../../components/ThemeSwitcher";
 
 export const Route = createFileRoute("/_studio")({
@@ -22,11 +24,25 @@ export const Route = createFileRoute("/_studio")({
 });
 
 function StudioLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <div className="flex h-screen overflow-hidden bg-base-200">
-      <Sidebar />
-      <main className="flex flex-1 flex-col overflow-y-auto">
-        <Outlet />
+    <div className="flex min-h-dvh">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <main className="flex-1 bg-bg md:pl-60">
+        <div className="mx-auto max-w-6xl p-4 sm:p-6">
+          <div className="mb-4 md:hidden">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              className="flex size-9 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface-hover hover:text-text"
+              aria-label="打开导航菜单"
+            >
+              <Menu className="size-5" />
+            </button>
+          </div>
+          <Outlet />
+        </div>
       </main>
     </div>
   );
@@ -47,7 +63,7 @@ type NavEntry = FlatNavItem | NavSection;
 
 function isActive(path: string, pathname: string) {
   if (path === "/") return pathname === "/";
-  return pathname === path || pathname.startsWith(path + "/");
+  return pathname === path || pathname.startsWith(`${path}/`);
 }
 
 function hasActiveChild(entry: NavEntry, pathname: string): boolean {
@@ -63,6 +79,7 @@ function entryToNavItem(
   entry: NavEntry,
   pathname: string,
   level: number,
+  onClose?: () => void,
 ): React.ReactNode {
   if ("children" in entry) {
     return (
@@ -71,11 +88,12 @@ function entryToNavItem(
         section={entry}
         pathname={pathname}
         level={level}
+        onClose={onClose}
       />
     );
   }
   return (
-    <LeafItem key={entry.path} item={entry} pathname={pathname} level={level} />
+    <LeafItem key={entry.path} item={entry} level={level} onClose={onClose} />
   );
 }
 
@@ -87,26 +105,30 @@ const iconRegistry: Record<string, LucideIcon> = {
 
 function LeafItem({
   item,
-  pathname,
   level,
+  onClose,
 }: {
   item: FlatNavItem;
-  pathname: string;
   level: number;
+  onClose?: () => void;
 }) {
+  const { pathname } = useLocation();
   const active = isActive(item.path, pathname);
   const IconComp = item.icon ? iconRegistry[item.icon] : null;
+
   return (
     <Link
       to={item.path}
-      className={`flex items-center gap-3 rounded-btn px-3 py-2 text-sm transition-colors ${
+      onClick={onClose}
+      data-active={active || undefined}
+      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
         active
-          ? "bg-base-200 font-medium text-base-content"
-          : "text-base-content/60 hover:bg-base-200 hover:text-base-content"
+          ? "bg-sidebar-active text-white"
+          : "text-on-sidebar-muted hover:bg-sidebar-hover hover:text-on-sidebar"
       }`}
       style={{ paddingLeft: `${12 + level * 16}px` }}
     >
-      {IconComp && <IconComp className="h-4 w-4 shrink-0" />}
+      {IconComp && <IconComp className="size-5 shrink-0" />}
       <span>{item.title}</span>
     </Link>
   );
@@ -116,39 +138,44 @@ function SectionItem({
   section,
   pathname,
   level,
+  onClose,
 }: {
   section: NavSection;
   pathname: string;
   level: number;
+  onClose?: () => void;
 }) {
   const active = isActive(section.path, pathname);
   const childActive = hasActiveChild(section, pathname);
   const [expanded, setExpanded] = useState(active || childActive);
   const IconComp = section.icon ? iconRegistry[section.icon] : null;
+
   return (
     <div>
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className={`flex w-full items-center gap-3 rounded-btn px-3 py-2 text-sm transition-colors ${
+        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
           active || childActive
-            ? "font-medium text-base-content"
-            : "text-base-content/60 hover:bg-base-200 hover:text-base-content"
+            ? "bg-sidebar-active text-white"
+            : "text-on-sidebar-muted hover:bg-sidebar-hover hover:text-on-sidebar"
         }`}
         style={{ paddingLeft: `${12 + level * 16}px` }}
       >
-        {IconComp && <IconComp className="h-4 w-4 shrink-0" />}
-        <span className="flex-1 text-left">{section.title}</span>
+        <div className="flex items-center gap-3">
+          {IconComp && <IconComp className="size-5 shrink-0" />}
+          <span>{section.title}</span>
+        </div>
         {expanded ? (
-          <ChevronDown className="h-4 w-4 shrink-0 text-base-content/40" />
+          <ChevronDown className="size-4 shrink-0 opacity-70" />
         ) : (
-          <ChevronRight className="h-4 w-4 shrink-0 text-base-content/40" />
+          <ChevronRight className="size-4 shrink-0 opacity-70" />
         )}
       </button>
       {expanded && (
-        <div className="mt-0.5">
+        <div className="mt-1 space-y-1">
           {section.children.map((child) =>
-            entryToNavItem(child, pathname, level + 1),
+            entryToNavItem(child, pathname, level + 1, onClose),
           )}
         </div>
       )}
@@ -184,7 +211,7 @@ function collect(route: RouteLike): NavEntry[] {
   const entry: FlatNavItem = {
     title: (data?.title as string) ?? route.id,
     icon: data?.icon as string | undefined,
-    path: route.path.startsWith("/") ? route.path : "/" + route.path,
+    path: route.path.startsWith("/") ? route.path : `/${route.path}`,
     order: (data?.order as number) ?? 99,
   };
 
@@ -195,33 +222,91 @@ function collect(route: RouteLike): NavEntry[] {
   return [entry];
 }
 
-export function Sidebar() {
+function SidebarContent({ onClose }: { onClose?: () => void }) {
   const router = useRouter();
-  const { pathname } = useLocation();
   const routeTree = router.routeTree as unknown as RouteLike;
   const navItems = collect(routeTree);
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-base-300 bg-base-100">
-      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-base-300 px-6">
-        <div className="bg-primary text-primary-content flex h-8 w-8 items-center justify-center rounded-btn text-sm font-bold">
-          Y
+    <>
+      <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-sidebar-hover px-6">
+        <div className="flex items-center gap-3">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-sidebar-active text-sm font-bold text-on-sidebar">
+            Y
+          </div>
+          <span className="text-base font-semibold text-on-sidebar">
+            YongStack
+          </span>
         </div>
-        <span className="text-sm font-semibold text-base-content">
-          YongStack
-        </span>
-      </div>
-      <nav className="flex-1 overflow-y-auto p-3">
-        {navItems.length === 0 && (
-          <p className="px-3 py-8 text-center text-sm text-base-content/40">
-            暂无导航
-          </p>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex size-8 items-center justify-center rounded-lg text-on-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-on-sidebar"
+            aria-label="关闭导航菜单"
+          >
+            <X className="size-5" />
+          </button>
         )}
-        {navItems.map((item) => entryToNavItem(item, pathname, 0))}
+      </div>
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        {navItems.length === 0 && (
+          <p className="px-3 text-sm text-on-sidebar-muted">暂无导航</p>
+        )}
+        <div className="space-y-1">
+          {navItems.map((item) => entryToNavItem(item, "", 0, onClose))}
+        </div>
       </nav>
-      <div className="border-t border-base-300 p-3">
+      <div className="shrink-0 border-t border-sidebar-hover px-3 py-3">
         <ThemeSwitcher />
       </div>
-    </aside>
+    </>
+  );
+}
+
+export function Sidebar({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  return (
+    <>
+      {/* Desktop */}
+      <div className="hidden md:fixed md:inset-y-0 md:left-0 md:z-40 md:flex">
+        <aside className="flex w-60 flex-col bg-sidebar">
+          <SidebarContent />
+        </aside>
+      </div>
+
+      {/* Mobile */}
+      <div
+        className={`fixed inset-0 z-50 md:hidden ${
+          open ? "" : "pointer-events-none"
+        }`}
+      >
+        <div
+          className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ${
+            open ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={onClose}
+        />
+        <aside
+          className={`absolute left-0 top-0 z-10 flex h-full w-60 flex-col bg-sidebar shadow-dropdown transition-transform duration-200 ease-in-out ${
+            open ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <SidebarContent onClose={onClose} />
+        </aside>
+      </div>
+    </>
   );
 }

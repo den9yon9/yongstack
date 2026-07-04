@@ -4,7 +4,8 @@
   "scripts": {
     "start": "bun run main.ts",
     "dev": "bun --watch run main.ts",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test": "bun test"
   },
   "exports": "./main.ts",
   "types": "./main.ts",

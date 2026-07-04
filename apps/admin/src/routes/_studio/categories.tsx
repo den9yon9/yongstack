@@ -1,9 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { FolderOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Breadcrumb } from "../../components/Breadcrumb";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { Skeleton } from "../../components/ui/Skeleton";
 import { api } from "../../libs/api";
 
 export const Route = createFileRoute("/_studio/categories")({
@@ -35,7 +38,7 @@ function buildTree(
   for (const cat of flat) {
     const node = map.get(cat.id)!;
     if (cat.parentId && map.has(cat.parentId)) {
-      map.get(cat.parentId)!.children.push(node);
+      map.get(cat.parentId)?.children.push(node);
     } else {
       roots.push(node);
     }
@@ -134,38 +137,40 @@ function CategoriesPage() {
 
   const createForm = (
     <div
-      className="flex items-center gap-2"
+      className="mt-2 flex items-center gap-2"
       onClick={(e) => e.stopPropagation()}
     >
       <input
         value={createName}
         onChange={(e) => setCreateName(e.target.value)}
         placeholder="类目名称"
-        className="input input-bordered input-sm w-40"
+        className="block h-8 w-48 rounded-md border border-border bg-surface px-2.5 text-sm text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
         autoFocus
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleCreate();
+          if (e.key === "Escape") {
+            setCreateTarget(null);
+            setCreateName("");
+          }
+        }}
       />
-      <button
-        type="button"
+      <Button
+        size="sm"
         onClick={handleCreate}
         disabled={saving || !createName.trim()}
-        className="btn btn-primary btn-sm"
       >
-        {saving ? (
-          <span className="loading loading-spinner loading-sm" />
-        ) : (
-          "保存"
-        )}
-      </button>
-      <button
-        type="button"
+        {saving ? "保存中..." : "保存"}
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => {
           setCreateTarget(null);
           setCreateName("");
         }}
-        className="btn btn-ghost btn-sm"
       >
         取消
-      </button>
+      </Button>
     </div>
   );
 
@@ -188,88 +193,49 @@ function CategoriesPage() {
         <input
           value={editName}
           onChange={(e) => setEditName(e.target.value)}
-          className="input input-bordered input-sm w-40"
+          className="block h-8 w-48 rounded-md border border-border bg-surface px-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
           autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleUpdate();
+            if (e.key === "Escape") setEditingId(null);
+          }}
         />
-        <button
-          type="button"
-          onClick={handleUpdate}
-          disabled={saving}
-          className="btn btn-primary btn-sm"
-        >
-          {saving ? (
-            <span className="loading loading-spinner loading-sm" />
-          ) : (
-            "保存"
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={() => setEditingId(null)}
-          className="btn btn-ghost btn-sm"
-        >
+        <Button size="sm" onClick={handleUpdate} disabled={saving}>
+          {saving ? "保存中..." : "保存"}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>
           取消
-        </button>
+        </Button>
       </div>
     );
 
-    if (isEditing) {
-      if (hasChildren) {
-        return (
-          <details open className="w-full">
-            <summary className="flex items-center gap-2 w-full">
-              {editForm}
-            </summary>
-            <ul>
-              {node.children.map((child) => (
-                <li key={child.id}>{renderTreeNode(child)}</li>
-              ))}
-              {showCreate && <li>{createForm}</li>}
-            </ul>
-          </details>
-        );
-      }
-      return (
-        <div className="flex items-center gap-2 px-3 py-2 w-full">
-          {editForm}
-        </div>
-      );
-    }
-
-    if (hasChildren) {
-      return (
-        <details open className="w-full">
-          <summary
-            className="flex items-center justify-between gap-2 w-full"
+    return (
+      <div className="group">
+        {isEditing ? (
+          <div className="py-1">{editForm}</div>
+        ) : (
+          <div
+            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text transition-colors hover:bg-surface-hover"
             onContextMenu={handleContextMenu}
           >
-            <span>{node.name}</span>
-          </summary>
-          <ul>
-            {node.children.map((child) => (
-              <li key={child.id}>{renderTreeNode(child)}</li>
-            ))}
-            {showCreate && <li>{createForm}</li>}
-          </ul>
-        </details>
-      );
-    }
-
-    return (
-      <>
-        <button
-          type="button"
-          className="flex items-center justify-between gap-2 w-full"
-          onContextMenu={handleContextMenu}
-        >
-          <span>{node.name}</span>
-        </button>
-        {showCreate && (
-          <ul>
-            <li>{createForm}</li>
-          </ul>
+            <FolderOpen className="size-4 shrink-0 text-warning" />
+            <span className="font-medium">{node.name}</span>
+            {hasChildren && (
+              <span className="ml-auto text-xs text-text-muted">
+                {node.children.length} 子项
+              </span>
+            )}
+          </div>
         )}
-      </>
+        {showCreate && createForm}
+        {hasChildren && (
+          <div className="ml-4 border-l border-border pl-3">
+            {node.children.map((child) => (
+              <div key={child.id}>{renderTreeNode(child)}</div>
+            ))}
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -279,34 +245,57 @@ function CategoriesPage() {
   };
 
   return (
-    <div className="p-6">
-      <Breadcrumb />
+    <div>
+      <Breadcrumb>
+        <Button
+          size="sm"
+          onClick={() => {
+            setCreateTarget({ parentId: null });
+            setCreateName("");
+          }}
+        >
+          <Plus className="size-4" />
+          新建顶级类目
+        </Button>
+      </Breadcrumb>
 
-      {isLoading ? (
-        <div className="card bg-base-100 card-border">
-          <div className="card-body items-center py-12">
-            <span className="loading loading-spinner loading-md text-base-content/40" />
-          </div>
+      <Card>
+        <div className="text-sm text-text-secondary">
+          右键类目名称可编辑、新建子类目或删除
         </div>
-      ) : (
-        <div className="card bg-base-100 card-border overflow-hidden">
-          <ul
-            className="menu w-full pb-9"
+      </Card>
+
+      <div className="mt-5">
+        {isLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-8 w-40" />
+          </div>
+        ) : (
+          <div
+            className="rounded-lg border border-border bg-surface p-4 shadow-card"
             onContextMenu={handleEmptyContextMenu}
           >
-            {createTarget?.parentId === null && <li>{createForm}</li>}
-            {tree.length === 0 && !createTarget ? (
-              <li>
-                <div className="flex items-center justify-center py-8 text-base-content/40">
-                  暂无类目，右键空白区域新建
-                </div>
-              </li>
-            ) : (
-              tree.map((node) => <li key={node.id}>{renderTreeNode(node)}</li>)
+            {createTarget?.parentId === null && (
+              <div className="mb-2">{createForm}</div>
             )}
-          </ul>
-        </div>
-      )}
+            {tree.length === 0 && !createTarget ? (
+              <div className="py-8 text-center text-sm text-text-muted">
+                暂无类目，点击右上角"新建顶级类目"或右键空白区域新建
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="space-y-1">
+                  {tree.map((node) => (
+                    <div key={node.id}>{renderTreeNode(node)}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {contextMenu && (
         <>
@@ -319,66 +308,64 @@ function CategoriesPage() {
             }}
           />
           <div
-            className="fixed z-50"
+            className="fixed z-50 min-w-36 rounded-lg border border-border bg-surface py-1 shadow-dropdown"
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
-            <ul className="menu menu-sm bg-base-100 rounded-box shadow-lg border border-base-300 w-40">
-              {(() => {
-                const cmNode = contextMenu.node;
-                return cmNode ? (
-                  <>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          startEdit(cmNode);
-                          closeContextMenu();
-                        }}
-                      >
-                        <Pencil className="w-4 h-4" /> 编辑
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCreateTarget({ parentId: cmNode.id });
-                          setCreateName("");
-                          closeContextMenu();
-                        }}
-                      >
-                        <Plus className="w-4 h-4" /> 新建子类目
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleDelete(cmNode.id);
-                          closeContextMenu();
-                        }}
-                        className="text-error"
-                      >
-                        <Trash2 className="w-4 h-4" /> 删除
-                      </button>
-                    </li>
-                  </>
-                ) : (
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCreateTarget({ parentId: null });
-                        setCreateName("");
-                        closeContextMenu();
-                      }}
-                    >
-                      <Plus className="w-4 h-4" /> 新建顶级类目
-                    </button>
-                  </li>
-                );
-              })()}
-            </ul>
+            {(() => {
+              const cmNode = contextMenu.node;
+              return cmNode ? (
+                <div className="space-y-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      startEdit(cmNode);
+                      closeContextMenu();
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-hover"
+                  >
+                    <Pencil className="size-4 text-text-muted" />
+                    编辑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreateTarget({ parentId: cmNode.id });
+                      setCreateName("");
+                      closeContextMenu();
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-hover"
+                  >
+                    <Plus className="size-4 text-text-muted" />
+                    新建子类目
+                  </button>
+                  <hr className="my-1 border-border" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDelete(cmNode.id);
+                      closeContextMenu();
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-danger transition-colors hover:bg-danger-soft"
+                  >
+                    <Trash2 className="size-4" />
+                    删除
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreateTarget({ parentId: null });
+                    setCreateName("");
+                    closeContextMenu();
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-text transition-colors hover:bg-surface-hover"
+                >
+                  <Plus className="size-4 text-text-muted" />
+                  新建顶级类目
+                </button>
+              );
+            })()}
           </div>
         </>
       )}

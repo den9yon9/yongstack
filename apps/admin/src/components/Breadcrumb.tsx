@@ -1,4 +1,5 @@
 import { Link, useMatches } from "@tanstack/react-router";
+import { ChevronRight, House } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface Props {
@@ -26,39 +27,41 @@ export function Breadcrumb({ children }: Props) {
       };
     });
 
-  if (crumbs.length === 0 && !children) return null;
-
   return (
-    <div className="navbar min-h-0 p-3 rounded-lg mb-1 bg-base-100 border-b border-base-300">
-      <div className="navbar-start">
-        <div className="breadcrumbs text-sm">
-          <ul>
-            {crumbs.length === 0 ? (
-              <li>
-                <span className="font-medium text-base-content">首页</span>
-              </li>
-            ) : (
-              crumbs.map((crumb, i) => (
-                <li key={crumb.path ?? i}>
-                  {crumb.path ? (
-                    <Link
-                      to={crumb.path}
-                      className="link link-hover text-base-content/60"
-                    >
-                      {crumb.title}
-                    </Link>
-                  ) : (
-                    <span className="font-medium text-base-content">
-                      {crumb.title}
-                    </span>
-                  )}
-                </li>
-              ))
-            )}
-          </ul>
-        </div>
-      </div>
-      {children && <div className="navbar-end grow gap-2">{children}</div>}
+    <div className="mb-6 flex items-center justify-between gap-4">
+      <nav
+        aria-label="面包屑导航"
+        className="flex min-h-9 items-center gap-1 text-sm text-text-secondary"
+      >
+        <House className="size-4 shrink-0 text-text-muted" />
+        <ChevronRight className="size-3.5 shrink-0 text-text-muted" />
+        {crumbs.length === 0 ? (
+          <span className="font-medium text-text">首页</span>
+        ) : (
+          crumbs.map((crumb, i) => (
+            <div key={crumb.path ?? i} className="flex items-center gap-1">
+              {crumb.path ? (
+                <Link
+                  to={crumb.path}
+                  className="rounded px-1 py-0.5 transition-colors hover:bg-surface-hover hover:text-text"
+                >
+                  {crumb.title}
+                </Link>
+              ) : (
+                <span className="rounded px-1 py-0.5 font-medium text-primary">
+                  {crumb.title}
+                </span>
+              )}
+              {i < crumbs.length - 1 && (
+                <ChevronRight className="size-3.5 shrink-0 text-text-muted" />
+              )}
+            </div>
+          ))
+        )}
+      </nav>
+      {children && (
+        <div className="flex shrink-0 items-center gap-3">{children}</div>
+      )}
     </div>
   );
 }

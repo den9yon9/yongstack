@@ -3,10 +3,19 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { Eye, EyeOff, KeyRound, LogIn, Smartphone } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+  LogIn,
+  Smartphone,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import * as v from "valibot";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
 import { api } from "../libs/api";
 import { queryClient } from "../libs/queryClient";
 
@@ -198,172 +207,179 @@ function RouteComponent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200 px-4">
-      <div className="w-full max-w-sm">
-        <div className="card bg-base-100 card-border">
-          <form onSubmit={handleSubmit} className="card-body gap-6">
-            <div className="text-center">
-              <div className="bg-primary text-primary-content w-12 h-12 rounded-btn flex items-center justify-center mx-auto mb-4">
-                <LogIn className="w-6 h-6" />
-              </div>
-              <h1 className="text-xl font-semibold text-base-content">
-                欢迎回来
-              </h1>
-              <p className="text-sm text-base-content/60 mt-1">
-                请登录你的账号
-              </p>
-            </div>
-
-            <div className="tabs tabs-bordered">
-              <button
-                type="button"
-                onClick={() => switchMode("password")}
-                className={`tab gap-2 ${mode === "password" ? "tab-active" : ""}`}
-              >
-                <KeyRound className="w-4 h-4" />
-                密码登录
-              </button>
-              <button
-                type="button"
-                onClick={() => switchMode("phone")}
-                className={`tab gap-2 ${mode === "phone" ? "tab-active" : ""}`}
-              >
-                <Smartphone className="w-4 h-4" />
-                手机登录
-              </button>
-            </div>
-
-            {mode === "password" && (
-              <div className="space-y-4">
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">用户名</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="输入用户名"
-                    className="input input-bordered w-full"
-                  />
-                  {errors.username && (
-                    <div className="label">
-                      <span className="label-text-alt text-error">
-                        {errors.username}
-                      </span>
-                    </div>
-                  )}
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">密码</span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="输入密码"
-                      className="input input-bordered w-full pr-11"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content transition-colors"
-                      tabIndex={-1}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <div className="label">
-                      <span className="label-text-alt text-error">
-                        {errors.password}
-                      </span>
-                    </div>
-                  )}
-                </label>
-              </div>
-            )}
-
-            {mode === "phone" && (
-              <div className="space-y-4">
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">手机号</span>
-                  </div>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) =>
-                      setPhone(e.target.value.replace(/\D/g, ""))
-                    }
-                    placeholder="输入手机号"
-                    maxLength={11}
-                    className="input input-bordered w-full"
-                  />
-                  {errors.phone && (
-                    <div className="label">
-                      <span className="label-text-alt text-error">
-                        {errors.phone}
-                      </span>
-                    </div>
-                  )}
-                </label>
-                <label className="form-control w-full">
-                  <div className="label">
-                    <span className="label-text">验证码</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={code}
-                      onChange={(e) =>
-                        setCode(e.target.value.replace(/\D/g, ""))
-                      }
-                      placeholder="输入验证码"
-                      maxLength={6}
-                      className="input input-bordered flex-1"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSendCode}
-                      disabled={smsLoading || smsCountdown > 0}
-                      className="btn btn-primary"
-                    >
-                      {smsLoading ? (
-                        <span className="loading loading-spinner loading-sm" />
-                      ) : smsCountdown > 0 ? (
-                        `${smsCountdown}s`
-                      ) : (
-                        "发送验证码"
-                      )}
-                    </button>
-                  </div>
-                  {errors.code && (
-                    <div className="label">
-                      <span className="label-text-alt text-error">
-                        {errors.code}
-                      </span>
-                    </div>
-                  )}
-                </label>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary w-full"
-            >
-              {loading ? <span className="loading loading-spinner" /> : "登录"}
-            </button>
-          </form>
+    <div className="flex min-h-dvh items-center justify-center bg-bg p-4">
+      <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-8 shadow-card">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-primary text-xl font-bold text-white">
+            Y
+          </div>
+          <h1 className="text-xl font-semibold text-text">欢迎回来</h1>
+          <p className="mt-1 text-sm text-text-secondary">请登录你的账号</p>
         </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => switchMode("password")}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium transition-colors ${
+                mode === "password"
+                  ? "border-primary bg-primary-soft text-primary"
+                  : "border-border text-text-secondary hover:bg-surface-hover"
+              }`}
+            >
+              <KeyRound className="size-4" />
+              密码登录
+            </button>
+            <button
+              type="button"
+              onClick={() => switchMode("phone")}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium transition-colors ${
+                mode === "phone"
+                  ? "border-primary bg-primary-soft text-primary"
+                  : "border-border text-text-secondary hover:bg-surface-hover"
+              }`}
+            >
+              <Smartphone className="size-4" />
+              手机登录
+            </button>
+          </div>
+
+          {mode === "password" && (
+            <div className="space-y-4">
+              <Input
+                label="用户名"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="输入用户名"
+                error={errors.username}
+              />
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-text"
+                >
+                  密码
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.password;
+                        return next;
+                      });
+                    }}
+                    placeholder="输入密码"
+                    className={`block h-9 w-full rounded-lg border bg-surface pr-10 pl-3 text-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 ${
+                      errors.password
+                        ? "border-danger focus:ring-danger/50"
+                        : "border-border focus:ring-primary/50"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary"
+                    tabIndex={-1}
+                    aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-xs text-danger" role="alert">
+                    {errors.password}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {mode === "phone" && (
+            <div className="space-y-4">
+              <Input
+                label="手机号"
+                type="tel"
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value.replace(/\D/g, ""));
+                  setErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.phone;
+                    return next;
+                  });
+                }}
+                placeholder="输入手机号"
+                maxLength={11}
+                error={errors.phone}
+              />
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="code"
+                  className="block text-sm font-medium text-text"
+                >
+                  验证码
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="code"
+                    type="text"
+                    value={code}
+                    onChange={(e) => {
+                      setCode(e.target.value.replace(/\D/g, ""));
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.code;
+                        return next;
+                      });
+                    }}
+                    placeholder="输入验证码"
+                    maxLength={6}
+                    className={`block h-9 flex-1 rounded-lg border bg-surface px-3 text-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 ${
+                      errors.code
+                        ? "border-danger focus:ring-danger/50"
+                        : "border-border focus:ring-primary/50"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendCode}
+                    disabled={smsLoading || smsCountdown > 0}
+                    className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-hover hover:text-text disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    {smsLoading ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : smsCountdown > 0 ? (
+                      `${smsCountdown}s`
+                    ) : (
+                      "发送验证码"
+                    )}
+                  </button>
+                </div>
+                {errors.code && (
+                  <p className="text-xs text-danger" role="alert">
+                    {errors.code}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <Button type="submit" loading={loading} className="w-full">
+            {loading ? null : <LogIn className="size-4" />}
+            登录
+          </Button>
+        </form>
       </div>
     </div>
   );

@@ -6,7 +6,6 @@
 
 - **运行时**: Bun
 - **API**: Elysia.js + TypeBox + Drizzle ORM + PostgreSQL
-- **Admin**: React 19 + Vite 7 + Tailwind CSS v4 + daisyUI 5
 - **端到端类型安全**: Eden Treaty
 - **格式化/检查**: Biome 2.3（2空格缩进，双引号，noExplicitAny: error）
 - **Husky + commitlint**: Conventional Commits
@@ -162,7 +161,13 @@ export const Route = createFileRoute("/_studio/products")({
 - 表单提交：`v.safeParse(Schema, data)`，错误用 `setErrors` 展示到字段
 - 全局 toast：`toast.success()` / `toast.error()`
 
-### 14. 组件
+### 14. 错误展示
+
+- 从 Eden 响应取错误信息用 `error?.value`（非 `error`），类型检查后用
+- 未知错误或不明确的 fallback **禁止**硬编码具体错误提示（如"验证码错误或已过期"），统一展示 `"未知错误"`
+- 框架/网络级异常展示 `"网络错误"` 或 `"未知错误"`
+
+### 15. 组件
 
 - 公共组件放 `src/components/`（Breadcrumb, ThemeSwitcher, ErrorUI）
 - 工具函数放 `src/libs/`（api, queryClient, error）
@@ -193,7 +198,7 @@ export const Route = createFileRoute("/_studio/products")({
 1. `packages/db/src/index.ts` 中 **cart 被 export 了两次**（line 2 和 3 重复），记得只保留一次
 2. `product/index.ts` 的 `POST /:id/cover` **直接调了 `db.update`**，违反了规范，应移到 service
 3. 多处路由写了**内联 `params: t.Object({ id: t.Numeric() })`**，应统一放到 model.ts
-4. Category 模块**未加 `isAuthenticated`**，如需生产环境加鉴权
+4. Category 模块默认公开，如需生产环境加鉴权可添加 `.use(isAuthenticated)`
 5. `auth/service.ts` 的 SMS code 用**内存 Map** 存储，生产需替换为 Redis
 6. 订单/购物车/售后/库存的 API **尚未实现**（schema 已完备）
 7. Admin 端 `products/new.tsx` 和 `products/$id.tsx` 是**占位页**（"表单待实现"）

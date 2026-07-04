@@ -15,8 +15,8 @@ import { EdenFetchError } from "@elysiajs/eden";
 function DefaultErrorComponent({ error }: { error: Error }) {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200 px-4">
-      <div className="w-full max-w-md">
+    <div>
+      <div>
         <ErrorUI
           error={error}
           onRetry={() => {

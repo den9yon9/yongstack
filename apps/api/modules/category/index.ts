@@ -1,5 +1,4 @@
 import Elysia from "elysia";
-import { isAuthenticated } from "../../lib/guard";
 import { categoryModel } from "./model";
 import {
   createCategory,
@@ -10,7 +9,6 @@ import {
 
 export const category = new Elysia({ prefix: "/categories" })
   .use(categoryModel)
-  .use(isAuthenticated)
   .get("", () => listCategories(), {
     response: "CategoriesResponse",
   })
