@@ -1,7 +1,7 @@
-import { clearSessionCookie, setSessionCookie } from '@nestup/session'
-import { assertNever, ErrorResponse } from '@nestup/shared'
-import { getUserById, loginUser } from '@nestup/user'
-import * as UserModel from '@nestup/user/model'
+import { clearSessionCookie, setSessionCookie } from '@yongstack/session'
+import { assertNever, ErrorResponse } from '@yongstack/shared'
+import { getUserById, loginUser } from '@yongstack/user'
+import * as UserModel from '@yongstack/user/model'
 import { Elysia, status } from 'elysia'
 
 import { type AdminPlugins } from '../plugins'

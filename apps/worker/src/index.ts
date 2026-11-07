@@ -1,5 +1,5 @@
-import { createMetrics, Gauge, type Registry, renderMetrics } from '@nestup/http'
-import { createLogger } from '@nestup/shared'
+import { createMetrics, Gauge, type Registry, renderMetrics } from '@yongstack/http'
+import { createLogger } from '@yongstack/shared'
 
 import { createEnv } from './env'
 import { registerWorkers } from './registry'

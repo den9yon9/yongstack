@@ -33,7 +33,7 @@ function LoginPage() {
         onSubmit={submit}
         className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
       >
-        <h1 className="mb-6 text-xl font-bold text-slate-900">Nestup 管理后台</h1>
+        <h1 className="mb-6 text-xl font-bold text-slate-900">Yongstack 管理后台</h1>
         <label className="mb-1 block text-sm text-slate-600">
           邮箱
           <input

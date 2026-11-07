@@ -1,5 +1,5 @@
-import { DEFAULT_LOCALE, type Locale, resolveLocale, translate } from '@nestup/i18n'
-import type { Redis } from '@nestup/redis'
+import { DEFAULT_LOCALE, type Locale, resolveLocale, translate } from '@yongstack/i18n'
+import type { Redis } from '@yongstack/redis'
 import { rateLimit as nazliRateLimit, type RedisClientLike } from 'elysia-nazli'
 import { redisStore } from 'elysia-nazli/redis'
 
@@ -19,7 +19,7 @@ export function authRateLimit(opts: AuthRateLimitOptions): ReturnType<typeof naz
   const trustProxy = opts.trustProxy ?? false
   const defaultLocale = opts.defaultLocale ?? DEFAULT_LOCALE
   return nazliRateLimit({
-    namespace: opts.namespace ?? 'nestup',
+    namespace: opts.namespace ?? 'yongstack',
     store: redisStore({
       client: opts.redis as unknown as RedisClientLike,
       adapter: 'ioredis',

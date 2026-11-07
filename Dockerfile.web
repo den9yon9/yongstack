@@ -1,4 +1,4 @@
-ARG APP=storefront-web
+ARG APP=app-web
 
 FROM node:22-alpine AS build
 ARG APP
@@ -15,7 +15,7 @@ COPY usecases/ ./usecases/
 RUN corepack enable && pnpm install --frozen-lockfile --ignore-scripts
 
 # 2. 构建目标前端（edn client 直接引 api 源码, 无需先构建后端）
-RUN pnpm --filter @nestup/${APP} build
+RUN pnpm --filter @yongstack/${APP} build
 
 FROM nginx:1.27-alpine AS prod
 ARG APP

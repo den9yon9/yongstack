@@ -1,5 +1,5 @@
 {
-  "name": "@nestup/shared",
+  "name": "@yongstack/shared",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",

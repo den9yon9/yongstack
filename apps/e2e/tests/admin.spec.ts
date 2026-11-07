@@ -5,7 +5,7 @@ const apiBase = 'http://localhost:3001'
 test('未登录访问管理端会跳转登录页', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveURL(/\/login$/)
-  await expect(page.getByRole('heading', { name: 'Nestup 管理后台' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Yongstack 管理后台' })).toBeVisible()
 })
 
 test('管理员登录 → 控制台 → 退出', async ({ page }) => {
@@ -15,8 +15,8 @@ test('管理员登录 → 控制台 → 退出', async ({ page }) => {
   await page.getByRole('button', { name: '登录' }).click()
 
   await expect(page).toHaveURL(/\/$/)
-  await expect(page.getByText('Nestup 管理后台')).toBeVisible()
-  await expect(page.getByRole('heading', { name: '房源管理' })).toBeVisible()
+  await expect(page.getByText('Yongstack 管理后台')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '用户管理' })).toBeVisible()
   await expect(page.getByText('API 正常')).toBeVisible()
 
   await page.getByRole('button', { name: '退出' }).click()

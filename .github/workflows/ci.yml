@@ -11,13 +11,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: nestup
-          POSTGRES_PASSWORD: nestup
-          POSTGRES_DB: nestup
+          POSTGRES_USER: yongstack
+          POSTGRES_PASSWORD: yongstack
+          POSTGRES_DB: yongstack
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U nestup"
+          --health-cmd "pg_isready -U yongstack"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 5
@@ -62,7 +62,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Check generated route tree
-        run: git diff --exit-code -- apps/admin-web/src/routeTree.gen.ts apps/storefront-web/src/routeTree.gen.ts
+        run: git diff --exit-code -- apps/admin-web/src/routeTree.gen.ts apps/app-web/src/routeTree.gen.ts
 
       - name: Build
         run: pnpm build
@@ -71,7 +71,7 @@ jobs:
       - name: Run tests with coverage
         run: pnpm exec turbo test --concurrency=1 -- --coverage
         env:
-          TESTING_DATABASE_URL: postgres://nestup:nestup@localhost:5432/nestup_test
+          TESTING_DATABASE_URL: postgres://yongstack:yongstack@localhost:5432/yongstack_test
           TESTING_REDIS_URL: redis://localhost:6379/1
           TESTING_SESSION_SECRET: test-session-secret-0123456789abcdef
           NODE_ENV: test
@@ -81,40 +81,40 @@ jobs:
         uses: wagoid/commitlint-github-action@v6
 
       - name: Run migrations
-        run: pnpm --filter @nestup/database db:migrate
+        run: pnpm --filter @yongstack/database db:migrate
         env:
-          DATABASE_URL: postgres://nestup:nestup@localhost:5432/nestup
+          DATABASE_URL: postgres://yongstack:yongstack@localhost:5432/yongstack
           NODE_ENV: test
 
       - name: Prepare .env for e2e
         run: |
           cat > .env <<'EOF'
-          DATABASE_URL=postgres://nestup:nestup@localhost:5432/nestup
+          DATABASE_URL=postgres://yongstack:yongstack@localhost:5432/yongstack
           REDIS_URL=redis://localhost:6379
           SESSION_SECRET=test-session-secret-0123456789abcdef
           LOG_LEVEL=silent
           CORS_ORIGIN=*
           TRUST_PROXY=false
-          STOREFRONT_PORT=3000
+          APP_PORT=3000
           ADMIN_PORT=3001
           HEALTH_PORT=3100
           ADMIN_EMAIL=admin@example.com
           ADMIN_PASSWORD=admin123456
-          TESTING_DATABASE_URL=postgres://nestup:nestup@localhost:5432/nestup_test
+          TESTING_DATABASE_URL=postgres://yongstack:yongstack@localhost:5432/yongstack_test
           TESTING_REDIS_URL=redis://localhost:6379/1
           TESTING_SESSION_SECRET=test-session-secret-0123456789abcdef
           STORAGE_ENDPOINT=http://localhost:8333
           STORAGE_REGION=us-east-1
-          STORAGE_BUCKET=nestup
+          STORAGE_BUCKET=yongstack
           STORAGE_ACCESS_KEY_ID=admin
           STORAGE_SECRET_ACCESS_KEY=secret
           STORAGE_FORCE_PATH_STYLE=true
-          STORAGE_PUBLIC_BASE_URL=http://localhost:8333/nestup
+          STORAGE_PUBLIC_BASE_URL=http://localhost:8333/yongstack
           STORAGE_KEY_PREFIX=media
           EOF
 
       - name: Seed admin user
-        run: pnpm --filter @nestup/database db:seed
+        run: pnpm --filter @yongstack/database db:seed
 
       - name: Start object storage
         run: |
@@ -132,16 +132,16 @@ jobs:
           docker run --rm --network host \
             -e AWS_ACCESS_KEY_ID=admin \
             -e AWS_SECRET_ACCESS_KEY=secret \
-            amazon/aws-cli --endpoint-url http://localhost:8333 s3 mb s3://nestup || true
+            amazon/aws-cli --endpoint-url http://localhost:8333 s3 mb s3://yongstack || true
           docker run --rm --network host \
             -e AWS_ACCESS_KEY_ID=admin \
             -e AWS_SECRET_ACCESS_KEY=secret \
             amazon/aws-cli --endpoint-url http://localhost:8333 s3api put-bucket-policy \
-            --bucket nestup \
-            --policy '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":["s3:GetObject"],"Resource":["arn:aws:s3:::nestup/*"]}]}'
+            --bucket yongstack \
+            --policy '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":["s3:GetObject"],"Resource":["arn:aws:s3:::yongstack/*"]}]}'
 
       - name: Install Playwright browser
-        run: pnpm --filter @nestup/e2e exec playwright install --with-deps chromium
+        run: pnpm --filter @yongstack/e2e exec playwright install --with-deps chromium
 
       - name: Run e2e
         run: pnpm e2e
@@ -150,25 +150,25 @@ jobs:
 
       - name: Build & smoke test docker image
         run: |
-          docker build --build-arg APP=storefront-api -t nestup-smoke .
-          docker run -d --name nestup-smoke --network=host \
-            -e DATABASE_URL=postgres://nestup:nestup@localhost:5432/nestup_test \
+          docker build --build-arg APP=app-api -t yongstack-smoke .
+          docker run -d --name yongstack-smoke --network=host \
+            -e DATABASE_URL=postgres://yongstack:yongstack@localhost:5432/yongstack_test \
             -e REDIS_URL=redis://localhost:6379/1 \
             -e SESSION_SECRET=test-session-secret-0123456789abcdef \
             -e NODE_ENV=test \
             -e CORS_ORIGIN='*' \
             -e TRUST_PROXY=false \
-            -e STOREFRONT_PORT=3000 \
+            -e APP_PORT=3000 \
             -e LOG_LEVEL=silent \
-            nestup-smoke
+            yongstack-smoke
           for i in $(seq 1 30); do
-            if docker exec nestup-smoke wget -q -O /dev/null http://localhost:3000/health; then
+            if docker exec yongstack-smoke wget -q -O /dev/null http://localhost:3000/health; then
               echo "health ok"
-              docker rm -f nestup-smoke
+              docker rm -f yongstack-smoke
               exit 0
             fi
             sleep 2
           done
-          docker logs nestup-smoke
-          docker rm -f nestup-smoke
+          docker logs yongstack-smoke
+          docker rm -f yongstack-smoke
           exit 1

@@ -1,14 +1,14 @@
 import { treaty } from '@elysiajs/eden'
-import { closeDb, type Db, schema } from '@nestup/database'
-import { prepareTestDb, resetDb } from '@nestup/database/testing'
-import { createRedisClient, type Redis } from '@nestup/redis'
-import { flushTestRedis } from '@nestup/redis/testing'
-import { createLogger } from '@nestup/shared'
-import { getTestEnv } from '@nestup/shared/testing'
+import { closeDb, type Db, schema } from '@yongstack/database'
+import { prepareTestDb, resetDb } from '@yongstack/database/testing'
+import { createRedisClient, type Redis } from '@yongstack/redis'
+import { flushTestRedis } from '@yongstack/redis/testing'
+import { createLogger } from '@yongstack/shared'
+import { getTestEnv } from '@yongstack/shared/testing'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 
-import { STOREFRONT_SESSION_COOKIE, type StorefrontAppOptions } from './deps'
+import { APP_SESSION_COOKIE, type AppOptions } from './deps'
 import { type App, buildApp } from './index'
 
 const env = getTestEnv()
@@ -35,10 +35,10 @@ beforeEach(async () => {
   await flushTestRedis()
 })
 
-function createTestDeps(deps: { db: Db; redis: Redis }): StorefrontAppOptions {
+function createTestDeps(deps: { db: Db; redis: Redis }): AppOptions {
   return {
     ...deps,
-    sessionCookieName: STOREFRONT_SESSION_COOKIE,
+    sessionCookieName: APP_SESSION_COOKIE,
     sessionSecret: env.TESTING_SESSION_SECRET,
     corsOrigin: true,
     trustProxy: false,
@@ -71,7 +71,7 @@ describe('system', () => {
     const res = await app.handle(new Request('http://localhost/info'))
     expect(res.status).toBe(200)
     expect(await res.json()).toMatchObject({
-      service: 'nestup-storefront-api',
+      service: 'yongstack-app-api',
       version: '0.1.0',
     })
   })
@@ -96,7 +96,7 @@ describe('auth', () => {
     expect('passwordHash' in res.data).toBe(false)
 
     const cookie = sessionCookie(res)
-    expect(cookie.startsWith(`${STOREFRONT_SESSION_COOKIE}=`)).toBe(true)
+    expect(cookie.startsWith(`${APP_SESSION_COOKIE}=`)).toBe(true)
 
     const me = await api.auth.me.get({ fetch: { headers: { cookie } } })
     expect(me.status).toBe(200)
@@ -138,7 +138,7 @@ describe('auth', () => {
     })
     expect(login.status).toBe(200)
     const cookie = sessionCookie(login)
-    expect(cookie).toMatch(/^nestup_session=[^;]+\./)
+    expect(cookie).toMatch(/^yongstack_session=[^;]+\./)
 
     const me = await api.auth.me.get({ fetch: { headers: { cookie } } })
     expect(me.status).toBe(200)

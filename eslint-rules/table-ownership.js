@@ -1,7 +1,7 @@
 // ESLint 本地插件: 强制 domains/* 只写本域归属的表, 且 apps/* 禁止直接写任何表
 //
 // 背景: eslint-plugin-boundaries 只约束包级 import 方向, 管不到 schema.xxx 数据表访问;
-// payment 域可以合法 import '@nestup/database' 后 tx.update(schema.orders) 越界写订单表,
+// payment 域可以合法 import '@yongstack/database' 后 tx.update(schema.orders) 越界写订单表,
 // apps 表现层也可能图省事直接在路由里 db.update(schema.xxx)(曾发生在 admin ship 路由)。
 //
 // 归属推导: schema 表定义按域分目录(见 packages/database/src/schema/), 目录名即归属域。

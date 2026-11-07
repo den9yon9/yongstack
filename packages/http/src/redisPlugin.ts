@@ -1,5 +1,5 @@
-import { type Redis } from '@nestup/redis'
-import type { Logger } from '@nestup/shared'
+import { type Redis } from '@yongstack/redis'
+import type { Logger } from '@yongstack/shared'
 import { Elysia } from 'elysia'
 
 export function redisPlugin(client: Redis, opts: { logger: Logger }) {

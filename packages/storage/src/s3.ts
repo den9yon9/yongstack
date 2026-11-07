@@ -7,7 +7,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { err, ok } from '@nestup/shared'
+import { err, ok } from '@yongstack/shared'
 
 import type { StorageEnv } from './env'
 import type { Storage } from './types'

@@ -15,9 +15,9 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'storefront',
+      name: 'app',
       use: { ...devices['Desktop Chrome'], baseURL: 'http://localhost:5173' },
-      testMatch: /storefront\.spec\.ts/,
+      testMatch: /app\.spec\.ts/,
     },
     {
       name: 'admin',
@@ -28,13 +28,13 @@ export default defineConfig({
   webServer: [
     {
       command: 'AUTH_RATE_LIMIT_PER_MINUTE=40 bun --env-file=../../.env src/index.ts',
-      cwd: '../storefront-api',
+      cwd: '../app-api',
       url: 'http://localhost:3000/health',
       reuseExistingServer: true,
     },
     {
       command: 'pnpm dev',
-      cwd: '../storefront-web',
+      cwd: '../app-web',
       // /@vite/client 在 proxy bypass 白名单内, 不会误入 API
       url: 'http://localhost:5173/@vite/client',
       reuseExistingServer: true,

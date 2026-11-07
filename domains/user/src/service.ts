@@ -1,6 +1,6 @@
-import { type DbClient, schema } from '@nestup/database'
-import { err, hashPassword, ok, type Result, verifyPassword } from '@nestup/shared'
 import type { Static } from '@sinclair/typebox'
+import { type DbClient, schema } from '@yongstack/database'
+import { err, hashPassword, ok, type Result, verifyPassword } from '@yongstack/shared'
 import { eq } from 'drizzle-orm'
 
 import type { LoginInputSchema, RegisterInputSchema, UpdateProfileInputSchema } from './model'
@@ -28,7 +28,7 @@ function normalizeEmail(email: string): string {
 let dummyHash: string | null = null
 
 async function getDummyHash(): Promise<string> {
-  if (!dummyHash) dummyHash = await hashPassword('nestup-dummy-password')
+  if (!dummyHash) dummyHash = await hashPassword('yongstack-dummy-password')
   return dummyHash
 }
 

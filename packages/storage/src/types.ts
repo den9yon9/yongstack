@@ -1,4 +1,4 @@
-import type { Result } from '@nestup/shared'
+import type { Result } from '@yongstack/shared'
 
 export type StorageError = 'STORAGE_UNAVAILABLE'
 

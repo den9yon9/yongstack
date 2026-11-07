@@ -2,7 +2,7 @@
 # 原生(不用 Docker)一键启动本地监控栈: Prometheus + Grafana。
 # 前置:
 #   brew install prometheus grafana          # 一次性
-#   pnpm dev 已跑起来(storefront-api 3000 / admin-api 3001 / worker HEALTH_PORT 3100)
+#   pnpm dev 已跑起来(app-api 3000 / admin-api 3001 / worker HEALTH_PORT 3100)
 # 用法: scripts/monitoring-up.sh
 # 说明: Prometheus 后台运行, Grafana 前台运行; Ctrl+C 停止 Grafana 并连带停掉 Prometheus。
 # 若 9090/3005 端口已被占用(可能是上次遗留的进程), 脚本会提示你停掉后再跑, 不会强行双开。
@@ -74,9 +74,9 @@ trap 'echo "Stopping Prometheus (pid $PROM_PID)"; kill "$PROM_PID" 2>/dev/null |
 export GF_PATHS_PROVISIONING="$GRAFANA_PROVISIONING"
 export GF_PATHS_DATA="$GRAFANA_DATA"
 export GF_SERVER_HTTP_PORT="$GRAFANA_PORT"
-# dashboards.yml 用 ${NESTUP_DASHBOARDS_PATH} 引用绝对路径
-export NESTUP_DASHBOARDS_PATH="$GRAFANA_DASHBOARDS"
+# dashboards.yml 用 ${YONGSTACK_DASHBOARDS_PATH} 引用绝对路径
+export YONGSTACK_DASHBOARDS_PATH="$GRAFANA_DASHBOARDS"
 echo "Starting Grafana on http://localhost:$GRAFANA_PORT (admin/admin) via: $GRAFANA_CMD_LABEL"
-echo "dashboard 'nestup 总览' auto-import via provisioning"
+echo "dashboard 'yongstack 总览' auto-import via provisioning"
 echo "Ctrl+C to stop Grafana (Prometheus will be stopped too)"
 "${GRAFANA_CMD[@]}" --homepath "$GRAFANA_HOMEPATH"

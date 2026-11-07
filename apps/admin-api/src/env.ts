@@ -1,6 +1,6 @@
-import { parseEnv } from '@nestup/shared'
-import { storageEnvSchema } from '@nestup/storage'
 import { type StaticDecode, Type } from '@sinclair/typebox'
+import { parseEnv } from '@yongstack/shared'
+import { storageEnvSchema } from '@yongstack/storage'
 
 const corsOrigin = Type.Transform(Type.String({ default: '*' }))
   .Decode((raw: string) => {

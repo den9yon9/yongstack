@@ -1,4 +1,4 @@
-import { err, ok } from '@nestup/shared'
+import { err, ok } from '@yongstack/shared'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 

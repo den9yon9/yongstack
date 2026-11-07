@@ -1,12 +1,12 @@
-import { createDb, type Db } from '@nestup/database'
-import { type Locale } from '@nestup/i18n'
-import { createRedisClient, type Redis } from '@nestup/redis'
-import { createLogger, type Logger } from '@nestup/shared'
-import { createStorage, type Storage } from '@nestup/storage'
+import { createDb, type Db } from '@yongstack/database'
+import { type Locale } from '@yongstack/i18n'
+import { createRedisClient, type Redis } from '@yongstack/redis'
+import { createLogger, type Logger } from '@yongstack/shared'
+import { createStorage, type Storage } from '@yongstack/storage'
 
 import { type AdminEnv } from './env'
 
-export const ADMIN_SESSION_COOKIE = 'nestup_admin_session'
+export const ADMIN_SESSION_COOKIE = 'yongstack_admin_session'
 
 export interface AdminAppOptions {
   db: Db

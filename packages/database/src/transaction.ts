@@ -1,4 +1,4 @@
-import { err, type Result } from '@nestup/shared'
+import { err, type Result } from '@yongstack/shared'
 import { PgTransaction } from 'drizzle-orm/pg-core'
 
 import type { DbClient, DbTransaction } from './index'

@@ -1,5 +1,5 @@
-import { createLogger, parseEnv } from '@nestup/shared'
 import { Type } from '@sinclair/typebox'
+import { createLogger, parseEnv } from '@yongstack/shared'
 
 import { runMigrations } from './index'
 

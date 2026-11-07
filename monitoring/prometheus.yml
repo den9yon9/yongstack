@@ -1,4 +1,4 @@
-# Prometheus 抓取配置(原生优先, 单一事实源): 采集 nestup 三个服务的 /metrics 端点。
+# Prometheus 抓取配置(原生优先, 单一事实源): 采集 yongstack 三个服务的 /metrics 端点。
 # 目标固定为本机 localhost(brew 本机运行直接可用); 端口调整直接改这里的 :3000/:3001/:3100。
 # 注意: Prometheus 配置文件不支持 ${VAR} 环境变量替换; Docker 场景请使用
 # docker/prometheus.docker.yml(容器内用 host.docker.internal 访问宿主机)。
@@ -7,7 +7,7 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: storefront-api
+  - job_name: app-api
     static_configs:
       - targets: ['localhost:3000']
 

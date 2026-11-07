@@ -1,5 +1,5 @@
 {
-  "name": "@nestup/http",
+  "name": "@yongstack/http",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
@@ -10,10 +10,10 @@
     "test": "bun test --parallel=1"
   },
   "dependencies": {
-    "@nestup/database": "workspace:*",
-    "@nestup/i18n": "workspace:*",
-    "@nestup/redis": "workspace:*",
-    "@nestup/shared": "workspace:*",
+    "@yongstack/database": "workspace:*",
+    "@yongstack/i18n": "workspace:*",
+    "@yongstack/redis": "workspace:*",
+    "@yongstack/shared": "workspace:*",
     "elysia": "^1.2.0",
     "prom-client": "^15"
   }

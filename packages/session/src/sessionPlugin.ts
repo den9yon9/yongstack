@@ -1,9 +1,9 @@
-import { USER_ROLE, type UserRole } from '@nestup/database'
-import { DEFAULT_LOCALE, type Locale, resolveLocale, translate } from '@nestup/i18n'
-import type { Redis } from '@nestup/redis'
-import { type Logger } from '@nestup/shared'
 import { Type } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
+import { USER_ROLE, type UserRole } from '@yongstack/database'
+import { DEFAULT_LOCALE, type Locale, resolveLocale, translate } from '@yongstack/i18n'
+import type { Redis } from '@yongstack/redis'
+import { type Logger } from '@yongstack/shared'
 import { type Cookie, Elysia, status } from 'elysia'
 
 // 会话/权限守卫文案也属用户可见: 在守卫处按请求语言取值(不走 controller derive)。
@@ -49,7 +49,7 @@ export interface SessionPluginOptions {
   sessionSecret: string
   isProduction: boolean
   logger: Logger
-  // 会话 cookie 名; 默认 session_id。多应用共享域时按应用隔离(如 nestup_session / nestup_admin_session)
+  // 会话 cookie 名; 默认 session_id。多应用共享域时按应用隔离(如 yongstack_session / yongstack_admin_session)
   cookieName?: string
   // 无请求语言线索时的回退语言(来自 env DEFAULT_LOCALE)
   defaultLocale?: Locale

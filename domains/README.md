@@ -8,7 +8,7 @@ domains/<name>/
   src/service.ts  纯业务函数（neverthrow Result，依赖 DbClient 注入）
   src/index.ts    对外出口（只导出函数与类型）
   tsconfig.json
-  package.json    @nestup/<name>
+  package.json    @yongstack/<name>
 ```
 
 约束：

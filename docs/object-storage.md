@@ -1,6 +1,6 @@
 # 对象存储
 
-房源图片等媒体资源存放在 S3 兼容对象存储，数据库只保存可公开访问的 URL。上传、读取与 provider 无关，Cloudflare R2、腾讯云 COS、AWS S3、自建 SeaweedFS 共用同一套代码。
+媒体资源存放在 S3 兼容对象存储，数据库只保存可公开访问的 URL。上传、读取与 provider 无关，Cloudflare R2、腾讯云 COS、AWS S3、自建 SeaweedFS 共用同一套代码。
 
 ## 为什么用 S3 兼容协议
 
@@ -18,11 +18,11 @@ S3 API 是对象存储的事实标准（不是 ISO 标准）。只要服务支�
 ```env
 STORAGE_ENDPOINT=http://localhost:8333
 STORAGE_REGION=us-east-1
-STORAGE_BUCKET=nestup
+STORAGE_BUCKET=yongstack
 STORAGE_ACCESS_KEY_ID=admin
 STORAGE_SECRET_ACCESS_KEY=secret
 STORAGE_FORCE_PATH_STYLE=true
-STORAGE_PUBLIC_BASE_URL=http://localhost:8333/nestup
+STORAGE_PUBLIC_BASE_URL=http://localhost:8333/yongstack
 STORAGE_KEY_PREFIX=media
 ```
 
@@ -31,7 +31,7 @@ STORAGE_KEY_PREFIX=media
 ```env
 STORAGE_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
 STORAGE_REGION=auto
-STORAGE_BUCKET=nestup
+STORAGE_BUCKET=yongstack
 STORAGE_FORCE_PATH_STYLE=false
 STORAGE_PUBLIC_BASE_URL=https://img.example.com
 ```

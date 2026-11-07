@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [tanstackRouter(), tailwindcss(), react()],
   server: {
     port: 5173,
-    // ponytail: 全量代理到 storefront API, SPA 与 Vite 内部请求 bypass;
+    // ponytail: 全量代理到 app API, SPA 与 Vite 内部请求 bypass;
     // HttpOnly session cookie 同源透传, 无需 CORS/.env 改动
     proxy: {
       '/': {

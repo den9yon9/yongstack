@@ -130,7 +130,7 @@ export default [
     },
   },
   {
-    files: ['apps/storefront-web/src/**/*.{ts,tsx}', 'apps/admin-web/src/**/*.{ts,tsx}'],
+    files: ['apps/app-web/src/**/*.{ts,tsx}', 'apps/admin-web/src/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     rules: {
       'react-hooks/rules-of-hooks': 'error',
@@ -207,7 +207,7 @@ export default [
     plugins: { i18n: i18nRules },
     // 用户可见面: 标记必须字面量 + 禁裸中文(OpenAPI detail 除外)
     files: [
-      'apps/storefront-api/src/**/*.ts',
+      'apps/app-api/src/**/*.ts',
       'apps/admin-api/src/**/*.ts',
       'apps/worker/src/**/*.ts',
       'packages/session/src/**/*.ts',

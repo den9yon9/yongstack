@@ -18,7 +18,7 @@ const rule = {
     },
     messages: {
       bareThrow:
-        'Bare `throw new Error(...)` is forbidden: business failures return err(); impossible states throw new InvariantViolation(...) from @nestup/shared.',
+        'Bare `throw new Error(...)` is forbidden: business failures return err(); impossible states throw new InvariantViolation(...) from @yongstack/shared.',
     },
   },
   create(context) {

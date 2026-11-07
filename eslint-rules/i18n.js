@@ -89,7 +89,7 @@ const noCjkLiteral = {
 const noCoreImport = {
   meta: {
     type: 'problem',
-    docs: { description: 'domain/usecase 禁止 import @nestup/i18n(呈现层职责)' },
+    docs: { description: 'domain/usecase 禁止 import @yongstack/i18n(呈现层职责)' },
     messages: {
       coreImport:
         'i18n belongs to the presentation layer: domains/usecases must return error codes/data, not localized text.',
@@ -101,7 +101,7 @@ const noCoreImport = {
         const source = node.source.value
         if (
           typeof source === 'string' &&
-          (source === '@nestup/i18n' || source.startsWith('@nestup/i18n/'))
+          (source === '@yongstack/i18n' || source.startsWith('@yongstack/i18n/'))
         ) {
           context.report({ node, messageId: 'coreImport' })
         }

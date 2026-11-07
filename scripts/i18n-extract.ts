@@ -20,7 +20,7 @@ const TARGET_LOCALES = ['zh-CN'] as const
 
 // 用户可见面: 只扫这些目录的源码
 const SCAN_ROOTS = [
-  'apps/storefront-api/src',
+  'apps/app-api/src',
   'apps/admin-api/src',
   'apps/worker/src',
   'packages/session/src',

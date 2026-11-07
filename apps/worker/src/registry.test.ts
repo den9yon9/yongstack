@@ -1,4 +1,4 @@
-import { createLogger } from '@nestup/shared'
+import { createLogger } from '@yongstack/shared'
 import { describe, expect, test } from 'bun:test'
 
 import { createEnv } from './env'
@@ -8,7 +8,7 @@ describe('worker registry', () => {
   test('starts with no queues until business domains are added', () => {
     const env = createEnv({
       REDIS_URL: 'redis://localhost:6379',
-      DATABASE_URL: 'postgres://localhost:5432/nestup',
+      DATABASE_URL: 'postgres://localhost:5432/yongstack',
       LOG_LEVEL: 'silent',
     })
     const registration = registerWorkers(env, createLogger('silent'))

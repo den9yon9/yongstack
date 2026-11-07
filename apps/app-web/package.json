@@ -1,5 +1,5 @@
 {
-  "name": "@nestup/storefront-web",
+  "name": "@yongstack/app-web",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,13 +9,13 @@
   },
   "dependencies": {
     "@elysiajs/eden": "^1.4.9",
-    "@nestup/eden-client": "workspace:^",
+    "@yongstack/eden-client": "workspace:^",
     "@tanstack/react-router": "^1.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@nestup/storefront-api": "workspace:*",
+    "@yongstack/app-api": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-cli": "^1.167.25",
     "@tanstack/router-plugin": "^1.0.0",

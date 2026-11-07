@@ -1,5 +1,5 @@
-import { closeDb, type Db, schema } from '@nestup/database'
-import { prepareTestDb, resetDb } from '@nestup/database/testing'
+import { closeDb, type Db, schema } from '@yongstack/database'
+import { prepareTestDb, resetDb } from '@yongstack/database/testing'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 

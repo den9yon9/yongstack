@@ -1,4 +1,4 @@
-import { closeDb, type Db } from '@nestup/database'
+import { closeDb, type Db } from '@yongstack/database'
 import { Elysia } from 'elysia'
 
 export function dbPlugin(client: Db) {

@@ -1,5 +1,6 @@
 import { cors } from '@elysiajs/cors'
 import { openapi } from '@elysiajs/openapi'
+import { Type } from '@sinclair/typebox'
 import {
   createMetrics,
   healthCheck,
@@ -9,11 +10,10 @@ import {
   requestLogger,
   securityHeaders,
   startServer,
-} from '@nestup/http'
-import { Type } from '@sinclair/typebox'
+} from '@yongstack/http'
 import { Elysia } from 'elysia'
 
-import { createStorefrontDeps, type StorefrontAppOptions } from './deps'
+import { type AppOptions, createAppDeps } from './deps'
 import { createEnv } from './env'
 import { createPlugins } from './plugins'
 import { createUserRoutes } from './routes/user'
@@ -24,7 +24,7 @@ const InfoResponse = Type.Object({
   runtime: Type.String(),
 })
 
-export function buildApp(options: StorefrontAppOptions) {
+export function buildApp(options: AppOptions) {
   // 监控指标: 进程级 Registry + HTTP 计数, /metrics 端点随 buildApp 挂载
   const metrics = createMetrics()
   const httpMetrics = registerHttpMetrics(metrics)
@@ -49,7 +49,7 @@ export function buildApp(options: StorefrontAppOptions) {
         ? openapi({
             path: '/docs',
             documentation: {
-              info: { title: 'Nestup Storefront API', version: '0.1.0' },
+              info: { title: 'Yongstack App API', version: '0.1.0' },
             },
           })
         : new Elysia(),
@@ -58,7 +58,7 @@ export function buildApp(options: StorefrontAppOptions) {
     .get(
       '/info',
       () => ({
-        service: 'nestup-storefront-api',
+        service: 'yongstack-app-api',
         version: '0.1.0',
         runtime: `bun ${Bun.version}`,
       }),
@@ -86,10 +86,10 @@ export function buildApp(options: StorefrontAppOptions) {
 
 if (import.meta.main) {
   const env = createEnv()
-  const deps = createStorefrontDeps(env)
+  const deps = createAppDeps(env)
   startServer(buildApp(deps), {
-    serviceName: 'storefront',
-    port: Number(env.STOREFRONT_PORT),
+    serviceName: 'app',
+    port: Number(env.APP_PORT),
     logger: deps.logger,
   })
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@nestup/queue",
+  "name": "@yongstack/queue",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@nestup/redis": "workspace:*",
-    "@nestup/shared": "workspace:*",
+    "@yongstack/redis": "workspace:*",
+    "@yongstack/shared": "workspace:*",
     "bullmq": "^5.41.0"
   }
 }

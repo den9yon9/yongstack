@@ -1,6 +1,6 @@
-import { dbPlugin, localePlugin, redisPlugin } from '@nestup/http'
-import { authRateLimit, createSessionPlugin } from '@nestup/session'
-import { type Logger } from '@nestup/shared'
+import { dbPlugin, localePlugin, redisPlugin } from '@yongstack/http'
+import { authRateLimit, createSessionPlugin } from '@yongstack/session'
+import { type Logger } from '@yongstack/shared'
 
 import { type AdminAppOptions } from './deps'
 

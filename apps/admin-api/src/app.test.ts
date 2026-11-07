@@ -1,11 +1,11 @@
 import { treaty } from '@elysiajs/eden'
-import { closeDb, type Db, schema } from '@nestup/database'
-import { prepareTestDb, resetDb } from '@nestup/database/testing'
-import { createRedisClient, type Redis } from '@nestup/redis'
-import { flushTestRedis } from '@nestup/redis/testing'
-import { createLogger } from '@nestup/shared'
-import { getTestEnv } from '@nestup/shared/testing'
-import { createInMemoryStorage } from '@nestup/storage/testing'
+import { closeDb, type Db, schema } from '@yongstack/database'
+import { prepareTestDb, resetDb } from '@yongstack/database/testing'
+import { createRedisClient, type Redis } from '@yongstack/redis'
+import { flushTestRedis } from '@yongstack/redis/testing'
+import { createLogger } from '@yongstack/shared'
+import { getTestEnv } from '@yongstack/shared/testing'
+import { createInMemoryStorage } from '@yongstack/storage/testing'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 
@@ -73,7 +73,7 @@ describe('system', () => {
     const res = await app.handle(new Request('http://localhost/info'))
     expect(res.status).toBe(200)
     expect(await res.json()).toMatchObject({
-      service: 'nestup-admin-api',
+      service: 'yongstack-admin-api',
       version: '0.1.0',
     })
   })
@@ -96,7 +96,7 @@ describe('admin auth', () => {
     expect(login.status).toBe(200)
     const cookie = sessionCookie(login)
     expect(cookie.startsWith(`${ADMIN_SESSION_COOKIE}=`)).toBe(true)
-    expect(cookie).toMatch(/^nestup_admin_session=[^;]+\./)
+    expect(cookie).toMatch(/^yongstack_admin_session=[^;]+\./)
 
     const me = await api.auth.me.get({ fetch: { headers: { cookie } } })
     expect(me.status).toBe(200)

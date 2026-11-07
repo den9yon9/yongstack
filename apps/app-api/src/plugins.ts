@@ -1,22 +1,22 @@
-import { dbPlugin, type HttpMetricsBundle, localePlugin, redisPlugin } from '@nestup/http'
-import { type Locale } from '@nestup/i18n'
-import { authRateLimit, createSessionPlugin } from '@nestup/session'
-import { type Logger } from '@nestup/shared'
+import { dbPlugin, type HttpMetricsBundle, localePlugin, redisPlugin } from '@yongstack/http'
+import { type Locale } from '@yongstack/i18n'
+import { authRateLimit, createSessionPlugin } from '@yongstack/session'
+import { type Logger } from '@yongstack/shared'
 
-import { type StorefrontAppOptions } from './deps'
+import { type AppOptions } from './deps'
 
-export interface StorefrontMetrics {
+export interface AppMetrics {
   http: HttpMetricsBundle
 }
 
-export interface StorefrontPlugins {
+export interface AppPlugins {
   dbPlugin: ReturnType<typeof dbPlugin>
   redisPlugin: ReturnType<typeof redisPlugin>
   localePlugin: ReturnType<typeof localePlugin>
   sessionPlugin: ReturnType<typeof createSessionPlugin>
   authRateLimit: ReturnType<typeof authRateLimit>
   sessionCookieName: string
-  metrics: StorefrontMetrics
+  metrics: AppMetrics
   isProduction: boolean
   logger: Logger
   authRateLimitPerMinute: number
@@ -24,9 +24,9 @@ export interface StorefrontPlugins {
 }
 
 export function createPlugins(
-  options: Omit<StorefrontAppOptions, 'corsOrigin'>,
-  metrics: StorefrontMetrics,
-): StorefrontPlugins {
+  options: Omit<AppOptions, 'corsOrigin'>,
+  metrics: AppMetrics,
+): AppPlugins {
   const { db, redis, sessionCookieName, sessionSecret, trustProxy, isProduction, logger } = options
   return {
     dbPlugin: dbPlugin(db),

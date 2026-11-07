@@ -1,5 +1,5 @@
-import { parseEnv } from '@nestup/shared'
 import { type StaticDecode, Type } from '@sinclair/typebox'
+import { parseEnv } from '@yongstack/shared'
 
 const forcePathStyle = Type.Transform(Type.String({ default: 'false' }))
   .Decode((raw: string) => raw.trim() === 'true')

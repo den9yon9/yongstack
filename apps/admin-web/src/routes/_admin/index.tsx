@@ -14,10 +14,11 @@ export const Route = createFileRoute('/_admin/')({
 })
 
 const modules = [
-  { title: '房源管理', detail: '房源、图片、价格与可租状态' },
-  { title: '租约管理', detail: '签约、续租、退租与合同状态' },
-  { title: '租客管理', detail: '租客资料、实名与信用信息' },
-  { title: '财务对账', detail: '租金账单、押金与收款流水' },
+  { title: '用户管理', detail: '账号、状态与角色分配' },
+  { title: '角色权限', detail: '角色、权限与访问控制' },
+  { title: '文件管理', detail: '上传、元数据与附件关联' },
+  { title: '审计日志', detail: '关键操作与变更留痕' },
+  { title: '系统设置', detail: '运行时配置与功能开关' },
 ]
 
 function DashboardPage() {
@@ -53,7 +54,7 @@ function DashboardPage() {
           <div>
             <h2 className="text-lg font-semibold">欢迎，{adminUser.name ?? adminUser.email}</h2>
             <p className="mt-1 text-sm text-slate-500">
-              管理端后端已就绪，业务路由将在后续提交接入。
+              Yongstack 通用模板，平台能力将在后续里程碑接入。
             </p>
           </div>
           <span

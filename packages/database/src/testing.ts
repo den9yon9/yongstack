@@ -1,4 +1,4 @@
-import { getTestEnv } from '@nestup/shared/testing'
+import { getTestEnv } from '@yongstack/shared/testing'
 import { sql } from 'drizzle-orm'
 import postgres from 'postgres'
 

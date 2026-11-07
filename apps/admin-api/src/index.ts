@@ -1,5 +1,6 @@
 import { cors } from '@elysiajs/cors'
 import { openapi } from '@elysiajs/openapi'
+import { Type } from '@sinclair/typebox'
 import {
   createMetrics,
   healthCheck,
@@ -9,8 +10,7 @@ import {
   requestLogger,
   securityHeaders,
   startServer,
-} from '@nestup/http'
-import { Type } from '@sinclair/typebox'
+} from '@yongstack/http'
 import { Elysia } from 'elysia'
 
 import { type AdminAppOptions, createAdminDeps } from './deps'
@@ -45,7 +45,7 @@ export function buildApp(options: AdminAppOptions) {
         ? openapi({
             path: '/docs',
             documentation: {
-              info: { title: 'Nestup Admin API', version: '0.1.0' },
+              info: { title: 'Yongstack Admin API', version: '0.1.0' },
             },
           })
         : new Elysia(),
@@ -54,7 +54,7 @@ export function buildApp(options: AdminAppOptions) {
     .get(
       '/info',
       () => ({
-        service: 'nestup-admin-api',
+        service: 'yongstack-admin-api',
         version: '0.1.0',
         runtime: `bun ${Bun.version}`,
       }),

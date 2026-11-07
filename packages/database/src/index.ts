@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 
-import { type Logger } from '@nestup/shared'
+import { type Logger } from '@yongstack/shared'
 import type { ExtractTablesWithRelations } from 'drizzle-orm'
 import type { PgTransaction } from 'drizzle-orm/pg-core'
 import type { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js'

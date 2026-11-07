@@ -1,5 +1,5 @@
-import { parseEnv } from '@nestup/shared'
 import { type StaticDecode, Type } from '@sinclair/typebox'
+import { parseEnv } from '@yongstack/shared'
 
 export const workerEnvSchema = Type.Object({
   NODE_ENV: Type.Union(

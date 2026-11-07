@@ -1,5 +1,5 @@
 {
-  "name": "@nestup/user",
+  "name": "@yongstack/user",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
@@ -14,8 +14,8 @@
     "test": "bun --env-file=../../.env test --parallel=1"
   },
   "dependencies": {
-    "@nestup/database": "workspace:*",
-    "@nestup/shared": "workspace:*",
+    "@yongstack/database": "workspace:*",
+    "@yongstack/shared": "workspace:*",
     "@sinclair/typebox": "^0.34.0",
     "drizzle-orm": "^0.40.0"
   }

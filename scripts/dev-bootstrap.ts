@@ -73,7 +73,7 @@ function parseArgs(argv: string[]): Options {
 function printHelp(): void {
   console.log(`Usage: pnpm bootstrap [options]
 
-Local onboarding for nestup. Creates .env when missing, starts local
+Local onboarding for yongstack. Creates .env when missing, starts local
 infrastructure, initializes the media bucket and runs migrations.
 
 Options:
@@ -409,7 +409,7 @@ function printSummary(env: EnvValues, opts: Options): void {
   console.log(`
 [ok] Local environment is ready.
 
-  Storefront:  http://localhost:5173
+  App:         http://localhost:5173
   Admin:       http://localhost:5174
   API docs:    http://localhost:3000/docs
   Admin API:   http://localhost:3001/docs
@@ -515,7 +515,7 @@ async function main(): Promise<void> {
     return
   }
 
-  console.log('nestup local bootstrap')
+  console.log('yongstack local bootstrap')
   console.log(
     `mode: ${opts.noDocker ? 'existing services' : 'docker'} / ${opts.externalStorage ? 'external storage' : 'local SeaweedFS'}`,
   )
@@ -571,10 +571,10 @@ async function main(): Promise<void> {
   }
 
   step(6, 8, 'Run database migrations')
-  await run('run database migrations', ['pnpm', '--filter', '@nestup/database', 'db:migrate'])
+  await run('run database migrations', ['pnpm', '--filter', '@yongstack/database', 'db:migrate'])
 
   step(7, 8, 'Seed admin user')
-  await run('seed admin user', ['pnpm', '--filter', '@nestup/database', 'db:seed'])
+  await run('seed admin user', ['pnpm', '--filter', '@yongstack/database', 'db:seed'])
 
   step(8, 8, 'Done')
   printSummary(env, opts)

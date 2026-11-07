@@ -21,9 +21,9 @@ function RootLayout() {
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 md:px-6">
           <Link to="/" className="flex items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 font-bold text-white">
-              N
+              Y
             </span>
-            <span className="text-lg font-semibold tracking-tight">Nestup</span>
+            <span className="text-lg font-semibold tracking-tight">Yongstack</span>
           </Link>
           <nav className="flex items-center gap-4 text-sm text-slate-600">
             <a className="hover:text-brand-600" href="/docs" target="_blank" rel="noreferrer">
@@ -61,7 +61,7 @@ function RootLayout() {
         <Outlet />
       </main>
       <footer className="border-t border-slate-200 py-6 text-center text-sm text-slate-500">
-        Nestup · 租房平台
+        Yongstack · 个人全栈技术栈模板
       </footer>
     </div>
   )

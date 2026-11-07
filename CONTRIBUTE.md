@@ -38,7 +38,7 @@ pnpm dev         # 自动迁移 + 全部服务 watch
 - 需要 Docker；没有 Docker 或使用 R2/COS 时见 [docs/onboarding.md](docs/onboarding.md)
 - 只检查环境：`pnpm bootstrap:check`
 
-- 接口文档：http://localhost:3000/docs（storefront）、http://localhost:3001/docs（admin）
+- 接口文档：http://localhost:3000/docs（app）、http://localhost:3001/docs（admin）
 - `pnpm test` 需要本地 postgres + redis；测试库/Redis 配置在 `.env` 的 `TESTING_*`
 - 常用命令：`bootstrap` / `bootstrap:check` / `typecheck` / `lint` / `format` / `check` / `build` / `clean` / `test`
 
@@ -66,14 +66,14 @@ pnpm dev         # 自动迁移 + 全部服务 watch
 
 - 业务失败 → `return err('CODE')`：进错误契约，调用方穷举处理
 - 不该发生的失败（数据不一致/程序 bug）→
-  `throw new InvariantViolation(msg, { cause })`（`@nestup/shared`）：触发回滚、
+  `throw new InvariantViolation(msg, { cause })`（`@yongstack/shared`）：触发回滚、
   落 500，name 可监控告警；与 `assertNever` 同族（编译期/运行时两种"不可能"）
 - 环境配置错误 → env.ts 内 fail-fast `throw new Error`（启动即失败）
 
 ### 2. 新增用例（usecases/*）
 
 跨域编排放这里，与 domain 同样的三文件结构。需要原子性时用
-`withTransaction(client, fn)`（@nestup/database）包住多个 domain 调用；
+`withTransaction(client, fn)`（@yongstack/database）包住多个 domain 调用；
 回调内 `return err('CODE')` 会自动回滚整个事务（helper 内部转抛 abort 再还原为 err），
 DB 异常同理。域/用例内禁止直接调用 `.transaction(`（ESLint 强制）。
 幂等需求在事务内写唯一约束表实现（冲突时回滚整个事务，不静默跳过）。
@@ -84,8 +84,8 @@ DB 异常同理。域/用例内禁止直接调用 `.transaction(`（ESLint 强�
 每个路由文件导出工厂 `createXxxRoutes(plugins)`，接收插件实例按需 `.use()`：
 
 ```ts
-export function createOrderRoutes(plugins: StorefrontPlugins) {
-  return new Elysia({ name: 'order-storefront' })
+export function createOrderRoutes(plugins: AppPlugins) {
+  return new Elysia({ name: 'order-app' })
     .use(plugins.dbPlugin)
     .use(plugins.sessionPlugin)
     .post(
@@ -150,7 +150,7 @@ createEnv() → createDeps(env) → buildApp(options) → createPlugins(options)
 ### 6. 数据库变更
 
 1. 修改 `packages/database/src/schema/*.ts`
-2. `pnpm --filter @nestup/database db:generate`
+2. `pnpm --filter @yongstack/database db:generate`
 3. 检查生成的 SQL 并提交到 `packages/database/src/migrations/`（CI 会在真实 PG 重放）
 
 ### 7. 用户可见文案 i18n
@@ -163,7 +163,7 @@ createEnv() → createDeps(env) → buildApp(options) → createPlugins(options)
 - **标记**：`i18n('英文源串', params?)`。controller 经 `localePlugin` 的 `derive` 每请求注入
 - **基础设施边界**（session 守卫、限流 429）用显式 `translate(locale, '源串')`
 - **语言协商**：`X-Locale` / `?lang=` → `Accept-Language`（q 值）→ env `DEFAULT_LOCALE`
-- **i18n 是呈现层职责**：domain/usecase 禁止 import `@nestup/i18n`（eslint `i18n/no-core-import`）
+- **i18n 是呈现层职责**：domain/usecase 禁止 import `@yongstack/i18n`（eslint `i18n/no-core-import`）
 
 catalog 自动生成/校验（`packages/i18n/src/catalog/{en,zh-CN}.json`，勿手改 en）：
 

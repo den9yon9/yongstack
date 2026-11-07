@@ -1,5 +1,5 @@
-import { parseEnv } from '@nestup/shared'
 import { type StaticDecode, Type } from '@sinclair/typebox'
+import { parseEnv } from '@yongstack/shared'
 
 const corsOrigin = Type.Transform(Type.String({ default: '*' }))
   .Decode((raw: string) => {
@@ -19,7 +19,7 @@ const trustProxy = Type.Transform(Type.String({ default: 'false' }))
   .Decode((raw: string) => raw.trim() === 'true')
   .Encode((v) => (v ? 'true' : 'false'))
 
-export const storefrontEnvSchema = Type.Object({
+export const appEnvSchema = Type.Object({
   DATABASE_URL: Type.String({ format: 'uri' }),
   REDIS_URL: Type.String({ format: 'uri' }),
   SESSION_SECRET: Type.String({ minLength: 32 }),
@@ -41,17 +41,17 @@ export const storefrontEnvSchema = Type.Object({
   ),
   CORS_ORIGIN: corsOrigin,
   TRUST_PROXY: trustProxy,
-  STOREFRONT_PORT: Type.String({ pattern: '^\\d+$' }),
+  APP_PORT: Type.String({ pattern: '^\\d+$' }),
   // 无请求语言线索时的回退语言(错误响应 message / 限流文案)
   DEFAULT_LOCALE: Type.Union([Type.Literal('en'), Type.Literal('zh-CN')], { default: 'en' }),
   // 认证接口限流(次/分钟): 注册/登录共用。后续接入 domains/user 时生效
   AUTH_RATE_LIMIT_PER_MINUTE: Type.String({ pattern: '^\\d+$', default: '20' }),
 })
 
-export type StorefrontEnv = StaticDecode<typeof storefrontEnvSchema>
+export type AppEnv = StaticDecode<typeof appEnvSchema>
 
-export function createEnv(source: Record<string, string | undefined> = process.env): StorefrontEnv {
-  const env = parseEnv(storefrontEnvSchema, source)
+export function createEnv(source: Record<string, string | undefined> = process.env): AppEnv {
+  const env = parseEnv(appEnvSchema, source)
   if (env.NODE_ENV === 'production' && env.CORS_ORIGIN === true) {
     throw new Error(
       '[ENV] CORS_ORIGIN cannot be "*" in production; set an explicit origin or comma-separated allowlist',

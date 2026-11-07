@@ -1,7 +1,7 @@
-import { type Redis } from '@nestup/redis'
-import { createRedisClient } from '@nestup/redis'
-import { flushTestRedis } from '@nestup/redis/testing'
-import { getTestEnv } from '@nestup/shared/testing'
+import { type Redis } from '@yongstack/redis'
+import { createRedisClient } from '@yongstack/redis'
+import { flushTestRedis } from '@yongstack/redis/testing'
+import { getTestEnv } from '@yongstack/shared/testing'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 
 import { createSessionStore } from './sessionPlugin'

@@ -24,7 +24,7 @@ export const Route = createFileRoute('/_admin')({
 })
 
 const navItems = ['控制台']
-const pendingModules = ['房源管理', '租约管理', '租客管理', '财务对账']
+const pendingModules = ['用户管理', '角色权限', '文件管理', '审计日志', '系统设置']
 
 function AdminLayout() {
   const navigate = useNavigate()
@@ -40,9 +40,9 @@ function AdminLayout() {
       <aside className="hidden w-60 flex-col border-r border-slate-200 bg-white p-5 md:flex">
         <Link to="/" className="flex items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 font-bold text-white">
-            N
+            Y
           </span>
-          <span className="text-lg font-semibold tracking-tight">Nestup Admin</span>
+          <span className="text-lg font-semibold tracking-tight">Yongstack Admin</span>
         </Link>
         <nav className="mt-8 space-y-1 text-sm">
           {navItems.map((label) => (
@@ -64,8 +64,8 @@ function AdminLayout() {
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4">
           <div>
-            <h1 className="text-base font-semibold">Nestup 管理后台</h1>
-            <p className="text-xs text-slate-500">工程底座 · 业务模块待接入</p>
+            <h1 className="text-base font-semibold">Yongstack 管理后台</h1>
+            <p className="text-xs text-slate-500">通用模板 · 业务模块待接入</p>
           </div>
           <div className="flex items-center gap-4 text-sm">
             <span className="text-slate-600">{adminUser.name ?? adminUser.email}</span>

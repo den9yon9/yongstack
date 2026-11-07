@@ -7,7 +7,7 @@ import { createInMemoryStorage } from './testing'
 const env: StorageEnv = {
   STORAGE_ENDPOINT: 'http://localhost:8333',
   STORAGE_REGION: 'us-east-1',
-  STORAGE_BUCKET: 'nestup',
+  STORAGE_BUCKET: 'yongstack',
   STORAGE_ACCESS_KEY_ID: 'admin',
   STORAGE_SECRET_ACCESS_KEY: 'secret',
   STORAGE_FORCE_PATH_STYLE: true,

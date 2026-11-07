@@ -1,5 +1,5 @@
 {
-  "name": "@nestup/storefront-api",
+  "name": "@yongstack/app-api",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
@@ -17,13 +17,13 @@
   "dependencies": {
     "@elysiajs/cors": "^1.4.2",
     "@elysiajs/openapi": "^1.4.0",
-    "@nestup/database": "workspace:*",
-    "@nestup/http": "workspace:*",
-    "@nestup/i18n": "workspace:*",
-    "@nestup/redis": "workspace:*",
-    "@nestup/session": "workspace:*",
-    "@nestup/shared": "workspace:*",
-    "@nestup/user": "workspace:*",
+    "@yongstack/database": "workspace:*",
+    "@yongstack/http": "workspace:*",
+    "@yongstack/i18n": "workspace:*",
+    "@yongstack/redis": "workspace:*",
+    "@yongstack/session": "workspace:*",
+    "@yongstack/shared": "workspace:*",
+    "@yongstack/user": "workspace:*",
     "@sinclair/typebox": "^0.34.0",
     "elysia": "^1.2.0"
   },

@@ -1,5 +1,5 @@
-import type { Queue, Worker } from '@nestup/queue'
-import type { Logger } from '@nestup/shared'
+import type { Queue, Worker } from '@yongstack/queue'
+import type { Logger } from '@yongstack/shared'
 
 import type { WorkerEnv } from './env'
 

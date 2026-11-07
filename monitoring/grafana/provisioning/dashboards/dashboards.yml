@@ -1,11 +1,11 @@
 apiVersion: 1
 
 providers:
-  - name: nestup
-    folder: 'nestup'
+  - name: yongstack
+    folder: 'yongstack'
     type: file
     allowUiUpdates: true
     options:
       # 用环境变量引用绝对路径(scripts/monitoring-up.sh / docker compose 各自注入),
       # 避免依赖 Grafana 工作目录/容器路径解析差异。
-      path: ${NESTUP_DASHBOARDS_PATH}
+      path: ${YONGSTACK_DASHBOARDS_PATH}

@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [tanstackRouter(), tailwindcss(), react()],
   server: {
     port: 5174,
-    // ponytail: 与 storefront-web 同款方案: 全量代理到 admin API,
+    // ponytail: 与 app-web 同款方案: 全量代理到 admin API,
     // HttpOnly session cookie 同源透传, 无需 CORS/.env 改动
     proxy: {
       '/': {

@@ -6,7 +6,7 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: storefront-api
+  - job_name: app-api
     static_configs:
       - targets: ['host.docker.internal:3000']
 

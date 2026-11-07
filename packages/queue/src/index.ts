@@ -1,6 +1,6 @@
-import { type Redis } from '@nestup/redis'
-import type { Logger } from '@nestup/shared'
-import { runWithRequestId } from '@nestup/shared'
+import { type Redis } from '@yongstack/redis'
+import type { Logger } from '@yongstack/shared'
+import { runWithRequestId } from '@yongstack/shared'
 import {
   type ConnectionOptions,
   type Processor,

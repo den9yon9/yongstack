@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import { err, ok } from '@nestup/shared'
+import { err, ok } from '@yongstack/shared'
 
 import type { Storage } from './types'
 

@@ -1,5 +1,5 @@
-import { emailSchema, table } from '@nestup/database'
 import { Type } from '@sinclair/typebox'
+import { emailSchema, table } from '@yongstack/database'
 
 export const UserResponseSchema = table.select.user
 

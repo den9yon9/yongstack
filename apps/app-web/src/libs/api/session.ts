@@ -6,7 +6,7 @@ import type { AuthUser } from './types'
 // 轻量会话 store: Header/受保护页面共享登录态。
 // localStorage 仅作展示快照, 服务端会话仍以 HttpOnly cookie 为准;
 // 受保护页 beforeLoad 会强制 refreshSession 校验。
-const SESSION_CACHE_KEY = 'nestup.session.user'
+const SESSION_CACHE_KEY = 'yongstack.session.user'
 
 let current: AuthUser | null | undefined = readCachedSession()
 const listeners = new Set<() => void>()

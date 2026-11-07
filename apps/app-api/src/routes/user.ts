@@ -1,18 +1,24 @@
-import { resolveRequestLocale } from '@nestup/http'
-import { clearSessionCookie, setSessionCookie } from '@nestup/session'
-import { assertNever, ErrorResponse } from '@nestup/shared'
-import { getUserById, loginUser, registerUser, updateProfile, updateUserLocale } from '@nestup/user'
-import * as UserModel from '@nestup/user/model'
+import { resolveRequestLocale } from '@yongstack/http'
+import { clearSessionCookie, setSessionCookie } from '@yongstack/session'
+import { assertNever, ErrorResponse } from '@yongstack/shared'
+import {
+  getUserById,
+  loginUser,
+  registerUser,
+  updateProfile,
+  updateUserLocale,
+} from '@yongstack/user'
+import * as UserModel from '@yongstack/user/model'
 import { Elysia, status } from 'elysia'
 
-import { type StorefrontPlugins } from '../plugins'
+import { type AppPlugins } from '../plugins'
 
-export function createUserRoutes(plugins: StorefrontPlugins) {
+export function createUserRoutes(plugins: AppPlugins) {
   const { dbPlugin, sessionPlugin, authRateLimit, isProduction, sessionCookieName } = plugins
   const { authRateLimitPerMinute, defaultLocale } = plugins
   const requestLocale = (request: Request) => resolveRequestLocale(request, defaultLocale)
 
-  return new Elysia({ name: 'user-storefront', prefix: '/auth' })
+  return new Elysia({ name: 'user-app', prefix: '/auth' })
     .use(plugins.localePlugin)
     .use(dbPlugin)
     .use(sessionPlugin)

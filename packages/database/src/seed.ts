@@ -1,5 +1,5 @@
-import { createLogger, hashPassword, parseEnv } from '@nestup/shared'
 import { Type } from '@sinclair/typebox'
+import { createLogger, hashPassword, parseEnv } from '@yongstack/shared'
 
 import { closeDb, createDb, schema } from './index'
 

@@ -1,4 +1,4 @@
-import { createTranslator, type Locale, resolveLocale } from '@nestup/i18n'
+import { createTranslator, type Locale, resolveLocale } from '@yongstack/i18n'
 import { Elysia } from 'elysia'
 
 export interface LocalePluginOptions {

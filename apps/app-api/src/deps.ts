@@ -1,13 +1,13 @@
-import { createDb, type Db } from '@nestup/database'
-import { type Locale } from '@nestup/i18n'
-import { createRedisClient, type Redis } from '@nestup/redis'
-import { createLogger, type Logger } from '@nestup/shared'
+import { createDb, type Db } from '@yongstack/database'
+import { type Locale } from '@yongstack/i18n'
+import { createRedisClient, type Redis } from '@yongstack/redis'
+import { createLogger, type Logger } from '@yongstack/shared'
 
-import { type StorefrontEnv } from './env'
+import { type AppEnv } from './env'
 
-export const STOREFRONT_SESSION_COOKIE = 'nestup_session'
+export const APP_SESSION_COOKIE = 'yongstack_session'
 
-export interface StorefrontAppOptions {
+export interface AppOptions {
   db: Db
   redis: Redis
   sessionCookieName: string
@@ -20,11 +20,11 @@ export interface StorefrontAppOptions {
   defaultLocale: Locale
 }
 
-export function createStorefrontDeps(env: StorefrontEnv): StorefrontAppOptions {
+export function createAppDeps(env: AppEnv): AppOptions {
   return {
     db: createDb(env.DATABASE_URL),
     redis: createRedisClient(env.REDIS_URL),
-    sessionCookieName: STOREFRONT_SESSION_COOKIE,
+    sessionCookieName: APP_SESSION_COOKIE,
     sessionSecret: env.SESSION_SECRET,
     corsOrigin: env.CORS_ORIGIN,
     trustProxy: env.TRUST_PROXY,

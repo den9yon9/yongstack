@@ -38,15 +38,15 @@ macOS / Linux 直接使用；Windows 建议 WSL2。
 
 | 地址                       | 说明             |
 | -------------------------- | ---------------- |
-| http://localhost:5173      | C 端前端         |
+| http://localhost:5173      | 客户端前端       |
 | http://localhost:5174      | 管理后台         |
-| http://localhost:3000/docs | C 端 API 文档    |
+| http://localhost:3000/docs | 客户端 API 文档  |
 | http://localhost:3001/docs | 后台 API 文档    |
 | http://localhost:3100      | worker 健康/指标 |
 | http://localhost:8333      | 本地对象存储     |
 
 管理员账号由 bootstrap seed（默认 `admin@example.com` / `admin123456`，见 `.env` 的 `ADMIN_EMAIL` / `ADMIN_PASSWORD`）。
-C 端用户可在 `/register` 自行注册。当前尚无房源等业务数据。
+普通用户可在 `/register` 自行注册。当前尚无业务数据。
 
 ## 常用参数
 
@@ -80,15 +80,15 @@ pnpm bootstrap --no-docker
 ```bash
 pnpm test   # 需要 postgres + redis（TESTING_* 配置）
 pnpm e2e    # 需要 postgres + redis + SeaweedFS，且首次需安装 Playwright 浏览器
-pnpm --filter @nestup/e2e exec playwright install chromium
+pnpm --filter @yongstack/e2e exec playwright install chromium
 ```
 
 ## 常见问题
 
-| 现象                      | 处理                                                         |
-| ------------------------- | ------------------------------------------------------------ |
-| 5432/6379/8333 端口被占用 | 停掉已有服务，或 `pnpm bootstrap --no-docker` 复用已有实例   |
-| 存储 bucket 不存在        | `pnpm storage:init`                                          |
-| 数据库表缺失              | `pnpm --filter @nestup/database db:migrate`                  |
-| `.env` 缺少新变量         | 重新执行 `pnpm bootstrap`，会从 `.env.example` 补齐缺失项    |
-| e2e 浏览器未安装          | `pnpm --filter @nestup/e2e exec playwright install chromium` |
+| 现象                      | 处理                                                            |
+| ------------------------- | --------------------------------------------------------------- |
+| 5432/6379/8333 端口被占用 | 停掉已有服务，或 `pnpm bootstrap --no-docker` 复用已有实例      |
+| 存储 bucket 不存在        | `pnpm storage:init`                                             |
+| 数据库表缺失              | `pnpm --filter @yongstack/database db:migrate`                  |
+| `.env` 缺少新变量         | 重新执行 `pnpm bootstrap`，会从 `.env.example` 补齐缺失项       |
+| e2e 浏览器未安装          | `pnpm --filter @yongstack/e2e exec playwright install chromium` |

@@ -30,7 +30,7 @@ function RegisterPage() {
 
   return (
     <form onSubmit={submit} className="mx-auto flex max-w-sm flex-col gap-4 py-6">
-      <h1 className="text-2xl font-semibold tracking-tight">注册 Nestup</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">注册 Yongstack</h1>
       <label className="block">
         <span className="mb-1 block text-sm text-slate-600">昵称</span>
         <input

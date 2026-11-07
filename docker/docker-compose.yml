@@ -1,20 +1,20 @@
 # 显式项目名: Compose 默认取 compose 文件所在目录名(此处为 docker),
 # 与同目录/同名目录下的其他项目会互相覆盖, 这里固定为本项目身份。
-name: nestup
+name: yongstack
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: nestup
-      POSTGRES_PASSWORD: nestup
-      POSTGRES_DB: nestup
+      POSTGRES_USER: yongstack
+      POSTGRES_PASSWORD: yongstack
+      POSTGRES_DB: yongstack
     ports:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U nestup']
+      test: ['CMD-SHELL', 'pg_isready -U yongstack']
       interval: 5s
       timeout: 3s
       retries: 5
@@ -49,11 +49,11 @@ services:
       - |
         set -e
         until aws --endpoint-url http://seaweedfs:8333 s3 ls >/dev/null 2>&1; do sleep 1; done
-        aws --endpoint-url http://seaweedfs:8333 s3 mb s3://nestup 2>/dev/null || true
+        aws --endpoint-url http://seaweedfs:8333 s3 mb s3://yongstack 2>/dev/null || true
         cat >/tmp/policy.json <<'EOF'
-        {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":["s3:GetObject"],"Resource":["arn:aws:s3:::nestup/*"]}]}
+        {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":["s3:GetObject"],"Resource":["arn:aws:s3:::yongstack/*"]}]}
         EOF
-        aws --endpoint-url http://seaweedfs:8333 s3api put-bucket-policy --bucket nestup --policy file:///tmp/policy.json
+        aws --endpoint-url http://seaweedfs:8333 s3api put-bucket-policy --bucket yongstack --policy file:///tmp/policy.json
     environment:
       AWS_ACCESS_KEY_ID: admin
       AWS_SECRET_ACCESS_KEY: secret
@@ -75,12 +75,12 @@ services:
         condition: service_healthy
     restart: 'no'
 
-  storefront-api:
+  app-api:
     build:
       context: ..
       dockerfile: Dockerfile
       args:
-        APP: storefront-api
+        APP: app-api
     env_file: ../.env
     ports:
       - '3000:3000'
@@ -143,18 +143,18 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
-  storefront-web:
+  app-web:
     build:
       context: ..
       dockerfile: Dockerfile.web
       args:
-        APP: storefront-web
+        APP: app-web
     environment:
-      API_UPSTREAM: http://storefront-api:3000
+      API_UPSTREAM: http://app-api:3000
     ports:
       - '8080:80'
     depends_on:
-      storefront-api:
+      app-api:
         condition: service_started
     healthcheck:
       test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://localhost/']

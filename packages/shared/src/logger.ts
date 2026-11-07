@@ -9,7 +9,7 @@ const ALLOWED = new Set<LogLevel>(['debug', 'info', 'warn', 'error', 'silent'])
 export function createLogger(level: LogLevel): Logger {
   return pino({
     level: ALLOWED.has(level) ? (level as Level) : 'info',
-    base: { service: 'nestup' },
+    base: { service: 'yongstack' },
     redact: {
       paths: [
         'req.headers.authorization',

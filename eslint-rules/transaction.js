@@ -14,7 +14,7 @@ const rule = {
     },
     messages: {
       rawTransaction:
-        'Raw `.transaction()` is forbidden in domains/usecases: returning err() inside the callback would COMMIT instead of roll back. Use `withTransaction(client, fn)` from @nestup/database.',
+        'Raw `.transaction()` is forbidden in domains/usecases: returning err() inside the callback would COMMIT instead of roll back. Use `withTransaction(client, fn)` from @yongstack/database.',
     },
   },
   create(context) {
