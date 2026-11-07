@@ -145,7 +145,9 @@ createEnv() → createDeps(env) → buildApp(options) → createPlugins(options)
 - handler 只消费纯数据 `(data, logger)`，放在领域内
 - BullMQ 适配（createWorker/createDispatcher/Redis 连接）在 apps/worker；
   消费者在 `registry.ts` 注册；生产方在 app 侧 `createQueue`
-- 事件投递语义为 at-least-once：下游需幂等
+- 跨域副作用优先写 outbox 事件（与业务写入同事务），由 worker 异步投递；
+  事件 → 通知渠道的映射放 `usecases/notifications`，模板与发送放 `apps/worker`
+- 事件投递语义为 at-least-once：下游需幂等（邮件用确定性 jobId 去重）
 
 ### 6. 数据库变更
 

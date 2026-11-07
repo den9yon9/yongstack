@@ -1,13 +1,8 @@
+import { registerAccount } from '@yongstack/account'
 import { resolveRequestLocale } from '@yongstack/http'
 import { clearSessionCookie, setSessionCookie } from '@yongstack/session'
 import { assertNever, ErrorResponse } from '@yongstack/shared'
-import {
-  getUserById,
-  loginUser,
-  registerUser,
-  updateProfile,
-  updateUserLocale,
-} from '@yongstack/user'
+import { getUserById, loginUser, updateProfile, updateUserLocale } from '@yongstack/user'
 import * as UserModel from '@yongstack/user/model'
 import { Elysia, status } from 'elysia'
 
@@ -27,7 +22,7 @@ export function createUserRoutes(plugins: AppPlugins) {
       '/register',
       async ({ body, cookie, db, sessionStore, request, i18n }) => {
         const locale = requestLocale(request)
-        const result = await registerUser(body, db, { locale })
+        const result = await registerAccount(body, db, { locale })
         if (result.isErr()) {
           switch (result.error) {
             case 'EMAIL_ALREADY_REGISTERED':

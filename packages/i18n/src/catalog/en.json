@@ -3,8 +3,10 @@
   "Account is not an administrator": "Account is not an administrator",
   "Email already registered": "Email already registered",
   "Forbidden": "Forbidden",
+  "Hi {name}, your account is ready. Sign in at {url}": "Hi {name}, your account is ready. Sign in at {url}",
   "Invalid email or password": "Invalid email or password",
   "Too many requests": "Too many requests",
   "Unauthorized": "Unauthorized",
-  "User not found": "User not found"
+  "User not found": "User not found",
+  "Welcome to Yongstack": "Welcome to Yongstack"
 }

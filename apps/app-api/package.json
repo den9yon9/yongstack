@@ -17,6 +17,7 @@
   "dependencies": {
     "@elysiajs/cors": "^1.4.2",
     "@elysiajs/openapi": "^1.4.0",
+    "@yongstack/account": "workspace:*",
     "@yongstack/database": "workspace:*",
     "@yongstack/http": "workspace:*",
     "@yongstack/i18n": "workspace:*",

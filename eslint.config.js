@@ -41,8 +41,8 @@ export default [
         { type: 'shared', pattern: 'packages/eden-client' },
         { type: 'persistence', pattern: 'packages/database' },
         // ponytail: 领域层只允许依赖 persistence/shared(纯逻辑), 一切基础设施接线归 presentation;
-        // queue/http/session/redis 均属 infrastructure, 域内禁用
-        { type: 'infrastructure', pattern: 'packages/(session|queue|redis|http|storage)' },
+        // queue/http/session/redis/mailer 均属 infrastructure, 域内禁用
+        { type: 'infrastructure', pattern: 'packages/(session|queue|redis|http|storage|mailer)' },
         // 目录即分层: domains/* = entity 域, usecases/* = 编排层; 新增/改名无需改动此处
         { type: 'domain', pattern: 'domains/*' },
         { type: 'usecase', pattern: 'usecases/*' },

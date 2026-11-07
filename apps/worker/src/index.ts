@@ -12,9 +12,6 @@ logger.info('Worker application starting...')
 const registration = registerWorkers(env, logger)
 const { workers, close, queues } = registration
 
-// 暂无队列时保持进程常驻; 后续注册 worker 后可移除。
-const keepAlive = setInterval(() => {}, 60_000)
-
 // 可选健康端点: 容器健康检查与 e2e 就绪探测(未设 HEALTH_PORT 则不起);
 // 同端口附带 /metrics(Prometheus 文本), BullMQ 队列 job counts 每次抓取时刷新。
 if (env.HEALTH_PORT) {
@@ -57,7 +54,6 @@ if (env.HEALTH_PORT) {
 
 async function shutdown(signal: string) {
   logger.info({ signal }, 'Shutting down worker...')
-  clearInterval(keepAlive)
   const results = await Promise.allSettled(workers.map((worker) => worker.close()))
   await close()
   const failed = results.filter((result) => result.status === 'rejected')

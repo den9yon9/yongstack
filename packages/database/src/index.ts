@@ -12,6 +12,11 @@ import * as schema from './schema'
 
 export { schema }
 export { emailSchema, table } from './model'
+export {
+  OUTBOX_EVENT_STATUS,
+  type OutboxEventStatus,
+  outboxEventStatus,
+} from './schema/outbox/outbox-events'
 export { USER_ROLE, type UserRole } from './schema/user/users'
 export { withTransaction } from './transaction'
 

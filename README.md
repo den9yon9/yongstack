@@ -16,7 +16,8 @@
 | API      | ElysiaJS + TypeBox，`/info`、`/health`、`/metrics`、`/docs`            |
 | 前端     | React 19 + TanStack Router + Tailwind 4，Eden treaty 类型安全调用      |
 | 用户认证 | `domains/user`；注册/登录/登出/me/资料；Argon2id；Redis 会话 + 限流    |
-| 队列     | BullMQ 封装与 worker 运行时，消费者注册位待通用模块接入                |
+| 队列     | BullMQ 封装与 worker 运行时，消费者与健康/指标端点                     |
+| 通知     | outbox → notifications usecase → console/SMTP 邮件；注册欢迎邮件       |
 | 数据     | Drizzle ORM + postgres.js，迁移、事务 helper、测试库工具               |
 | 存储     | S3 兼容对象存储（本地 SeaweedFS / R2 / COS）                           |
 | 可观测性 | Prometheus 指标端点 + Grafana 大屏 + 本地监控脚本                      |
@@ -30,7 +31,7 @@
 apps/       presentation   薄壳: app-api/web · admin-api/web · worker · e2e
 usecases/   编排层         跨域用例(业务落地后新增)
 domains/    实体域         纯业务逻辑(业务落地后新增)
-packages/   基础设施       database · http · queue · redis · session · storage · shared · i18n · eden-client · tsconfig
+packages/   基础设施       database · http · queue · redis · session · storage · mailer · shared · i18n · eden-client · tsconfig
 ```
 
 - 每个域固定三文件：`model.ts`（TypeBox DTO）/ `service.ts`（纯业务，neverthrow Result）/ `index.ts`（公共出口）
@@ -108,6 +109,7 @@ packages/
   eden-client/     Eden 类型工具
   http/            插件、指标、安全头、服务启动
   i18n/            语言协商与翻译 catalog
+  mailer/          邮件 provider（console / SMTP）
   queue/           BullMQ 封装
   redis/           Redis 客户端
   session/         Redis 会话 + 限流
@@ -116,15 +118,18 @@ packages/
   tsconfig/        共享 TypeScript 配置
 
 domains/
+  outbox/          通用领域事件
   user/            用户注册/登录/资料
-usecases/          跨域编排（待接入）
+usecases/
+  account/         注册编排（用户 + outbox）
+  notifications/   事件 → 通知任务
 ```
 
 ## 路线图
 
 模板核心按里程碑逐步补齐：
 
-1. 通知与事件：outbox、mailer（console/SMTP）、worker 消费
+1. ~~通知与事件：outbox、mailer（console/SMTP）、worker 消费~~
 2. 运行时设置与功能开关
 3. RBAC、邮箱验证、找回密码、会话管理、管理端用户管理
 4. 媒体上传与文件元数据

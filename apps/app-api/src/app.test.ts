@@ -103,6 +103,10 @@ describe('auth', () => {
     if (me.error !== null) throw me.error
     expect(me.data.email).toBe('alice@example.com')
     expect('passwordHash' in me.data).toBe(false)
+
+    const [event] = await db.select().from(schema.outboxEvents)
+    expect(event).toMatchObject({ type: 'user.registered', status: 'pending' })
+    expect(event.payload).toMatchObject({ email: 'alice@example.com', name: 'Alice' })
   })
 
   test('register persists the request locale', async () => {
@@ -128,6 +132,9 @@ describe('auth', () => {
     expect(duplicate.status).toBe(409)
     if (duplicate.error === null) throw new Error('expected conflict')
     expect(duplicate.error.value).toMatchObject({ error: 'EMAIL_ALREADY_REGISTERED' })
+
+    const events = await db.select().from(schema.outboxEvents)
+    expect(events).toHaveLength(1)
   })
 
   test('login sets a signed cookie, tampering is rejected', async () => {

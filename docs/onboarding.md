@@ -48,6 +48,8 @@ macOS / Linux 直接使用；Windows 建议 WSL2。
 管理员账号由 bootstrap seed（默认 `admin@example.com` / `admin123456`，见 `.env` 的 `ADMIN_EMAIL` / `ADMIN_PASSWORD`）。
 普通用户可在 `/register` 自行注册。当前尚无业务数据。
 
+邮件默认走 `MAIL_TRANSPORT=console`（worker 日志）；生产可改为 `smtp` 并配置 `SMTP_*`、`MAIL_FROM`。
+
 ## 常用参数
 
 ```bash
