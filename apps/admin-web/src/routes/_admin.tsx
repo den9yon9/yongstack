@@ -23,8 +23,11 @@ export const Route = createFileRoute('/_admin')({
   component: AdminLayout,
 })
 
-const navItems = ['控制台']
-const pendingModules = ['用户管理', '角色权限', '文件管理', '审计日志', '系统设置']
+const navItems = [
+  { label: '控制台', to: '/', exact: true },
+  { label: '设置', to: '/settings', exact: false },
+] as const
+const pendingModules = ['用户管理', '角色权限', '文件管理', '审计日志']
 
 function AdminLayout() {
   const navigate = useNavigate()
@@ -45,13 +48,15 @@ function AdminLayout() {
           <span className="text-lg font-semibold tracking-tight">Yongstack Admin</span>
         </Link>
         <nav className="mt-8 space-y-1 text-sm">
-          {navItems.map((label) => (
+          {navItems.map((item) => (
             <Link
-              key={label}
-              to="/"
-              className="block rounded-lg bg-brand-50 px-3 py-2 font-medium text-brand-700"
+              key={item.to}
+              to={item.to}
+              activeOptions={{ exact: item.exact }}
+              className="block rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-50"
+              activeProps={{ className: 'bg-brand-50 font-medium text-brand-700' }}
             >
-              {label}
+              {item.label}
             </Link>
           ))}
           {pendingModules.map((label) => (

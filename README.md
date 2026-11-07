@@ -18,6 +18,7 @@
 | 用户认证 | `domains/user`；注册/登录/登出/me/资料；Argon2id；Redis 会话 + 限流    |
 | 队列     | BullMQ 封装与 worker 运行时，消费者与健康/指标端点                     |
 | 通知     | outbox → notifications usecase → console/SMTP 邮件；注册欢迎邮件       |
+| 设置     | 运行时设置与 `feature.*` 功能开关，管理端可视化编辑                    |
 | 数据     | Drizzle ORM + postgres.js，迁移、事务 helper、测试库工具               |
 | 存储     | S3 兼容对象存储（本地 SeaweedFS / R2 / COS）                           |
 | 可观测性 | Prometheus 指标端点 + Grafana 大屏 + 本地监控脚本                      |
@@ -119,6 +120,7 @@ packages/
 
 domains/
   outbox/          通用领域事件
+  settings/        运行时设置与功能开关
   user/            用户注册/登录/资料
 usecases/
   account/         注册编排（用户 + outbox）
@@ -130,7 +132,7 @@ usecases/
 模板核心按里程碑逐步补齐：
 
 1. ~~通知与事件：outbox、mailer（console/SMTP）、worker 消费~~
-2. 运行时设置与功能开关
+2. ~~运行时设置与功能开关~~
 3. RBAC、邮箱验证、找回密码、会话管理、管理端用户管理
 4. 媒体上传与文件元数据
 5. 审计日志与核心数据原语

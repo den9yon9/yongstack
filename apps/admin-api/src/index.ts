@@ -17,6 +17,7 @@ import { type AdminAppOptions, createAdminDeps } from './deps'
 import { createEnv } from './env'
 import { createPlugins } from './plugins'
 import { createAuthRoutes } from './routes/auth'
+import { createSettingsRoutes } from './routes/settings'
 
 const InfoResponse = Type.Object({
   service: Type.String(),
@@ -51,6 +52,7 @@ export function buildApp(options: AdminAppOptions) {
         : new Elysia(),
     )
     .use(createAuthRoutes(plugins))
+    .use(createSettingsRoutes(plugins))
     .get(
       '/info',
       () => ({

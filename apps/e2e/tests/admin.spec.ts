@@ -42,3 +42,18 @@ test('admin-api 健康检查', async ({ request }) => {
   expect(res.status()).toBe(200)
   expect(await res.json()).toMatchObject({ status: 'ok', db: true, redis: true })
 })
+
+test('管理员可以查看并保存运行时设置', async ({ page }) => {
+  await page.goto('/login')
+  await page.getByLabel('邮箱').fill('admin@example.com')
+  await page.getByLabel('密码').fill('admin123456')
+  await page.getByRole('button', { name: '登录' }).click()
+
+  await page.getByRole('link', { name: '设置' }).click()
+  await expect(page).toHaveURL(/\/settings$/)
+  await expect(page.getByRole('heading', { name: '运行时设置' })).toBeVisible()
+  await expect(page.getByText('app.name')).toBeVisible()
+
+  await page.getByRole('button', { name: '保存' }).click()
+  await expect(page.getByText('保存成功')).toBeVisible()
+})

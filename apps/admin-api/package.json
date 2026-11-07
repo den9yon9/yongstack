@@ -22,6 +22,7 @@
     "@yongstack/i18n": "workspace:*",
     "@yongstack/redis": "workspace:*",
     "@yongstack/session": "workspace:*",
+    "@yongstack/settings": "workspace:*",
     "@yongstack/shared": "workspace:*",
     "@yongstack/storage": "workspace:*",
     "@yongstack/user": "workspace:*",

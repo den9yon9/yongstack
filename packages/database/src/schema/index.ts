@@ -9,5 +9,7 @@ export {
   type OutboxEventStatus,
   outboxEventStatus,
 } from './outbox/outbox-events'
+// settings 域(运行时配置与功能开关)
+export { settings } from './settings/settings'
 // user 域(身份底座; 登录/注册等业务能力后续在 domains/user 实现)
 export { userRole, users } from './user/users'

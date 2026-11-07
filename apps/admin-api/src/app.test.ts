@@ -145,3 +145,54 @@ describe('admin auth', () => {
     expect(secondLogin.status).toBe(403)
   })
 })
+
+async function loginAdmin(email = 'admin@example.com'): Promise<string> {
+  await seedUser(email, 'admin')
+  const res = await api.auth.login.post({ email, password: 'password123' })
+  return sessionCookie(res)
+}
+
+describe('admin settings', () => {
+  test('requires admin authentication', async () => {
+    const res = await api.admin.settings.get()
+    expect(res.status).toBe(401)
+  })
+
+  test('lists defaults and updates values', async () => {
+    const cookie = await loginAdmin()
+
+    const list = await api.admin.settings.get({ fetch: { headers: { cookie } } })
+    expect(list.status).toBe(200)
+    if (list.error !== null) throw list.error
+    expect(list.data.items.find((item) => item.key === 'app.name')?.value).toBe('Yongstack')
+
+    const updated = await api.admin.settings.put(
+      { values: { 'app.name': 'Acme', 'upload.maxBytes': 10485760 } },
+      { fetch: { headers: { cookie } } },
+    )
+    expect(updated.status).toBe(200)
+    if (updated.error !== null) throw updated.error
+    expect(updated.data.items.find((item) => item.key === 'app.name')?.value).toBe('Acme')
+    expect(updated.data.items.find((item) => item.key === 'upload.maxBytes')?.value).toBe(10485760)
+  })
+
+  test('rejects invalid values with 400 and unknown keys with 404', async () => {
+    const cookie = await loginAdmin()
+
+    const invalid = await api.admin.settings.put(
+      { values: { 'upload.maxBytes': -1 } },
+      { fetch: { headers: { cookie } } },
+    )
+    expect(invalid.status).toBe(400)
+    if (invalid.error === null) throw new Error('expected invalid setting error')
+    expect(invalid.error.value).toMatchObject({ error: 'SETTING_INVALID' })
+
+    const unknown = await api.admin.settings.put(
+      { values: { 'unknown.key': true } },
+      { fetch: { headers: { cookie } } },
+    )
+    expect(unknown.status).toBe(404)
+    if (unknown.error === null) throw new Error('expected unknown setting error')
+    expect(unknown.error.value).toMatchObject({ error: 'SETTING_UNKNOWN' })
+  })
+})

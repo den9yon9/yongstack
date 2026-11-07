@@ -15,6 +15,13 @@
       "when": 1794048303715,
       "tag": "0001_brown_natasha_romanoff",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794052511042,
+      "tag": "0002_curved_red_wolf",
+      "breakpoints": true
     }
   ]
 }
