@@ -10,6 +10,8 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:5173',
+    // 前后端用户可见文案为中文; 浏览器语言会随 Accept-Language 传给 API
+    locale: 'zh-CN',
   },
   projects: [
     {

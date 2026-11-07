@@ -29,9 +29,10 @@ macOS / Linux 直接使用；Windows 建议 WSL2。
 4. 启动 `postgres`、`redis`、`seaweedfs`（或使用已有服务）。
 5. 执行 `pnpm storage:init` 创建媒体 bucket。
 6. 执行 `db:migrate`。
-7. 打印访问地址。
+7. 执行 `db:seed`，按 `ADMIN_EMAIL` / `ADMIN_PASSWORD` 创建或更新管理员。
+8. 打印访问地址。
 
-重复执行是安全的：不会覆盖已有有效配置，只补缺失项；bucket 初始化与迁移都是幂等的。
+重复执行是安全的：不会覆盖已有有效配置，只补缺失项；bucket 初始化、迁移与管理员 seed 都是幂等的（seed 会按 `.env` 同步管理员密码）。
 
 ## 启动后访问
 
@@ -44,7 +45,8 @@ macOS / Linux 直接使用；Windows 建议 WSL2。
 | http://localhost:3100      | worker 健康/指标 |
 | http://localhost:8333      | 本地对象存储     |
 
-当前为工程底座，尚无登录账号与业务数据；业务域落地后再补充初始化数据。
+管理员账号由 bootstrap seed（默认 `admin@example.com` / `admin123456`，见 `.env` 的 `ADMIN_EMAIL` / `ADMIN_PASSWORD`）。
+C 端用户可在 `/register` 自行注册。当前尚无房源等业务数据。
 
 ## 常用参数
 

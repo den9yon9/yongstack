@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
-import { api } from '../libs/api/client'
+import { api } from '../../libs/api/client'
 
 interface ServiceInfo {
   service: string
@@ -9,7 +9,7 @@ interface ServiceInfo {
   runtime: string
 }
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute('/_admin/')({
   component: DashboardPage,
 })
 
@@ -21,6 +21,7 @@ const modules = [
 ]
 
 function DashboardPage() {
+  const { adminUser } = Route.useRouteContext()
   const [info, setInfo] = useState<ServiceInfo | null>(null)
   const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading')
 
@@ -50,7 +51,7 @@ function DashboardPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">Admin API</h2>
+            <h2 className="text-lg font-semibold">欢迎，{adminUser.name ?? adminUser.email}</h2>
             <p className="mt-1 text-sm text-slate-500">
               管理端后端已就绪，业务路由将在后续提交接入。
             </p>

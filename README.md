@@ -1,6 +1,6 @@
 # nestup
 
-租房平台全栈项目。当前提交为**工程底座**：monorepo、API、前端、worker、数据库、队列、对象存储与可观测性已接线，租房业务域按 `domains/` + `usecases/` 分层后续接入。
+租房平台全栈项目。当前已完成**工程底座 + 用户认证**：monorepo、API、前端、worker、数据库、队列、对象存储与可观测性已接线；用户注册/登录/会话/资料与管理端登录已可用，租房业务域按 `domains/` + `usecases/` 分层后续接入。
 
 ## 当前能力
 
@@ -9,7 +9,7 @@
 | Monorepo | pnpm workspace + Turborepo，Bun 运行时，统一 lint / format / typecheck |
 | API      | ElysiaJS + TypeBox，`/info`、`/health`、`/metrics`、`/docs`            |
 | 前端     | React 19 + TanStack Router + Tailwind 4，Eden treaty 类型安全调用      |
-| 身份底座 | `users` 表 + 角色枚举；Redis 会话与路由级限流基础设施                  |
+| 用户认证 | `domains/user`；注册/登录/登出/me/资料；Argon2id；Redis 会话 + 限流    |
 | 队列     | BullMQ 封装与 worker 运行时，消费者注册位待业务接入                    |
 | 数据     | Drizzle ORM + postgres.js，迁移、事务 helper、测试库工具               |
 | 存储     | S3 兼容对象存储（本地 SeaweedFS / R2 / COS）                           |
@@ -53,6 +53,21 @@ pnpm dev         # 日常启动全部服务
 | worker 健康/指标         | http://localhost:3100          |
 | SeaweedFS S3（本地媒体） | http://localhost:8333          |
 
+本地管理员（bootstrap 自动 seed，可在 `.env` 修改）：
+
+```text
+admin@example.com / admin123456
+```
+
+认证接口：
+
+| 应用           | 接口                                                                                    |
+| -------------- | --------------------------------------------------------------------------------------- |
+| storefront-api | `POST /auth/register` · `POST /auth/login` · `POST /auth/logout` · `GET/PATCH /auth/me` |
+| admin-api      | `POST /auth/login` · `POST /auth/logout` · `GET /auth/me`（仅 admin）                   |
+
+会话 cookie 按应用隔离：storefront 为 `nestup_session`，admin 为 `nestup_admin_session`。
+
 常用命令：
 
 ```bash
@@ -92,15 +107,16 @@ packages/
   shared/           Result、日志、env、分页
   storage/          S3 兼容对象存储
   tsconfig/         共享 TypeScript 配置
-domains/            业务域（待接入）
+domains/
+  user/             用户注册/登录/资料
 usecases/           跨域编排（待接入）
 ```
 
 ## 下一步
 
 1. 确定租房核心模型（房源、租约、账单等）。
-2. 在 `domains/*` 落地实体域，在 `usecases/*` 编排跨域流程。
-3. 按需在其上补充 API 路由、前端页面、worker 消费者与迁移。
+2. 在 `domains/*` 落地房源/租约实体域，在 `usecases/*` 编排跨域流程。
+3. 补充密码找回、管理端用户管理、活跃会话管理（依赖邮件/队列基础设施）。
 4. 阅读 [CONTRIBUTE.md](CONTRIBUTE.md) 的分层与开发模式。
 
 ## 文档索引
