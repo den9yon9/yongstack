@@ -10,6 +10,7 @@
   "dependencies": {
     "@elysiajs/eden": "^1.4.9",
     "@yongstack/eden-client": "workspace:^",
+    "@yongstack/ui": "workspace:*",
     "@tanstack/react-router": "^1.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

@@ -39,7 +39,8 @@ export default [
         { type: 'shared', pattern: 'packages/shared' },
         { type: 'shared', pattern: 'packages/i18n' },
         { type: 'shared', pattern: 'packages/eden-client' },
-        { type: 'persistence', pattern: 'packages/database' },
+        { type: 'shared', pattern: 'packages/ui' },
+        { type: 'persistence', pattern: 'packages/(database|testkit)' },
         // ponytail: 领域层只允许依赖 persistence/shared(纯逻辑), 一切基础设施接线归 presentation;
         // queue/http/session/redis/mailer 均属 infrastructure, 域内禁用
         { type: 'infrastructure', pattern: 'packages/(session|queue|redis|http|storage|mailer)' },

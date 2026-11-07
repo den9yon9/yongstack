@@ -16,6 +16,7 @@
     "bootstrap:reset": "bun scripts/dev-bootstrap.ts --reset",
     "bootstrap:check": "bun scripts/dev-bootstrap.ts --check-only",
     "db:seed": "bun --env-file=.env scripts/seed.ts",
+    "gen": "bun scripts/gen-domain.ts",
     "storage:init": "bun scripts/storage-init.ts",
     "i18n:extract": "bun scripts/i18n-extract.ts",
     "i18n:check": "bun scripts/i18n-extract.ts --check",

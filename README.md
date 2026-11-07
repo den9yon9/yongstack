@@ -119,7 +119,9 @@ packages/
   session/         Redis 会话 + 限流
   shared/          Result、日志、env、分页
   storage/         S3 兼容对象存储
+  testkit/         测试数据工厂
   tsconfig/        共享 TypeScript 配置
+  ui/              通用后台组件
 
 domains/
   audit/           操作审计日志
@@ -144,13 +146,14 @@ usecases/
 3. ~~RBAC、邮箱验证、找回密码、会话管理、管理端用户管理~~
 4. ~~媒体上传与文件元数据~~
 5. ~~审计日志与核心数据原语~~
-6. 领域生成器、通用后台组件、测试工厂
+6. ~~领域生成器、通用后台组件、测试工厂~~
 
 ## 文档索引
 
 | 文档                                             | 内容                            |
 | ------------------------------------------------ | ------------------------------- |
 | [CONTRIBUTE.md](CONTRIBUTE.md)                   | 分层规范、开发模式、新增域/用例 |
+| [docs/template.md](docs/template.md)             | 模板使用与扩展指南              |
 | [docs/onboarding.md](docs/onboarding.md)         | 新手上手与本地环境              |
 | [docs/i18n.md](docs/i18n.md)                     | 后端用户文案 i18n               |
 | [docs/object-storage.md](docs/object-storage.md) | 对象存储：R2 / COS / SeaweedFS  |

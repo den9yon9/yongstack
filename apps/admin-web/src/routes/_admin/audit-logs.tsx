@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
 
+import { EmptyState, PageHeader } from '@yongstack/ui'
+
 import { api } from '../../libs/api/client'
 import type { AdminAuditLog } from '../../libs/api/types'
 
@@ -49,25 +51,23 @@ function AuditLogsPage() {
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold">审计日志</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              关键管理操作留痕：动作、对象、操作人与请求上下文。
-            </p>
-          </div>
-          <form onSubmit={submitSearch} className="flex gap-2">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="搜索动作 / 目标 / 关键词"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-            />
-            <button className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">
-              搜索
-            </button>
-          </form>
-        </div>
+        <PageHeader
+          title="审计日志"
+          description="关键管理操作留痕：动作、对象、操作人与请求上下文。"
+          actions={
+            <form onSubmit={submitSearch} className="flex gap-2">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="搜索动作 / 目标 / 关键词"
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+              />
+              <button className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">
+                搜索
+              </button>
+            </form>
+          }
+        />
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
       </section>
 
@@ -91,8 +91,8 @@ function AuditLogsPage() {
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
-                  暂无审计日志
+                <td colSpan={5}>
+                  <EmptyState title="暂无审计日志" description="管理操作发生后会出现在这里。" />
                 </td>
               </tr>
             ) : (
