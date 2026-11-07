@@ -7,3 +7,5 @@ export type SettingItem = EdenData<typeof api.admin.settings.get>['items'][numbe
 
 export type AdminUserListItem = EdenListItem<typeof api.admin.users.get>
 export type AdminRole = EdenListItem<typeof api.admin.roles.get>
+
+export type AdminFile = EdenListItem<typeof api.admin.files.get>

@@ -6,6 +6,7 @@ import { createRedisClient, type Redis } from '@yongstack/redis'
 import { flushTestRedis } from '@yongstack/redis/testing'
 import { createLogger } from '@yongstack/shared'
 import { getTestEnv } from '@yongstack/shared/testing'
+import { createInMemoryStorage, type InMemoryStorage } from '@yongstack/storage/testing'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { desc, eq } from 'drizzle-orm'
 
@@ -18,12 +19,14 @@ let app: App
 let api: ReturnType<typeof treaty<typeof app>>
 let db: Db
 let redis: Redis
+let storage: InMemoryStorage
 
 beforeAll(async () => {
   db = await prepareTestDb()
   await ensureRbacDefaults(db)
   redis = createRedisClient(env.TESTING_REDIS_URL)
   await redis.connect()
+  storage = createInMemoryStorage()
   app = buildApp(createTestDeps({ db, redis }))
   api = treaty<typeof app>(app)
 })
@@ -36,11 +39,13 @@ beforeEach(async () => {
   await resetDb(db)
   await ensureRbacDefaults(db)
   await flushTestRedis()
+  storage.objects.clear()
 })
 
 function createTestDeps(deps: { db: Db; redis: Redis }): AppOptions {
   return {
     ...deps,
+    storage,
     sessionCookieName: APP_SESSION_COOKIE,
     sessionSecret: env.TESTING_SESSION_SECRET,
     corsOrigin: true,
@@ -387,5 +392,119 @@ describe('account lifecycle', () => {
 
     const unknown = await api.auth['forgot-password'].post({ email: 'ghost@example.com' })
     expect(unknown.status).toBe(202)
+  })
+})
+
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+)
+
+async function uploadFile(cookie: string, buffer = TINY_PNG, name = 'a.png') {
+  const form = new FormData()
+  form.set('file', new File([buffer], name, { type: 'image/png' }))
+  form.set('purpose', 'avatar')
+  return app.handle(
+    new Request('http://localhost/files', {
+      method: 'POST',
+      headers: { cookie },
+      body: form,
+    }),
+  )
+}
+
+describe('files', () => {
+  test('uploads, reads and deletes an owned file', async () => {
+    const registered = await api.auth.register.post({
+      name: 'Alice',
+      email: 'upload@example.com',
+      password: 'password123',
+    })
+    const cookie = sessionCookie(registered)
+
+    const uploaded = await uploadFile(cookie)
+    expect(uploaded.status).toBe(201)
+    const file = (await uploaded.json()) as {
+      id: string
+      key: string
+      width: number
+      height: number
+    }
+    expect(file).toMatchObject({ mime: 'image/png', width: 1, height: 1, purpose: 'avatar' })
+    expect(storage.objects.has(file.key)).toBe(true)
+
+    const read = await app.handle(
+      new Request(`http://localhost/files/${file.id}`, { headers: { cookie } }),
+    )
+    expect(read.status).toBe(200)
+
+    const deleted = await app.handle(
+      new Request(`http://localhost/files/${file.id}`, { method: 'DELETE', headers: { cookie } }),
+    )
+    expect(deleted.status).toBe(204)
+    expect(storage.objects.has(file.key)).toBe(false)
+
+    const afterDelete = await app.handle(
+      new Request(`http://localhost/files/${file.id}`, { headers: { cookie } }),
+    )
+    expect(afterDelete.status).toBe(404)
+  })
+
+  test('rejects spoofed, disallowed and oversized files', async () => {
+    const registered = await api.auth.register.post({
+      name: 'Alice',
+      email: 'upload-guard@example.com',
+      password: 'password123',
+    })
+    const cookie = sessionCookie(registered)
+
+    const spoofed = await uploadFile(cookie, Buffer.from('not an image'))
+    expect(spoofed.status).toBe(400)
+
+    await db
+      .insert(schema.settings)
+      .values({ key: 'upload.allowedTypes', value: ['image/jpeg'] })
+      .onConflictDoUpdate({
+        target: schema.settings.key,
+        set: { value: ['image/jpeg'] },
+      })
+    const disallowed = await uploadFile(cookie)
+    expect(disallowed.status).toBe(400)
+
+    await db
+      .insert(schema.settings)
+      .values({ key: 'upload.maxBytes', value: 10 })
+      .onConflictDoUpdate({ target: schema.settings.key, set: { value: 10 } })
+    const oversized = await uploadFile(cookie)
+    expect(oversized.status).toBe(413)
+  })
+
+  test('hides files from other users', async () => {
+    const owner = await api.auth.register.post({
+      name: 'Owner',
+      email: 'owner@example.com',
+      password: 'password123',
+    })
+    const other = await api.auth.register.post({
+      name: 'Other',
+      email: 'other@example.com',
+      password: 'password123',
+    })
+    const uploaded = await uploadFile(sessionCookie(owner))
+    const file = (await uploaded.json()) as { id: string }
+
+    const denied = await app.handle(
+      new Request(`http://localhost/files/${file.id}`, {
+        headers: { cookie: sessionCookie(other) },
+      }),
+    )
+    expect(denied.status).toBe(404)
+    const deleteDenied = await app.handle(
+      new Request(`http://localhost/files/${file.id}`, {
+        method: 'DELETE',
+        headers: { cookie: sessionCookie(other) },
+      }),
+    )
+    expect(deleteDenied.status).toBe(404)
   })
 })

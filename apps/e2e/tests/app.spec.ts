@@ -94,3 +94,38 @@ test('无效验证与重置链接显示错误', async ({ page }) => {
   await page.getByRole('button', { name: '重置密码' }).click()
   await expect(page.getByText('令牌无效')).toBeVisible()
 })
+
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+)
+
+test('文件上传 → 读取 → 删除', async ({ request }) => {
+  const email = `file-${Date.now()}@example.com`
+  const registered = await request.post(`${apiBase}/auth/register`, {
+    data: { name: 'File User', email, password: 'password123' },
+  })
+  expect(registered.status()).toBe(201)
+  const cookie = (registered.headers()['set-cookie'] ?? '').split(';')[0]
+
+  const uploaded = await request.post(`${apiBase}/files`, {
+    headers: { cookie },
+    multipart: {
+      file: { name: 'a.png', mimeType: 'image/png', buffer: TINY_PNG },
+      purpose: 'avatar',
+    },
+  })
+  expect(uploaded.status()).toBe(201)
+  const file = (await uploaded.json()) as { id: string; mime: string; width: number }
+  expect(file.mime).toBe('image/png')
+  expect(file.width).toBe(1)
+
+  const read = await request.get(`${apiBase}/files/${file.id}`, { headers: { cookie } })
+  expect(read.status()).toBe(200)
+
+  const deleted = await request.delete(`${apiBase}/files/${file.id}`, { headers: { cookie } })
+  expect(deleted.status()).toBe(204)
+
+  const after = await request.get(`${apiBase}/files/${file.id}`, { headers: { cookie } })
+  expect(after.status()).toBe(404)
+})

@@ -16,6 +16,7 @@ import { Elysia } from 'elysia'
 import { type AppOptions, createAppDeps } from './deps'
 import { createEnv } from './env'
 import { createPlugins } from './plugins'
+import { createFileRoutes } from './routes/file'
 import { createUserRoutes } from './routes/user'
 
 const InfoResponse = Type.Object({
@@ -55,6 +56,7 @@ export function buildApp(options: AppOptions) {
         : new Elysia(),
     )
     .use(createUserRoutes(plugins))
+    .use(createFileRoutes(plugins))
     .get(
       '/info',
       () => ({

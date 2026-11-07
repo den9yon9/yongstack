@@ -1,5 +1,6 @@
 import { type StaticDecode, Type } from '@sinclair/typebox'
 import { parseEnv } from '@yongstack/shared'
+import { storageEnvSchema } from '@yongstack/storage'
 
 const corsOrigin = Type.Transform(Type.String({ default: '*' }))
   .Decode((raw: string) => {
@@ -46,6 +47,7 @@ export const appEnvSchema = Type.Object({
   DEFAULT_LOCALE: Type.Union([Type.Literal('en'), Type.Literal('zh-CN')], { default: 'en' }),
   // 认证接口限流(次/分钟): 注册/登录共用。后续接入 domains/user 时生效
   AUTH_RATE_LIMIT_PER_MINUTE: Type.String({ pattern: '^\\d+$', default: '20' }),
+  ...storageEnvSchema.properties,
 })
 
 export type AppEnv = StaticDecode<typeof appEnvSchema>

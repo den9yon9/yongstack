@@ -16,14 +16,14 @@ export const Route = createFileRoute('/_admin/')({
 type AdminModule = {
   title: string
   detail: string
-  to?: '/users' | '/roles' | '/settings'
+  to?: '/users' | '/roles' | '/files' | '/settings'
 }
 
 const modules: AdminModule[] = [
   { title: '用户管理', detail: '账号、状态与角色分配', to: '/users' },
   { title: '角色权限', detail: '角色、权限与访问控制', to: '/roles' },
+  { title: '文件管理', detail: '上传、元数据与附件关联', to: '/files' },
   { title: '系统设置', detail: '运行时配置与功能开关', to: '/settings' },
-  { title: '文件管理', detail: '上传、元数据与附件关联' },
   { title: '审计日志', detail: '关键操作与变更留痕' },
 ]
 

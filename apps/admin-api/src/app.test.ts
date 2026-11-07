@@ -6,7 +6,7 @@ import { createRedisClient, type Redis } from '@yongstack/redis'
 import { flushTestRedis } from '@yongstack/redis/testing'
 import { createLogger } from '@yongstack/shared'
 import { getTestEnv } from '@yongstack/shared/testing'
-import { createInMemoryStorage } from '@yongstack/storage/testing'
+import { createInMemoryStorage, type InMemoryStorage } from '@yongstack/storage/testing'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 
@@ -19,12 +19,14 @@ let app: App
 let api: ReturnType<typeof treaty<typeof app>>
 let db: Db
 let redis: Redis
+let storage: InMemoryStorage
 
 beforeAll(async () => {
   db = await prepareTestDb()
   await ensureRbacDefaults(db)
   redis = createRedisClient(env.TESTING_REDIS_URL)
   await redis.connect()
+  storage = createInMemoryStorage()
   app = buildApp(createTestDeps({ db, redis }))
   api = treaty<typeof app>(app)
 })
@@ -37,12 +39,13 @@ beforeEach(async () => {
   await resetDb(db)
   await ensureRbacDefaults(db)
   await flushTestRedis()
+  storage.objects.clear()
 })
 
 function createTestDeps(deps: { db: Db; redis: Redis }): AdminAppOptions {
   return {
     ...deps,
-    storage: createInMemoryStorage(),
+    storage,
     sessionCookieName: ADMIN_SESSION_COOKIE,
     sessionSecret: env.TESTING_SESSION_SECRET,
     corsOrigin: true,
@@ -263,6 +266,50 @@ describe('admin user management', () => {
 
   test('requires authentication', async () => {
     const res = await api.admin.users.get({ query: { page: 1, pageSize: 10 } })
+    expect(res.status).toBe(401)
+  })
+})
+
+describe('admin files', () => {
+  test('lists and deletes files', async () => {
+    const cookie = await loginAdmin()
+    const key = 'media/admin-file.png'
+    storage.objects.set(key, { body: Uint8Array.from([1, 2, 3]), contentType: 'image/png' })
+    const [file] = await db
+      .insert(schema.files)
+      .values({
+        key,
+        url: `https://cdn.example.com/${key}`,
+        mime: 'image/png',
+        size: 3,
+        purpose: 'avatar',
+      })
+      .returning()
+
+    const list = await api.admin.files.get({
+      query: { page: 1, pageSize: 10 },
+      fetch: { headers: { cookie } },
+    })
+    expect(list.status).toBe(200)
+    if (list.error !== null) throw list.error
+    expect(list.data.items.map((item) => item.id)).toContain(file.id)
+
+    const deleted = await api.admin
+      .files({ id: file.id })
+      .delete(undefined, { fetch: { headers: { cookie } } })
+    expect(deleted.status).toBe(204)
+    expect(storage.objects.has(key)).toBe(false)
+
+    const after = await api.admin.files.get({
+      query: { page: 1, pageSize: 10 },
+      fetch: { headers: { cookie } },
+    })
+    if (after.error !== null) throw after.error
+    expect(after.data.items).toHaveLength(0)
+  })
+
+  test('requires admin authentication', async () => {
+    const res = await api.admin.files.get({ query: { page: 1, pageSize: 10 } })
     expect(res.status).toBe(401)
   })
 })

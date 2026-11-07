@@ -15,6 +15,9 @@ export const emailSchema = Type.Transform(Type.String({ format: 'email', maxLeng
 
 export const table = {
   select: {
+    file: select(schema.files, {
+      metadata: Type.Record(Type.String(), Type.Unknown()),
+    }),
     user: Type.Omit(userSelect, ['passwordHash']),
   },
   insert: {

@@ -17,6 +17,7 @@ import { type AdminAppOptions, createAdminDeps } from './deps'
 import { createEnv } from './env'
 import { createPlugins } from './plugins'
 import { createAuthRoutes } from './routes/auth'
+import { createFileRoutes } from './routes/file'
 import { createSettingsRoutes } from './routes/settings'
 import { createUserRoutes } from './routes/user'
 
@@ -55,6 +56,7 @@ export function buildApp(options: AdminAppOptions) {
     .use(createAuthRoutes(plugins))
     .use(createSettingsRoutes(plugins))
     .use(createUserRoutes(plugins))
+    .use(createFileRoutes(plugins))
     .get(
       '/info',
       () => ({

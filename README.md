@@ -122,6 +122,7 @@ packages/
   tsconfig/        共享 TypeScript 配置
 
 domains/
+  file/            文件元数据与通用附件关联
   outbox/          通用领域事件
   rbac/            角色、权限、用户角色
   settings/        运行时设置与功能开关
@@ -139,7 +140,7 @@ usecases/
 1. ~~通知与事件：outbox、mailer（console/SMTP）、worker 消费~~
 2. ~~运行时设置与功能开关~~
 3. ~~RBAC、邮箱验证、找回密码、会话管理、管理端用户管理~~
-4. 媒体上传与文件元数据
+4. ~~媒体上传与文件元数据~~
 5. 审计日志与核心数据原语
 6. 领域生成器、通用后台组件、测试工厂
 

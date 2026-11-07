@@ -73,4 +73,9 @@ test('管理员可查看用户与角色页面', async ({ page }) => {
   await expect(page).toHaveURL(/\/roles$/)
   await expect(page.getByRole('heading', { name: '角色权限' })).toBeVisible()
   await expect(page.getByText('全部权限')).toBeVisible()
+
+  await page.getByRole('link', { name: '文件', exact: true }).click()
+  await expect(page).toHaveURL(/\/files$/)
+  await expect(page.getByRole('heading', { name: '文件管理' })).toBeVisible()
+  await expect(page.getByPlaceholder('搜索 key / mime / purpose')).toBeVisible()
 })
