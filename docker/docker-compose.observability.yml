@@ -5,6 +5,9 @@
 #   - prometheus targets 用 docker/prometheus.docker.yml(host.docker.internal), Prometheus 不支持 ${VAR} 替换
 #   - grafana datasource 覆盖为容器网络 hostname prometheus:9090(原生本机用 monitoring/ 内 localhost 版本)。
 # Grafana: http://localhost:3005 (admin/admin), 大屏已 provisioning 自动导入。
+# 独立项目名: 与业务 compose 分离, 可单独 up/down。
+name: nestup-observability
+
 services:
   prometheus:
     image: prom/prometheus:v2.53.0

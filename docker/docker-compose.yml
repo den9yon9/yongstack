@@ -1,3 +1,7 @@
+# 显式项目名: Compose 默认取 compose 文件所在目录名(此处为 docker),
+# 与同目录/同名目录下的其他项目会互相覆盖, 这里固定为本项目身份。
+name: nestup
+
 services:
   postgres:
     image: postgres:16-alpine
