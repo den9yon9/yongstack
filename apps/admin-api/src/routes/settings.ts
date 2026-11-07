@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox'
+import { hasPermission } from '@yongstack/session'
 import { listSettings, updateSettings } from '@yongstack/settings'
 import { assertNever, ErrorResponse } from '@yongstack/shared'
 import { Elysia, status } from 'elysia'
@@ -27,18 +28,30 @@ export function createSettingsRoutes(plugins: AdminPlugins) {
     .use(plugins.localePlugin)
     .use(plugins.dbPlugin)
     .use(plugins.sessionPlugin)
-    .get('/settings', async ({ db }) => ({ items: await listSettings(db) }), {
-      isAdmin: true,
-      response: { 200: SettingsResponseSchema, 401: ErrorResponse, 403: ErrorResponse },
-      detail: {
-        tags: ['Admin/Settings'],
-        summary: '运行时设置',
-        description: '返回全部已定义设置与当前值；未写入的配置返回默认值。\n\n- 需要 admin 角色',
+    .get(
+      '/settings',
+      async ({ db, session, i18n }) => {
+        if (!hasPermission(session, 'settings:read')) {
+          return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
+        }
+        return { items: await listSettings(db) }
       },
-    })
+      {
+        isAdmin: true,
+        response: { 200: SettingsResponseSchema, 401: ErrorResponse, 403: ErrorResponse },
+        detail: {
+          tags: ['Admin/Settings'],
+          summary: '运行时设置',
+          description: '返回全部已定义设置与当前值；未写入的配置返回默认值。\n\n- 需要 admin 角色',
+        },
+      },
+    )
     .put(
       '/settings',
       async ({ body, db, session, i18n }) => {
+        if (!hasPermission(session, 'settings:write')) {
+          return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
+        }
         const result = await updateSettings(body.values, db, session.userId)
         if (result.isErr()) {
           switch (result.error.code) {

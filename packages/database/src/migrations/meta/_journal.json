@@ -22,6 +22,20 @@
       "when": 1794052511042,
       "tag": "0002_curved_red_wolf",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794058375149,
+      "tag": "0003_wealthy_boom_boom",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794058410303,
+      "tag": "0004_rapid_skaar",
+      "breakpoints": true
     }
   ]
 }

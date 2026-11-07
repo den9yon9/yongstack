@@ -15,7 +15,7 @@ async function fetchAdminUser(): Promise<AdminUser | null> {
 export const Route = createFileRoute('/_admin')({
   beforeLoad: async (): Promise<AdminContext> => {
     const adminUser = await fetchAdminUser()
-    if (!adminUser || adminUser.role !== 'admin') {
+    if (!adminUser || !adminUser.roles.includes('admin')) {
       throw redirect({ to: '/login' })
     }
     return { adminUser }
@@ -25,9 +25,11 @@ export const Route = createFileRoute('/_admin')({
 
 const navItems = [
   { label: '控制台', to: '/', exact: true },
+  { label: '用户', to: '/users', exact: false },
+  { label: '角色', to: '/roles', exact: false },
   { label: '设置', to: '/settings', exact: false },
 ] as const
-const pendingModules = ['用户管理', '角色权限', '文件管理', '审计日志']
+const pendingModules = ['文件管理', '审计日志']
 
 function AdminLayout() {
   const navigate = useNavigate()

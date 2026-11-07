@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
 import { api } from '../../libs/api/client'
@@ -13,12 +13,18 @@ export const Route = createFileRoute('/_admin/')({
   component: DashboardPage,
 })
 
-const modules = [
-  { title: '用户管理', detail: '账号、状态与角色分配' },
-  { title: '角色权限', detail: '角色、权限与访问控制' },
+type AdminModule = {
+  title: string
+  detail: string
+  to?: '/users' | '/roles' | '/settings'
+}
+
+const modules: AdminModule[] = [
+  { title: '用户管理', detail: '账号、状态与角色分配', to: '/users' },
+  { title: '角色权限', detail: '角色、权限与访问控制', to: '/roles' },
+  { title: '系统设置', detail: '运行时配置与功能开关', to: '/settings' },
   { title: '文件管理', detail: '上传、元数据与附件关联' },
   { title: '审计日志', detail: '关键操作与变更留痕' },
-  { title: '系统设置', detail: '运行时配置与功能开关' },
 ]
 
 function DashboardPage() {
@@ -84,11 +90,23 @@ function DashboardPage() {
           >
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">{item.title}</h3>
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500">
-                待开发
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs ${
+                  item.to ? 'bg-brand-50 text-brand-700' : 'bg-slate-100 text-slate-500'
+                }`}
+              >
+                {item.to ? '可用' : '待开发'}
               </span>
             </div>
             <p className="mt-2 text-sm text-slate-500">{item.detail}</p>
+            {item.to ? (
+              <Link
+                to={item.to}
+                className="mt-3 inline-block text-sm text-brand-600 hover:underline"
+              >
+                进入
+              </Link>
+            ) : null}
           </div>
         ))}
       </section>

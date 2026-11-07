@@ -1,6 +1,7 @@
 import { treaty } from '@elysiajs/eden'
 import { closeDb, type Db, schema } from '@yongstack/database'
 import { prepareTestDb, resetDb } from '@yongstack/database/testing'
+import { assignRoles, ensureRbacDefaults } from '@yongstack/rbac'
 import { createRedisClient, type Redis } from '@yongstack/redis'
 import { flushTestRedis } from '@yongstack/redis/testing'
 import { createLogger } from '@yongstack/shared'
@@ -21,6 +22,7 @@ let redis: Redis
 
 beforeAll(async () => {
   db = await prepareTestDb()
+  await ensureRbacDefaults(db)
   redis = createRedisClient(env.TESTING_REDIS_URL)
   await redis.connect()
   app = buildApp(createTestDeps({ db, redis }))
@@ -33,6 +35,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await resetDb(db)
+  await ensureRbacDefaults(db)
   await flushTestRedis()
 })
 
@@ -55,16 +58,17 @@ function sessionCookie(res: { headers: unknown }): string {
   return (new Headers(res.headers as Headers).get('set-cookie') ?? '').split(';')[0]
 }
 
-async function seedUser(email: string, role: 'customer' | 'admin') {
+async function seedUser(email: string, role: 'member' | 'admin') {
   const [user] = await db
     .insert(schema.users)
     .values({
       name: email.split('@')[0],
       email,
       passwordHash: await Bun.password.hash('password123', 'argon2id'),
-      role,
     })
     .returning()
+  const assigned = await assignRoles(user.id, [role], db)
+  if (assigned.isErr()) throw new Error(assigned.error)
   return user
 }
 
@@ -101,7 +105,7 @@ describe('admin auth', () => {
     const me = await api.auth.me.get({ fetch: { headers: { cookie } } })
     expect(me.status).toBe(200)
     if (me.error !== null) throw me.error
-    expect(me.data.role).toBe('admin')
+    expect(me.data.roles).toContain('admin')
 
     const logout = await api.auth.logout.post({} as never, {
       fetch: { headers: { cookie } },
@@ -113,7 +117,7 @@ describe('admin auth', () => {
   })
 
   test('customer cannot login to admin', async () => {
-    await seedUser('customer@example.com', 'customer')
+    await seedUser('customer@example.com', 'member')
     const res = await api.auth.login.post({
       email: 'customer@example.com',
       password: 'password123',
@@ -194,5 +198,71 @@ describe('admin settings', () => {
     expect(unknown.status).toBe(404)
     if (unknown.error === null) throw new Error('expected unknown setting error')
     expect(unknown.error.value).toMatchObject({ error: 'SETTING_UNKNOWN' })
+  })
+})
+
+describe('admin user management', () => {
+  test('lists users with roles and returns detail', async () => {
+    const cookie = await loginAdmin()
+    const target = await seedUser('member@example.com', 'member')
+
+    const list = await api.admin.users.get({
+      query: { page: 1, pageSize: 10 },
+      fetch: { headers: { cookie } },
+    })
+    expect(list.status).toBe(200)
+    if (list.error !== null) throw list.error
+    expect(list.data.items.find((user) => user.email === 'member@example.com')?.roles).toEqual([
+      'member',
+    ])
+
+    const detail = await api.admin.users({ id: target.id }).get({
+      fetch: { headers: { cookie } },
+    })
+    expect(detail.status).toBe(200)
+    if (detail.error !== null) throw detail.error
+    expect(detail.data.roles).toEqual(['member'])
+    expect(detail.data.permissions).toEqual(['files:read'])
+  })
+
+  test('updates roles and status, and rejects self modification', async () => {
+    const cookie = await loginAdmin()
+    const target = await seedUser('target@example.com', 'member')
+
+    const updated = await api.admin
+      .users({ id: target.id })
+      .patch({ roles: ['admin'], isActive: false }, { fetch: { headers: { cookie } } })
+    expect(updated.status).toBe(200)
+    if (updated.error !== null) throw updated.error
+    expect(updated.data.roles).toEqual(['admin'])
+    expect(updated.data.isActive).toBe(false)
+
+    const me = await api.auth.me.get({ fetch: { headers: { cookie } } })
+    if (me.error !== null) throw me.error
+    const self = await api.admin
+      .users({ id: me.data.id })
+      .patch({ isActive: false }, { fetch: { headers: { cookie } } })
+    expect(self.status).toBe(400)
+    if (self.error === null) throw new Error('expected self operation error')
+    expect(self.error.value).toMatchObject({ error: 'SELF_OPERATION' })
+  })
+
+  test('lists roles and permissions', async () => {
+    const cookie = await loginAdmin()
+
+    const roles = await api.admin.roles.get({ fetch: { headers: { cookie } } })
+    expect(roles.status).toBe(200)
+    if (roles.error !== null) throw roles.error
+    expect(roles.data.items.map((role) => role.code)).toEqual(['admin', 'member'])
+
+    const permissions = await api.admin.permissions.get({ fetch: { headers: { cookie } } })
+    expect(permissions.status).toBe(200)
+    if (permissions.error !== null) throw permissions.error
+    expect(permissions.data.items.map((permission) => permission.code)).toContain('users:write')
+  })
+
+  test('requires authentication', async () => {
+    const res = await api.admin.users.get({ query: { page: 1, pageSize: 10 } })
+    expect(res.status).toBe(401)
   })
 })

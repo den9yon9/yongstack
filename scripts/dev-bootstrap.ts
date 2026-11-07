@@ -574,7 +574,7 @@ async function main(): Promise<void> {
   await run('run database migrations', ['pnpm', '--filter', '@yongstack/database', 'db:migrate'])
 
   step(7, 8, 'Seed admin user')
-  await run('seed admin user', ['pnpm', '--filter', '@yongstack/database', 'db:seed'])
+  await run('seed admin user', ['pnpm', 'db:seed'])
 
   step(8, 8, 'Done')
   printSummary(env, opts)

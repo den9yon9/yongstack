@@ -18,6 +18,7 @@ import { createEnv } from './env'
 import { createPlugins } from './plugins'
 import { createAuthRoutes } from './routes/auth'
 import { createSettingsRoutes } from './routes/settings'
+import { createUserRoutes } from './routes/user'
 
 const InfoResponse = Type.Object({
   service: Type.String(),
@@ -53,6 +54,7 @@ export function buildApp(options: AdminAppOptions) {
     )
     .use(createAuthRoutes(plugins))
     .use(createSettingsRoutes(plugins))
+    .use(createUserRoutes(plugins))
     .get(
       '/info',
       () => ({

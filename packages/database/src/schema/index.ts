@@ -9,7 +9,14 @@ export {
   type OutboxEventStatus,
   outboxEventStatus,
 } from './outbox/outbox-events'
+// rbac 域(角色/权限/用户角色)
+export { permissions } from './rbac/permissions'
+export { rolePermissions } from './rbac/role-permissions'
+export { roles } from './rbac/roles'
+export { userRoles } from './rbac/user-roles'
 // settings 域(运行时配置与功能开关)
 export { settings } from './settings/settings'
-// user 域(身份底座; 登录/注册等业务能力后续在 domains/user 实现)
-export { userRole, users } from './user/users'
+// user 域(身份底座)
+export { emailVerificationTokens } from './user/email-verification-tokens'
+export { passwordResetTokens } from './user/password-reset-tokens'
+export { users } from './user/users'

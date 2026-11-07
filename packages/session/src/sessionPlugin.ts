@@ -1,6 +1,5 @@
 import { Type } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
-import { USER_ROLE, type UserRole } from '@yongstack/database'
 import { DEFAULT_LOCALE, type Locale, resolveLocale, translate } from '@yongstack/i18n'
 import type { Redis } from '@yongstack/redis'
 import { type Logger } from '@yongstack/shared'
@@ -18,13 +17,44 @@ function guardLocale(request: Request, fallback: Locale): Locale {
 
 const SessionSchema = Type.Object({
   userId: Type.String(),
-  role: Type.Union(USER_ROLE.map((r) => Type.Literal(r))),
+  roles: Type.Array(Type.String()),
+  permissions: Type.Array(Type.String()),
+  createdAt: Type.String(),
+  lastSeenAt: Type.String(),
+  userAgent: Type.Union([Type.String(), Type.Null()]),
+  ip: Type.Union([Type.String(), Type.Null()]),
 })
 
-export type Session = { userId: string; role: UserRole }
+export type Session = {
+  userId: string
+  roles: string[]
+  permissions: string[]
+  createdAt: string
+  lastSeenAt: string
+  userAgent: string | null
+  ip: string | null
+}
+
+export type SessionWithId = Session & { id: string }
+
+export interface SessionInput {
+  userId: string
+  roles: string[]
+  permissions: string[]
+  userAgent?: string | null
+  ip?: string | null
+}
 
 export const SESSION_TTL_SECONDS = 86400
 export const DEFAULT_SESSION_COOKIE_NAME = 'session_id'
+
+export function hasPermission(session: Session | null, permission: string): boolean {
+  return session?.permissions.includes(permission) ?? false
+}
+
+export function isAdminSession(session: Session | null): boolean {
+  return session?.roles.includes('admin') ?? false
+}
 
 function parseSession(raw: string | null): Session | null {
   if (!raw) return null
@@ -75,8 +105,15 @@ export function createSessionPlugin(options: SessionPluginOptions) {
         if (session) {
           const ttl = await redis.ttl(`session:${sessionId}`)
           if (ttl > 0 && ttl < SESSION_TTL_SECONDS / 2) {
-            await redis.expire(`session:${sessionId}`, SESSION_TTL_SECONDS)
+            const refreshed: Session = { ...session, lastSeenAt: new Date().toISOString() }
+            await redis.set(
+              `session:${sessionId}`,
+              JSON.stringify(refreshed),
+              'EX',
+              SESSION_TTL_SECONDS,
+            )
             setSessionCookie(sessionCookie, sessionId, isProduction)
+            return { session: refreshed } satisfies { session: Session | null }
           }
         }
         return { session } satisfies { session: Session | null }
@@ -103,7 +140,7 @@ export function createSessionPlugin(options: SessionPluginOptions) {
               error: 'UNAUTHORIZED',
               message: translate(guardLocale(request, defaultLocale), 'Unauthorized'),
             })
-          if (session.role !== 'admin')
+          if (!isAdminSession(session))
             return status(403, {
               error: 'FORBIDDEN',
               message: translate(guardLocale(request, defaultLocale), 'Forbidden'),
@@ -143,10 +180,12 @@ export function clearSessionCookie(cookie: Cookie<unknown> | undefined, secure: 
 }
 
 export interface SessionStore {
-  create(session: Session): Promise<string>
+  create(input: SessionInput): Promise<string>
   read(sessionId: string): Promise<Session | null>
+  listForUser(userId: string): Promise<SessionWithId[]>
   destroy(sessionId: string): Promise<void>
   destroyAllForUser(userId: string): Promise<void>
+  destroyOtherSessions(userId: string, keepSessionId: string): Promise<void>
 }
 
 // per-user 会话索引: 每次登录 SADD, 使 destroyAllForUser 免全量 scanStream(O(1) SMEMBERS)。
@@ -157,16 +196,37 @@ function userSessionsKey(userId: string): string {
 
 export function createSessionStore(redis: Redis): SessionStore {
   return {
-    async create(session) {
+    async create(input) {
       const sessionId = crypto.randomUUID()
+      const now = new Date().toISOString()
+      const session: Session = {
+        userId: input.userId,
+        roles: input.roles,
+        permissions: input.permissions,
+        createdAt: now,
+        lastSeenAt: now,
+        userAgent: input.userAgent ?? null,
+        ip: input.ip ?? null,
+      }
       await redis.set(`session:${sessionId}`, JSON.stringify(session), 'EX', SESSION_TTL_SECONDS)
-      await redis.sadd(userSessionsKey(session.userId), sessionId)
-      await redis.expire(userSessionsKey(session.userId), SESSION_TTL_SECONDS)
+      await redis.sadd(userSessionsKey(input.userId), sessionId)
+      await redis.expire(userSessionsKey(input.userId), SESSION_TTL_SECONDS)
       return sessionId
     },
     async read(sessionId) {
       if (!sessionId) return null
       return parseSession(await redis.get(`session:${sessionId}`))
+    },
+    async listForUser(userId) {
+      const ids = await redis.smembers(userSessionsKey(userId))
+      if (ids.length === 0) return []
+      const values = await redis.mget(ids.map((id) => `session:${id}`))
+      const sessions: SessionWithId[] = []
+      ids.forEach((id, index) => {
+        const session = parseSession(values[index] ?? null)
+        if (session) sessions.push({ id, ...session })
+      })
+      return sessions
     },
     async destroy(sessionId) {
       if (!sessionId) return
@@ -174,7 +234,6 @@ export function createSessionStore(redis: Redis): SessionStore {
       await redis.del(`session:${sessionId}`)
       if (session) await redis.srem(userSessionsKey(session.userId), sessionId)
     },
-    // per-user Set 索引: 按 userId 直接取会话集合, 免全量扫描
     async destroyAllForUser(userId) {
       const key = userSessionsKey(userId)
       const members = await redis.smembers(key)
@@ -182,6 +241,15 @@ export function createSessionStore(redis: Redis): SessionStore {
         await redis.del(...members.map((id) => `session:${id}`))
       }
       await redis.del(key)
+    },
+    async destroyOtherSessions(userId, keepSessionId) {
+      const key = userSessionsKey(userId)
+      const members = await redis.smembers(key)
+      const others = members.filter((id) => id !== keepSessionId)
+      if (others.length > 0) {
+        await redis.del(...others.map((id) => `session:${id}`))
+        await redis.srem(key, ...others)
+      }
     },
   }
 }

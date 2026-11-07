@@ -57,3 +57,20 @@ test('管理员可以查看并保存运行时设置', async ({ page }) => {
   await page.getByRole('button', { name: '保存' }).click()
   await expect(page.getByText('保存成功')).toBeVisible()
 })
+
+test('管理员可查看用户与角色页面', async ({ page }) => {
+  await page.goto('/login')
+  await page.getByLabel('邮箱').fill('admin@example.com')
+  await page.getByLabel('密码').fill('admin123456')
+  await page.getByRole('button', { name: '登录' }).click()
+
+  await page.getByRole('link', { name: '用户', exact: true }).click()
+  await expect(page).toHaveURL(/\/users$/)
+  await expect(page.getByRole('heading', { name: '用户管理' })).toBeVisible()
+  await expect(page.getByPlaceholder('搜索邮箱或昵称')).toBeVisible()
+
+  await page.getByRole('link', { name: '角色', exact: true }).click()
+  await expect(page).toHaveURL(/\/roles$/)
+  await expect(page.getByRole('heading', { name: '角色权限' })).toBeVisible()
+  await expect(page.getByText('全部权限')).toBeVisible()
+})

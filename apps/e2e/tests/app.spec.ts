@@ -75,5 +75,22 @@ test('个人中心需要登录并可退出', async ({ page }) => {
   await page.getByRole('link', { name: '个人中心用户' }).click()
   await expect(page).toHaveURL(/\/me$/)
   await expect(page.getByText(email)).toBeVisible()
-  await expect(page.getByText('普通用户')).toBeVisible()
+  await expect(page.getByText('成员')).toBeVisible()
+})
+
+test('忘记密码页发送重置邮件提示', async ({ page }) => {
+  await page.goto('/forgot-password')
+  await page.getByLabel('邮箱').fill('ghost@example.com')
+  await page.getByRole('button', { name: '发送重置邮件' }).click()
+  await expect(page.getByText('重置邮件已发送')).toBeVisible()
+})
+
+test('无效验证与重置链接显示错误', async ({ page }) => {
+  await page.goto(`/verify-email?token=${'f'.repeat(64)}`)
+  await expect(page.getByText('令牌无效')).toBeVisible()
+
+  await page.goto(`/reset-password?token=${'f'.repeat(64)}`)
+  await page.getByLabel('新密码（至少 8 位）').fill('new-password-2')
+  await page.getByRole('button', { name: '重置密码' }).click()
+  await expect(page.getByText('令牌无效')).toBeVisible()
 })

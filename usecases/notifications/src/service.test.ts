@@ -46,6 +46,42 @@ describe('dispatchOutboxEvent', () => {
     expect(jobs[0].opts).toMatchObject({ jobId: 'welcome-u-1' })
   })
 
+  test('maps verification and reset events to link emails', async () => {
+    const { queue, jobs } = createFakeQueue()
+    const options = {
+      emailQueue: queue,
+      appUrl: 'https://app.example.com',
+      logger: createLogger('silent'),
+    }
+
+    await dispatchOutboxEvent(
+      event({
+        type: 'user.email_verification_requested',
+        payload: {
+          userId: 'u-1',
+          email: 'alice@example.com',
+          name: 'Alice',
+          token: 'verify-token',
+          locale: 'en',
+        },
+      }),
+      options,
+    )
+    await dispatchOutboxEvent(
+      event({
+        type: 'user.password_reset_requested',
+        payload: { email: 'alice@example.com', token: 'reset-token', locale: 'en' },
+      }),
+      options,
+    )
+
+    expect(jobs).toHaveLength(2)
+    expect(jobs[0].name).toBe(EMAIL_JOB_NAMES.VERIFY_EMAIL)
+    expect(jobs[0].data.vars.url).toBe('https://app.example.com/verify-email?token=verify-token')
+    expect(jobs[1].name).toBe(EMAIL_JOB_NAMES.RESET_PASSWORD)
+    expect(jobs[1].data.vars.url).toBe('https://app.example.com/reset-password?token=reset-token')
+  })
+
   test('ignores unknown event types and invalid payloads', async () => {
     const { queue, jobs } = createFakeQueue()
     const logger = createLogger('silent')

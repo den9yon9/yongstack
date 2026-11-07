@@ -10,7 +10,6 @@
     "test": "bun --env-file=../../.env test --parallel=1"
   },
   "dependencies": {
-    "@yongstack/database": "workspace:*",
     "@yongstack/i18n": "workspace:*",
     "@yongstack/redis": "workspace:*",
     "@yongstack/shared": "workspace:*",

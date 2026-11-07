@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox'
+import { closeDb, createDb, schema } from '@yongstack/database'
+import { assignRoles, ensureRbacDefaults } from '@yongstack/rbac'
 import { createLogger, hashPassword, parseEnv } from '@yongstack/shared'
-
-import { closeDb, createDb, schema } from './index'
 
 const DEFAULT_ADMIN_PASSWORD = 'admin123456'
 
@@ -44,6 +44,8 @@ async function main(): Promise<void> {
 
   const db = createDb(env.DATABASE_URL)
   try {
+    await ensureRbacDefaults(db)
+
     const passwordHash = await hashPassword(env.ADMIN_PASSWORD)
     const [admin] = await db
       .insert(schema.users)
@@ -51,13 +53,21 @@ async function main(): Promise<void> {
         name: 'Administrator',
         email: env.ADMIN_EMAIL,
         passwordHash,
-        role: 'admin',
+        emailVerifiedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: schema.users.email,
-        set: { role: 'admin', passwordHash, isActive: true, updatedAt: new Date() },
+        set: {
+          passwordHash,
+          isActive: true,
+          emailVerifiedAt: new Date(),
+          updatedAt: new Date(),
+        },
       })
       .returning()
+
+    const assigned = await assignRoles(admin.id, ['admin'], db)
+    if (assigned.isErr()) throw new Error(`failed to assign admin role: ${assigned.error}`)
 
     logger.info({ admin: { id: admin.id, email: admin.email } }, 'seed complete: admin user ready')
   } finally {

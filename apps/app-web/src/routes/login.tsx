@@ -58,6 +58,11 @@ function LoginPage() {
       >
         {submitting ? '登录中…' : '登录'}
       </button>
+      <p className="text-right text-sm">
+        <Link to="/forgot-password" className="text-brand-600 hover:underline">
+          忘记密码？
+        </Link>
+      </p>
       <p className="text-center text-sm text-slate-500">
         还没有账号？
         <Link to="/register" className="ml-1 text-brand-600 hover:underline">

@@ -23,6 +23,21 @@ export function renderEmail(
           url: vars.appUrl ?? '',
         }),
       }
+    case 'verify-email':
+      return {
+        subject: i18n('Verify your email'),
+        text: i18n('Hi {name}, verify your email by opening this link: {url}', {
+          name: vars.name ?? '',
+          url: vars.url ?? '',
+        }),
+      }
+    case 'reset-password':
+      return {
+        subject: i18n('Reset your password'),
+        text: i18n('Open this link to reset your password: {url}', {
+          url: vars.url ?? '',
+        }),
+      }
     default:
       return assertNever(template)
   }

@@ -1,9 +1,9 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { api } from '../libs/api/client'
 import { logout, refreshSession, useSession } from '../libs/api/session'
-import type { AuthUser } from '../libs/api/types'
+import type { AuthUser, SessionItem } from '../libs/api/types'
 
 export const Route = createFileRoute('/me')({
   beforeLoad: async () => {
@@ -54,7 +54,9 @@ function MePage() {
           </div>
           <div className="flex justify-between py-1 text-sm">
             <span className="text-slate-500">角色</span>
-            <span className="text-slate-900">{user.role === 'admin' ? '管理员' : '普通用户'}</span>
+            <span className="text-slate-900">
+              {user.roles.includes('admin') ? '管理员' : '成员'}
+            </span>
           </div>
           <div className="flex justify-between py-1 text-sm">
             <span className="text-slate-500">注册时间</span>
@@ -62,6 +64,9 @@ function MePage() {
           </div>
         </section>
       )}
+
+      <SessionsSection />
+      <ChangePasswordSection />
 
       <button
         onClick={() => void logout().then(() => navigate({ to: '/', replace: true }))}
@@ -152,5 +157,150 @@ function ProfileForm({ user, onDone }: { user: AuthUser; onDone: () => void }) {
         </button>
       </div>
     </form>
+  )
+}
+
+function SessionsSection() {
+  const [sessions, setSessions] = useState<SessionItem[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function load() {
+    const res = await api.auth.sessions.get()
+    if (res.error !== null) {
+      setError(res.error.value.message ?? '加载会话失败')
+      return
+    }
+    setError(null)
+    setSessions(res.data.items)
+  }
+
+  useEffect(() => {
+    void load()
+  }, [])
+
+  async function revoke(id: string) {
+    await api.auth.sessions({ id }).delete(undefined)
+    await load()
+  }
+
+  async function revokeOthers() {
+    await api.auth.sessions.delete(undefined)
+    await load()
+  }
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="font-semibold">活跃会话</h2>
+          <p className="mt-1 text-sm text-slate-500">查看并撤销其他设备上的登录状态。</p>
+        </div>
+        <button
+          onClick={() => void revokeOthers()}
+          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+        >
+          退出其他设备
+        </button>
+      </div>
+      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+      <div className="mt-4 divide-y divide-slate-100">
+        {sessions === null ? (
+          <p className="py-3 text-sm text-slate-400">加载中…</p>
+        ) : sessions.length === 0 ? (
+          <p className="py-3 text-sm text-slate-400">暂无会话</p>
+        ) : (
+          sessions.map((item) => (
+            <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+              <div className="min-w-0 text-sm">
+                <p className="truncate text-slate-900">
+                  {item.userAgent ?? '未知设备'}
+                  {item.current ? (
+                    <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
+                      当前
+                    </span>
+                  ) : null}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {item.ip ?? '未知 IP'} · 最近活跃 {new Date(item.lastSeenAt).toLocaleString()}
+                </p>
+              </div>
+              {!item.current ? (
+                <button
+                  onClick={() => void revoke(item.id)}
+                  className="text-sm text-red-600 hover:underline"
+                >
+                  撤销
+                </button>
+              ) : null}
+            </div>
+          ))
+        )}
+      </div>
+    </section>
+  )
+}
+
+function ChangePasswordSection() {
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setMessage(null)
+    setSubmitting(true)
+    const res = await api.auth['change-password'].post({ currentPassword, newPassword })
+    setSubmitting(false)
+    if (res.error !== null) {
+      setMessage(res.error.value.message ?? '修改失败')
+      return
+    }
+    setCurrentPassword('')
+    setNewPassword('')
+    setMessage('密码已更新，其他设备已退出。')
+  }
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="font-semibold">修改密码</h2>
+      <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
+        <label className="block">
+          <span className="mb-1 block text-sm text-slate-600">当前密码</span>
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+            className={inputCls}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-sm text-slate-600">新密码（至少 8 位）</span>
+          <input
+            type="password"
+            minLength={8}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            className={inputCls}
+          />
+        </label>
+        {message ? (
+          <p
+            className={`text-sm ${message.startsWith('密码已更新') ? 'text-emerald-600' : 'text-red-600'}`}
+          >
+            {message}
+          </p>
+        ) : null}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded-lg bg-brand-600 py-2.5 text-white hover:bg-brand-700 disabled:opacity-50"
+        >
+          {submitting ? '更新中…' : '更新密码'}
+        </button>
+      </form>
+    </section>
   )
 }

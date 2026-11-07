@@ -17,7 +17,6 @@ export {
   type OutboxEventStatus,
   outboxEventStatus,
 } from './schema/outbox/outbox-events'
-export { USER_ROLE, type UserRole } from './schema/user/users'
 export { withTransaction } from './transaction'
 
 type PgDatabase = PostgresJsDatabase<typeof schema> & { $client: Sql }

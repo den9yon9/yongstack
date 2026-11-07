@@ -9,6 +9,7 @@ import type { AuthUser } from './types'
 const SESSION_CACHE_KEY = 'yongstack.session.user'
 
 let current: AuthUser | null | undefined = readCachedSession()
+let sessionVersion = 0
 const listeners = new Set<() => void>()
 
 function readCachedSession(): AuthUser | null | undefined {
@@ -48,7 +49,10 @@ export function useSession(): AuthUser | null | undefined {
 }
 
 export async function refreshSession(): Promise<AuthUser | null> {
+  const requestVersion = sessionVersion
   const res = await api.auth.me.get()
+  // 请求期间发生了登录/退出: 丢弃旧响应, 避免把新状态覆盖回去
+  if (sessionVersion !== requestVersion) return current ?? null
   current = res.error === null ? res.data : null
   persist(current)
   notify()
@@ -64,6 +68,7 @@ export async function register(
   if (res.error !== null) {
     return { user: null, error: res.error.value.message ?? '注册失败' }
   }
+  sessionVersion += 1
   current = res.data
   persist(current)
   notify()
@@ -78,6 +83,7 @@ export async function login(
   if (res.error !== null) {
     return { user: null, error: res.error.value.message ?? '登录失败' }
   }
+  sessionVersion += 1
   current = res.data
   persist(current)
   notify()
@@ -85,11 +91,14 @@ export async function login(
 }
 
 export async function logout(): Promise<void> {
+  // 本地优先: UI 立即退出, 服务端销毁失败也不会卡住登录态
+  sessionVersion += 1
+  current = null
+  persist(current)
+  notify()
   try {
     await api.auth.logout.post({} as never)
-  } finally {
-    current = null
-    persist(current)
-    notify()
+  } catch {
+    // 残余 cookie 由后续 401 兜底
   }
 }

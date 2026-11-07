@@ -1,18 +1,4 @@
-import {
-  boolean,
-  index,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-  varchar,
-} from 'drizzle-orm/pg-core'
-
-export const USER_ROLE = ['customer', 'admin'] as const
-export type UserRole = (typeof USER_ROLE)[number]
-
-export const userRole = pgEnum('user_role', USER_ROLE)
+import { boolean, index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 
 export const users = pgTable(
   'users',
@@ -25,7 +11,8 @@ export const users = pgTable(
     avatar: text('avatar'),
     // 用户语言偏好(注册/登录时由 Accept-Language 落库); 邮件等异步通知按此渲染
     locale: varchar('locale', { length: 16 }).default('en').notNull(),
-    role: userRole('role').default('customer').notNull(),
+    emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
     isActive: boolean('is_active').default(true).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true })

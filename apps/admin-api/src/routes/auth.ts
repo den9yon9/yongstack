@@ -1,10 +1,47 @@
-import { clearSessionCookie, setSessionCookie } from '@yongstack/session'
+import { getUserAccess, type UserAccess } from '@yongstack/rbac'
+import { clearSessionCookie, type SessionStore, setSessionCookie } from '@yongstack/session'
 import { assertNever, ErrorResponse } from '@yongstack/shared'
 import { getUserById, loginUser } from '@yongstack/user'
 import * as UserModel from '@yongstack/user/model'
-import { Elysia, status } from 'elysia'
+import { type Cookie, Elysia, status } from 'elysia'
 
 import { type AdminPlugins } from '../plugins'
+
+function sessionCookieFrom(cookie: unknown, name: string): Cookie<unknown> | undefined {
+  return (cookie as Record<string, Cookie<unknown> | undefined>)[name]
+}
+
+function requestMeta(request: Request): { userAgent: string | null; ip: string | null } {
+  const forwarded = request.headers.get('x-forwarded-for')
+  const ip = forwarded?.split(',')[0]?.trim() ?? request.headers.get('x-real-ip')
+  return { userAgent: request.headers.get('user-agent'), ip }
+}
+
+interface StartSessionOptions {
+  userId: string
+  access: UserAccess
+  cookie: unknown
+  request: Request
+  sessionStore: SessionStore
+  sessionCookieName: string
+  isProduction: boolean
+}
+
+async function startSession(options: StartSessionOptions): Promise<void> {
+  const meta = requestMeta(options.request)
+  const sessionId = await options.sessionStore.create({
+    userId: options.userId,
+    roles: options.access.roles,
+    permissions: options.access.permissions,
+    userAgent: meta.userAgent,
+    ip: meta.ip,
+  })
+  setSessionCookie(
+    sessionCookieFrom(options.cookie, options.sessionCookieName),
+    sessionId,
+    options.isProduction,
+  )
+}
 
 export function createAuthRoutes(plugins: AdminPlugins) {
   const { dbPlugin, sessionPlugin, authRateLimit, isProduction, sessionCookieName } = plugins
@@ -17,7 +54,7 @@ export function createAuthRoutes(plugins: AdminPlugins) {
     .use(authRateLimit)
     .post(
       '/login',
-      async ({ body, cookie, db, sessionStore, i18n }) => {
+      async ({ body, cookie, db, sessionStore, request, i18n }) => {
         const result = await loginUser(body, db)
         if (result.isErr()) {
           switch (result.error) {
@@ -34,37 +71,44 @@ export function createAuthRoutes(plugins: AdminPlugins) {
         }
 
         const user = result.value
-        if (user.role !== 'admin') {
+        const access = await getUserAccess(user.id, db)
+        if (!access.roles.includes('admin')) {
           return status(403, {
             error: 'FORBIDDEN',
             message: i18n('Account is not an administrator'),
           })
         }
 
-        const sessionCookie = cookie[sessionCookieName]
-        const oldSid = sessionCookie?.value
-        if (typeof oldSid === 'string' && oldSid.length > 0) {
-          await sessionStore.destroy(oldSid)
-        }
-        const sessionId = await sessionStore.create({ userId: user.id, role: user.role })
-        setSessionCookie(sessionCookie, sessionId, isProduction)
-        return user
+        await startSession({
+          userId: user.id,
+          access,
+          cookie,
+          request,
+          sessionStore,
+          sessionCookieName,
+          isProduction,
+        })
+        return { ...user, ...access }
       },
       {
         body: UserModel.LoginInputSchema,
         rateLimit: { limit: authRateLimitPerMinute, window: '60s' },
-        response: { 200: UserModel.UserResponseSchema, 401: ErrorResponse, 403: ErrorResponse },
+        response: {
+          200: UserModel.AuthUserResponseSchema,
+          401: ErrorResponse,
+          403: ErrorResponse,
+        },
         detail: {
           tags: ['Auth'],
           summary: '管理员登录',
-          description: `管理员登录，成功后设置签名 session cookie。\n\n- 凭据错误返回 401\n- 仅 admin 角色可登录，否则返回 403\n- 账号被禁用返回 403\n- 限流：60 秒内最多 ${authRateLimitPerMinute} 次尝试`,
+          description: `管理员登录，成功后设置签名 session cookie。\n\n- 凭据错误返回 401\n- 仅 admin 角色可登录，否则返回 403\n- 限流：60 秒内最多 ${authRateLimitPerMinute} 次尝试`,
         },
       },
     )
     .post(
       '/logout',
       async ({ cookie, session, sessionStore }) => {
-        const sessionCookie = cookie[sessionCookieName]
+        const sessionCookie = sessionCookieFrom(cookie, sessionCookieName)
         if (session) {
           const sid = sessionCookie?.value
           if (typeof sid === 'string' && sid.length > 0) {
@@ -98,15 +142,16 @@ export function createAuthRoutes(plugins: AdminPlugins) {
         if (!user.isActive) {
           return status(403, { error: 'ACCOUNT_DISABLED', message: i18n('Account is disabled') })
         }
-        if (user.role !== 'admin') {
+        const access = await getUserAccess(session.userId, db)
+        if (!access.roles.includes('admin')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
-        return user
+        return { ...user, ...access }
       },
       {
         isAdmin: true,
         response: {
-          200: UserModel.UserResponseSchema,
+          200: UserModel.AuthUserResponseSchema,
           401: ErrorResponse,
           403: ErrorResponse,
           404: ErrorResponse,
@@ -114,7 +159,7 @@ export function createAuthRoutes(plugins: AdminPlugins) {
         detail: {
           tags: ['Auth'],
           summary: '当前管理员信息',
-          description: '获取当前登录管理员的信息。\n\n- 需要 admin 角色\n- 用户不存在返回 404',
+          description: '获取当前登录管理员的信息与 roles/permissions。\n\n- 需要 admin 角色',
         },
       },
     )

@@ -1,6 +1,9 @@
-import type { EdenData } from '@yongstack/eden-client'
+import type { EdenData, EdenListItem } from '@yongstack/eden-client'
 
 import type { api } from './client'
 
 export type AdminUser = EdenData<typeof api.auth.me.get>
 export type SettingItem = EdenData<typeof api.admin.settings.get>['items'][number]
+
+export type AdminUserListItem = EdenListItem<typeof api.admin.users.get>
+export type AdminRole = EdenListItem<typeof api.admin.roles.get>

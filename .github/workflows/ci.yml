@@ -117,7 +117,7 @@ jobs:
           EOF
 
       - name: Seed admin user
-        run: pnpm --filter @yongstack/database db:seed
+        run: pnpm db:seed
 
       - name: Start object storage
         run: |

@@ -10,14 +10,18 @@ export function registerEmailWorker(
   mailer: Mailer,
   logger: Logger,
 ): Worker<SendEmailJobData> {
+  const sendEmail = async (data: SendEmailJobData, handlerLogger: Logger) => {
+    const rendered = renderEmail(data.template, data.vars, data.locale)
+    const result = await mailer.send({ to: data.to, ...rendered })
+    if (result.isErr()) throw new Error(`mail send failed: ${result.error}`)
+    handlerLogger.info({ to: data.to, template: data.template }, 'email sent')
+  }
+
   const processor = createDispatcher<SendEmailJobData>(
     {
-      [EMAIL_JOB_NAMES.WELCOME]: async (data, handlerLogger) => {
-        const rendered = renderEmail(data.template, data.vars, data.locale)
-        const result = await mailer.send({ to: data.to, ...rendered })
-        if (result.isErr()) throw new Error(`mail send failed: ${result.error}`)
-        handlerLogger.info({ to: data.to, template: data.template }, 'email sent')
-      },
+      [EMAIL_JOB_NAMES.WELCOME]: sendEmail,
+      [EMAIL_JOB_NAMES.VERIFY_EMAIL]: sendEmail,
+      [EMAIL_JOB_NAMES.RESET_PASSWORD]: sendEmail,
     },
     logger,
   )
