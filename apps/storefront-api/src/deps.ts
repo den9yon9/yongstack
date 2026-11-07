@@ -5,9 +5,12 @@ import { createLogger, type Logger } from '@nestup/shared'
 
 import { type StorefrontEnv } from './env'
 
+export const STOREFRONT_SESSION_COOKIE = 'nestup_session'
+
 export interface StorefrontAppOptions {
   db: Db
   redis: Redis
+  sessionCookieName: string
   sessionSecret: string
   corsOrigin: true | string | string[]
   trustProxy: boolean
@@ -21,6 +24,7 @@ export function createStorefrontDeps(env: StorefrontEnv): StorefrontAppOptions {
   return {
     db: createDb(env.DATABASE_URL),
     redis: createRedisClient(env.REDIS_URL),
+    sessionCookieName: STOREFRONT_SESSION_COOKIE,
     sessionSecret: env.SESSION_SECRET,
     corsOrigin: env.CORS_ORIGIN,
     trustProxy: env.TRUST_PROXY,

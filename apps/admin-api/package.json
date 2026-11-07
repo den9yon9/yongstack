@@ -24,6 +24,7 @@
     "@nestup/session": "workspace:*",
     "@nestup/shared": "workspace:*",
     "@nestup/storage": "workspace:*",
+    "@nestup/user": "workspace:*",
     "@sinclair/typebox": "^0.34.0",
     "elysia": "^1.2.0"
   },

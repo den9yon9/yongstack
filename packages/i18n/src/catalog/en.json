@@ -1,5 +1,10 @@
 {
+  "Account is disabled": "Account is disabled",
+  "Account is not an administrator": "Account is not an administrator",
+  "Email already registered": "Email already registered",
   "Forbidden": "Forbidden",
+  "Invalid email or password": "Invalid email or password",
   "Too many requests": "Too many requests",
-  "Unauthorized": "Unauthorized"
+  "Unauthorized": "Unauthorized",
+  "User not found": "User not found"
 }

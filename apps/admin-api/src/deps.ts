@@ -6,10 +6,13 @@ import { createStorage, type Storage } from '@nestup/storage'
 
 import { type AdminEnv } from './env'
 
+export const ADMIN_SESSION_COOKIE = 'nestup_admin_session'
+
 export interface AdminAppOptions {
   db: Db
   redis: Redis
   storage: Storage
+  sessionCookieName: string
   sessionSecret: string
   corsOrigin: true | string | string[]
   trustProxy: boolean
@@ -24,6 +27,7 @@ export function createAdminDeps(env: AdminEnv): AdminAppOptions {
     db: createDb(env.DATABASE_URL),
     redis: createRedisClient(env.REDIS_URL),
     storage: createStorage(env),
+    sessionCookieName: ADMIN_SESSION_COOKIE,
     sessionSecret: env.SESSION_SECRET,
     corsOrigin: env.CORS_ORIGIN,
     trustProxy: env.TRUST_PROXY,

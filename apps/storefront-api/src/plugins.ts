@@ -15,6 +15,7 @@ export interface StorefrontPlugins {
   localePlugin: ReturnType<typeof localePlugin>
   sessionPlugin: ReturnType<typeof createSessionPlugin>
   authRateLimit: ReturnType<typeof authRateLimit>
+  sessionCookieName: string
   metrics: StorefrontMetrics
   isProduction: boolean
   logger: Logger
@@ -26,7 +27,7 @@ export function createPlugins(
   options: Omit<StorefrontAppOptions, 'corsOrigin'>,
   metrics: StorefrontMetrics,
 ): StorefrontPlugins {
-  const { db, redis, sessionSecret, trustProxy, isProduction, logger } = options
+  const { db, redis, sessionCookieName, sessionSecret, trustProxy, isProduction, logger } = options
   return {
     dbPlugin: dbPlugin(db),
     redisPlugin: redisPlugin(redis, { logger }),
@@ -34,6 +35,7 @@ export function createPlugins(
     sessionPlugin: createSessionPlugin({
       redis,
       sessionSecret,
+      cookieName: sessionCookieName,
       isProduction,
       logger,
       defaultLocale: options.defaultLocale,
@@ -44,6 +46,7 @@ export function createPlugins(
       trustProxy,
       defaultLocale: options.defaultLocale,
     }),
+    sessionCookieName,
     metrics,
     isProduction,
     logger,

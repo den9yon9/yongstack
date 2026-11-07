@@ -24,6 +24,7 @@ const SessionSchema = Type.Object({
 export type Session = { userId: string; role: UserRole }
 
 export const SESSION_TTL_SECONDS = 86400
+export const DEFAULT_SESSION_COOKIE_NAME = 'session_id'
 
 function parseSession(raw: string | null): Session | null {
   if (!raw) return null
@@ -48,6 +49,8 @@ export interface SessionPluginOptions {
   sessionSecret: string
   isProduction: boolean
   logger: Logger
+  // 会话 cookie 名; 默认 session_id。多应用共享域时按应用隔离(如 nestup_session / nestup_admin_session)
+  cookieName?: string
   // 无请求语言线索时的回退语言(来自 env DEFAULT_LOCALE)
   defaultLocale?: Locale
 }
@@ -55,12 +58,14 @@ export interface SessionPluginOptions {
 export function createSessionPlugin(options: SessionPluginOptions) {
   const { redis, isProduction, logger } = options
   const defaultLocale = options.defaultLocale ?? DEFAULT_LOCALE
-  // 签名配置在根 app 的 Elysia 构造选项上（session_id 由 Elysia 负责签名/验签）；插件侧只做启动校验
+  const cookieName = options.cookieName ?? DEFAULT_SESSION_COOKIE_NAME
+  // 签名配置在根 app 的 Elysia 构造选项上（cookieName 由 Elysia 负责签名/验签）；插件侧只做启动校验
   resolveSecret(options.sessionSecret)
   return new Elysia({ name: 'session' })
     .decorate('sessionStore', createSessionStore(redis))
     .derive({ as: 'scoped' }, async ({ cookie }) => {
-      const sessionId = cookie.session_id?.value
+      const sessionCookie = cookie[cookieName]
+      const sessionId = sessionCookie?.value
       if (typeof sessionId !== 'string' || sessionId.length === 0) {
         return { session: null } satisfies { session: Session | null }
       }
@@ -71,7 +76,7 @@ export function createSessionPlugin(options: SessionPluginOptions) {
           const ttl = await redis.ttl(`session:${sessionId}`)
           if (ttl > 0 && ttl < SESSION_TTL_SECONDS / 2) {
             await redis.expire(`session:${sessionId}`, SESSION_TTL_SECONDS)
-            setSessionCookie(cookie.session_id, sessionId, isProduction)
+            setSessionCookie(sessionCookie, sessionId, isProduction)
           }
         }
         return { session } satisfies { session: Session | null }

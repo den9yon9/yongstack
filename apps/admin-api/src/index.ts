@@ -16,6 +16,7 @@ import { Elysia } from 'elysia'
 import { type AdminAppOptions, createAdminDeps } from './deps'
 import { createEnv } from './env'
 import { createPlugins } from './plugins'
+import { createAuthRoutes } from './routes/auth'
 
 const InfoResponse = Type.Object({
   service: Type.String(),
@@ -28,7 +29,9 @@ export function buildApp(options: AdminAppOptions) {
   const httpMetrics = registerHttpMetrics(metrics)
   const plugins = createPlugins(options)
   const enableDocs = !options.isProduction
-  return new Elysia({ cookie: { secrets: options.sessionSecret, sign: ['session_id'] } })
+  return new Elysia({
+    cookie: { secrets: options.sessionSecret, sign: [options.sessionCookieName] },
+  })
     .use(httpMetricsPlugin(httpMetrics))
     .use(requestLogger(options.logger))
     .use(securityHeaders(options.isProduction))
@@ -47,6 +50,7 @@ export function buildApp(options: AdminAppOptions) {
           })
         : new Elysia(),
     )
+    .use(createAuthRoutes(plugins))
     .get(
       '/info',
       () => ({

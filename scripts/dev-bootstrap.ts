@@ -416,6 +416,7 @@ function printSummary(env: EnvValues, opts: Options): void {
   Worker:      http://localhost:${envValue(env, 'HEALTH_PORT') || '3100'}/metrics
 
   Storage:     ${opts.externalStorage ? 'external S3-compatible bucket' : 'local SeaweedFS (http://localhost:8333)'}
+  Admin login: ${envValue(env, 'ADMIN_EMAIL') || 'admin@example.com'} / ${envValue(env, 'ADMIN_PASSWORD') || 'admin123456'}
 
 Next:
   pnpm dev
@@ -546,14 +547,14 @@ async function main(): Promise<void> {
     return
   }
 
-  step(2, 7, 'Install dependencies')
+  step(2, 8, 'Install dependencies')
   await run('install dependencies', ['pnpm', 'install'])
 
-  step(3, 7, 'Validate configuration')
+  step(3, 8, 'Validate configuration')
   validateStorageEnv(env, opts.externalStorage)
   info('[ok] storage configuration present')
 
-  step(4, 7, 'Start infrastructure')
+  step(4, 8, 'Start infrastructure')
   if (opts.noDocker) {
     info('using existing Postgres/Redis' + (opts.externalStorage ? '' : '/SeaweedFS'))
     await checkExistingInfrastructure(env, opts)
@@ -561,7 +562,7 @@ async function main(): Promise<void> {
     await startDockerInfrastructure(env, opts)
   }
 
-  step(5, 7, 'Initialize media storage')
+  step(5, 8, 'Initialize media storage')
   if (opts.externalStorage) {
     info('[ok] external storage configured; skipping storage:init')
     info('      make sure the bucket exists and public objects are readable')
@@ -569,10 +570,13 @@ async function main(): Promise<void> {
     await run('initialize local object storage', ['pnpm', 'storage:init'])
   }
 
-  step(6, 7, 'Run database migrations')
+  step(6, 8, 'Run database migrations')
   await run('run database migrations', ['pnpm', '--filter', '@nestup/database', 'db:migrate'])
 
-  step(7, 7, 'Done')
+  step(7, 8, 'Seed admin user')
+  await run('seed admin user', ['pnpm', '--filter', '@nestup/database', 'db:seed'])
+
+  step(8, 8, 'Done')
   printSummary(env, opts)
 }
 

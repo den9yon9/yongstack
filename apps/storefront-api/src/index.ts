@@ -16,6 +16,7 @@ import { Elysia } from 'elysia'
 import { createStorefrontDeps, type StorefrontAppOptions } from './deps'
 import { createEnv } from './env'
 import { createPlugins } from './plugins'
+import { createUserRoutes } from './routes/user'
 
 const InfoResponse = Type.Object({
   service: Type.String(),
@@ -32,7 +33,7 @@ export function buildApp(options: StorefrontAppOptions) {
   return new Elysia({
     cookie: {
       secrets: options.sessionSecret,
-      sign: ['session_id'],
+      sign: [options.sessionCookieName],
     },
   })
     .use(httpMetricsPlugin(httpMetrics))
@@ -53,6 +54,7 @@ export function buildApp(options: StorefrontAppOptions) {
           })
         : new Elysia(),
     )
+    .use(createUserRoutes(plugins))
     .get(
       '/info',
       () => ({

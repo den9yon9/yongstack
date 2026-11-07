@@ -9,7 +9,8 @@ export interface AdminPlugins {
   redisPlugin: ReturnType<typeof redisPlugin>
   localePlugin: ReturnType<typeof localePlugin>
   sessionPlugin: ReturnType<typeof createSessionPlugin>
-  rateLimitPlugin: ReturnType<typeof authRateLimit>
+  authRateLimit: ReturnType<typeof authRateLimit>
+  sessionCookieName: string
   storage: AdminAppOptions['storage']
   isProduction: boolean
   logger: Logger
@@ -17,7 +18,8 @@ export interface AdminPlugins {
 }
 
 export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): AdminPlugins {
-  const { db, redis, sessionSecret, trustProxy, isProduction, logger, storage } = options
+  const { db, redis, sessionCookieName, sessionSecret, trustProxy, isProduction, logger, storage } =
+    options
   return {
     dbPlugin: dbPlugin(db),
     redisPlugin: redisPlugin(redis, { logger }),
@@ -25,16 +27,18 @@ export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): Adm
     sessionPlugin: createSessionPlugin({
       redis,
       sessionSecret,
+      cookieName: sessionCookieName,
       isProduction,
       logger,
       defaultLocale: options.defaultLocale,
     }),
-    rateLimitPlugin: authRateLimit({
+    authRateLimit: authRateLimit({
       redis,
       prefix: 'rl:admin',
       trustProxy,
       defaultLocale: options.defaultLocale,
     }),
+    sessionCookieName,
     storage,
     isProduction,
     logger,
