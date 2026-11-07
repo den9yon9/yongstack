@@ -78,4 +78,8 @@ test('管理员可查看用户与角色页面', async ({ page }) => {
   await expect(page).toHaveURL(/\/files$/)
   await expect(page.getByRole('heading', { name: '文件管理' })).toBeVisible()
   await expect(page.getByPlaceholder('搜索 key / mime / purpose')).toBeVisible()
+
+  await page.getByRole('link', { name: '审计', exact: true }).click()
+  await expect(page).toHaveURL(/\/audit-logs$/)
+  await expect(page.getByRole('heading', { name: '审计日志' })).toBeVisible()
 })

@@ -18,6 +18,7 @@
     "@elysiajs/cors": "^1.4.2",
     "@elysiajs/openapi": "^1.4.0",
     "@yongstack/admin-users": "workspace:*",
+    "@yongstack/audit": "workspace:*",
     "@yongstack/database": "workspace:*",
     "@yongstack/file": "workspace:*",
     "@yongstack/http": "workspace:*",

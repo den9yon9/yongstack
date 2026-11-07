@@ -10,6 +10,7 @@
   "Forbidden": "Forbidden",
   "Hi {name}, verify your email by opening this link: {url}": "Hi {name}, verify your email by opening this link: {url}",
   "Hi {name}, your account is ready. Sign in at {url}": "Hi {name}, your account is ready. Sign in at {url}",
+  "Idempotency key reused with a different request": "Idempotency key reused with a different request",
   "Invalid email or password": "Invalid email or password",
   "Invalid setting value": "Invalid setting value",
   "Invalid token": "Invalid token",

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminIndexRouteImport } from './routes/_admin/index'
+import { Route as AdminAuditLogsRouteImport } from './routes/_admin/audit-logs'
 import { Route as AdminFilesRouteImport } from './routes/_admin/files'
 import { Route as AdminRolesRouteImport } from './routes/_admin/roles'
 import { Route as AdminSettingsRouteImport } from './routes/_admin/settings'
@@ -29,6 +30,11 @@ const LoginRoute = LoginRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditLogsRoute = AdminAuditLogsRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminFilesRoute = AdminFilesRouteImport.update({
@@ -55,6 +61,7 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AdminIndexRoute
   '/login': typeof LoginRoute
+  '/audit-logs': typeof AdminAuditLogsRoute
   '/files': typeof AdminFilesRoute
   '/roles': typeof AdminRolesRoute
   '/settings': typeof AdminSettingsRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/audit-logs': typeof AdminAuditLogsRoute
   '/files': typeof AdminFilesRoute
   '/roles': typeof AdminRolesRoute
   '/settings': typeof AdminSettingsRoute
@@ -72,6 +80,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/_admin/audit-logs': typeof AdminAuditLogsRoute
   '/_admin/files': typeof AdminFilesRoute
   '/_admin/roles': typeof AdminRolesRoute
   '/_admin/settings': typeof AdminSettingsRoute
@@ -80,13 +89,14 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/files' | '/roles' | '/settings' | '/users'
+  fullPaths: '/' | '/login' | '/audit-logs' | '/files' | '/roles' | '/settings' | '/users'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/files' | '/roles' | '/settings' | '/users' | '/'
+  to: '/login' | '/audit-logs' | '/files' | '/roles' | '/settings' | '/users' | '/'
   id:
     | '__root__'
     | '/_admin'
     | '/login'
+    | '/_admin/audit-logs'
     | '/_admin/files'
     | '/_admin/roles'
     | '/_admin/settings'
@@ -122,6 +132,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/audit-logs': {
+      id: '/_admin/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/audit-logs'
+      preLoaderRoute: typeof AdminAuditLogsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/files': {
       id: '/_admin/files'
       path: '/files'
@@ -154,6 +171,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminAuditLogsRoute: typeof AdminAuditLogsRoute
   AdminFilesRoute: typeof AdminFilesRoute
   AdminRolesRoute: typeof AdminRolesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -162,6 +180,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAuditLogsRoute: AdminAuditLogsRoute,
   AdminFilesRoute: AdminFilesRoute,
   AdminRolesRoute: AdminRolesRoute,
   AdminSettingsRoute: AdminSettingsRoute,

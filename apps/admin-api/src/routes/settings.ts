@@ -1,7 +1,8 @@
 import { Type } from '@sinclair/typebox'
+import { recordAudit } from '@yongstack/audit'
 import { hasPermission } from '@yongstack/session'
 import { listSettings, updateSettings } from '@yongstack/settings'
-import { assertNever, ErrorResponse } from '@yongstack/shared'
+import { assertNever, ErrorResponse, requestMeta } from '@yongstack/shared'
 import { Elysia, status } from 'elysia'
 
 import { type AdminPlugins } from '../plugins'
@@ -48,7 +49,7 @@ export function createSettingsRoutes(plugins: AdminPlugins) {
     )
     .put(
       '/settings',
-      async ({ body, db, session, i18n }) => {
+      async ({ body, db, session, request, i18n }) => {
         if (!hasPermission(session, 'settings:write')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
@@ -66,6 +67,16 @@ export function createSettingsRoutes(plugins: AdminPlugins) {
               return assertNever(result.error.code)
           }
         }
+        await recordAudit(
+          {
+            actorId: session.userId,
+            action: 'admin.settings.update',
+            targetType: 'settings',
+            diff: { keys: Object.keys(body.values) },
+            ...requestMeta(request),
+          },
+          db,
+        )
         return { items: result.value }
       },
       {

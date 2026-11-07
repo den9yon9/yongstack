@@ -28,9 +28,10 @@ const navItems = [
   { label: '用户', to: '/users', exact: false },
   { label: '角色', to: '/roles', exact: false },
   { label: '文件', to: '/files', exact: false },
+  { label: '审计', to: '/audit-logs', exact: false },
   { label: '设置', to: '/settings', exact: false },
 ] as const
-const pendingModules = ['审计日志']
+const pendingModules: string[] = []
 
 function AdminLayout() {
   const navigate = useNavigate()

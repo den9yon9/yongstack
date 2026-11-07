@@ -313,3 +313,29 @@ describe('admin files', () => {
     expect(res.status).toBe(401)
   })
 })
+
+describe('admin audit', () => {
+  test('records admin actions and lists them', async () => {
+    const cookie = await loginAdmin()
+    const target = await seedUser('audit-target@example.com', 'member')
+
+    await api.admin
+      .users({ id: target.id })
+      .patch({ isActive: false }, { fetch: { headers: { cookie } } })
+
+    const res = await api.admin.audit.get({
+      query: { page: 1, pageSize: 10 },
+      fetch: { headers: { cookie } },
+    })
+    expect(res.status).toBe(200)
+    if (res.error !== null) throw res.error
+    const entry = res.data.items.find((item) => item.action === 'admin.user.update')
+    expect(entry).toBeDefined()
+    expect(entry?.targetId).toBe(target.id)
+  })
+
+  test('requires admin authentication', async () => {
+    const res = await api.admin.audit.get({ query: { page: 1, pageSize: 10 } })
+    expect(res.status).toBe(401)
+  })
+})

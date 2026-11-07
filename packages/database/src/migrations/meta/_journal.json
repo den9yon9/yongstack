@@ -43,6 +43,13 @@
       "when": 1794091823992,
       "tag": "0005_warm_punisher",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794092700783,
+      "tag": "0006_heavy_tarot",
+      "breakpoints": true
     }
   ]
 }

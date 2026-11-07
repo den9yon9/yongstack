@@ -101,18 +101,20 @@ export async function requestPasswordReset(
   client: DbClient,
   opts: { locale?: string } = {},
 ): Promise<Result<{ token: string } | null, never>> {
-  const created = await createPasswordResetToken(email, client)
-  if (created === null) return ok(null)
+  return withTransaction(client, async (tx) => {
+    const created = await createPasswordResetToken(email, tx)
+    if (created === null) return ok(null)
 
-  await recordOutboxEvent(client, {
-    type: PASSWORD_RESET_REQUESTED_EVENT,
-    payload: {
-      email,
-      token: created.token,
-      locale: opts.locale ?? 'en',
-    },
+    await recordOutboxEvent(tx, {
+      type: PASSWORD_RESET_REQUESTED_EVENT,
+      payload: {
+        email,
+        token: created.token,
+        locale: opts.locale ?? 'en',
+      },
+    })
+    return ok(created)
   })
-  return ok(created)
 }
 
 export async function resetPassword(

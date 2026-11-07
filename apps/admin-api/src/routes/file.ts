@@ -1,7 +1,8 @@
+import { recordAudit } from '@yongstack/audit'
 import { listFiles, softDeleteFile } from '@yongstack/file'
 import * as FileModel from '@yongstack/file/model'
 import { hasPermission } from '@yongstack/session'
-import { ErrorResponse } from '@yongstack/shared'
+import { ErrorResponse, requestMeta } from '@yongstack/shared'
 import { Elysia, status, t } from 'elysia'
 
 import { type AdminPlugins } from '../plugins'
@@ -38,7 +39,7 @@ export function createFileRoutes(plugins: AdminPlugins) {
     )
     .delete(
       '/files/:id',
-      async ({ params, session, db, i18n }) => {
+      async ({ params, session, db, request, i18n }) => {
         if (!hasPermission(session, 'files:delete')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
@@ -47,6 +48,17 @@ export function createFileRoutes(plugins: AdminPlugins) {
           return status(404, { error: deleted.error, message: i18n('File not found') })
         }
         await storage.delete(deleted.value.key)
+        await recordAudit(
+          {
+            actorId: session.userId,
+            action: 'admin.file.delete',
+            targetType: 'file',
+            targetId: params.id,
+            diff: { key: deleted.value.key },
+            ...requestMeta(request),
+          },
+          db,
+        )
         return status(204)
       },
       {

@@ -8,6 +8,7 @@ import {
   verifyEmail,
 } from '@yongstack/account'
 import { resolveRequestLocale } from '@yongstack/http'
+import { hashIdempotencyRequest, withIdempotency } from '@yongstack/idempotency'
 import { getUserAccess, type UserAccess } from '@yongstack/rbac'
 import { clearSessionCookie, type SessionStore, setSessionCookie } from '@yongstack/session'
 import { isEmailVerificationRequired } from '@yongstack/settings'
@@ -378,10 +379,32 @@ export function createUserRoutes(plugins: AppPlugins) {
     )
     .post(
       '/forgot-password',
-      async ({ body, db, request }) => {
-        await requestPasswordReset(body.email, db, {
-          locale: requestLocale(request),
-        })
+      async ({ body, db, request, headers, i18n }) => {
+        const locale = requestLocale(request)
+        const idempotencyKey = headers['idempotency-key']
+        if (typeof idempotencyKey !== 'string' || idempotencyKey.length === 0) {
+          await requestPasswordReset(body.email, db, { locale })
+          return status(202)
+        }
+
+        const result = await withIdempotency(
+          {
+            scope: 'auth.forgot-password',
+            key: idempotencyKey,
+            requestHash: hashIdempotencyRequest({ email: body.email }),
+          },
+          db,
+          async () => {
+            await requestPasswordReset(body.email, db, { locale })
+            return { statusCode: 202, body: {} }
+          },
+        )
+        if (result.isErr()) {
+          return status(409, {
+            error: result.error,
+            message: i18n('Idempotency key reused with a different request'),
+          })
+        }
         return status(202)
       },
       {

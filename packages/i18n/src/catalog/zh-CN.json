@@ -10,6 +10,7 @@
   "Forbidden": "无权限访问",
   "Hi {name}, verify your email by opening this link: {url}": "你好，{name}！请打开以下链接验证邮箱：{url}",
   "Hi {name}, your account is ready. Sign in at {url}": "你好，{name}！你的账号已就绪。登录地址：{url}",
+  "Idempotency key reused with a different request": "幂等键已用于不同的请求内容",
   "Invalid email or password": "邮箱或密码错误",
   "Invalid setting value": "设置值不合法",
   "Invalid token": "令牌无效",

@@ -16,6 +16,7 @@ import { Elysia } from 'elysia'
 import { type AdminAppOptions, createAdminDeps } from './deps'
 import { createEnv } from './env'
 import { createPlugins } from './plugins'
+import { createAuditRoutes } from './routes/audit'
 import { createAuthRoutes } from './routes/auth'
 import { createFileRoutes } from './routes/file'
 import { createSettingsRoutes } from './routes/settings'
@@ -57,6 +58,7 @@ export function buildApp(options: AdminAppOptions) {
     .use(createSettingsRoutes(plugins))
     .use(createUserRoutes(plugins))
     .use(createFileRoutes(plugins))
+    .use(createAuditRoutes(plugins))
     .get(
       '/info',
       () => ({

@@ -1,8 +1,9 @@
 import { Type } from '@sinclair/typebox'
 import { getUserWithRoles, listUsersWithRoles, updateUserAccess } from '@yongstack/admin-users'
+import { recordAudit } from '@yongstack/audit'
 import { listPermissions, listRoles } from '@yongstack/rbac'
 import { hasPermission } from '@yongstack/session'
-import { assertNever, ErrorResponse } from '@yongstack/shared'
+import { assertNever, ErrorResponse, requestMeta } from '@yongstack/shared'
 import * as UserModel from '@yongstack/user/model'
 import { Elysia, status } from 'elysia'
 
@@ -91,7 +92,7 @@ export function createUserRoutes(plugins: AdminPlugins) {
     )
     .patch(
       '/users/:id',
-      async ({ params, body, session, db, sessionStore, i18n }) => {
+      async ({ params, body, session, db, sessionStore, request, i18n }) => {
         if (!hasPermission(session, 'users:write')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
@@ -117,6 +118,17 @@ export function createUserRoutes(plugins: AdminPlugins) {
 
         // 角色/状态变更后旧会话权限立即失效
         await sessionStore.destroyAllForUser(params.id)
+        await recordAudit(
+          {
+            actorId: session.userId,
+            action: 'admin.user.update',
+            targetType: 'user',
+            targetId: params.id,
+            diff: body,
+            ...requestMeta(request),
+          },
+          db,
+        )
         return result.value
       },
       {
@@ -140,7 +152,7 @@ export function createUserRoutes(plugins: AdminPlugins) {
     )
     .delete(
       '/users/:id/sessions',
-      async ({ params, session, sessionStore, i18n }) => {
+      async ({ params, session, sessionStore, db, request, i18n }) => {
         if (!hasPermission(session, 'users:write')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
@@ -151,6 +163,16 @@ export function createUserRoutes(plugins: AdminPlugins) {
           })
         }
         await sessionStore.destroyAllForUser(params.id)
+        await recordAudit(
+          {
+            actorId: session.userId,
+            action: 'admin.user.sessions_revoked',
+            targetType: 'user',
+            targetId: params.id,
+            ...requestMeta(request),
+          },
+          db,
+        )
         return status(204)
       },
       {

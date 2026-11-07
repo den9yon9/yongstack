@@ -3,13 +3,18 @@ export { parseEnv } from './env'
 export { createLogger, type Logger } from './logger'
 export { fromCents, toCents } from './money'
 export { getRequestContext, getRequestId, runWithRequestId } from './requestContext'
+export { type RequestMeta, requestMeta } from './requestMeta'
 export {
+  buildOffset,
   DEFAULT_PAGE,
   DEFAULT_PAGE_SIZE,
   ErrorResponse,
+  likePattern,
   MAX_PAGE_SIZE,
   PaginatedResponse,
   PaginationQuery,
+  SortOrder,
+  SortQuery,
 } from './schemas'
 export { err, ok, type Result } from 'neverthrow'
 

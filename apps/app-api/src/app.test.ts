@@ -508,3 +508,37 @@ describe('files', () => {
     expect(deleteDenied.status).toBe(404)
   })
 })
+
+describe('idempotency', () => {
+  test('forgot-password replays the cached response and rejects body drift', async () => {
+    await api.auth.register.post({
+      name: 'Alice',
+      email: 'idempotent@example.com',
+      password: 'password123',
+    })
+    const headers = { 'idempotency-key': 'forgot-key-1' }
+
+    const first = await api.auth['forgot-password'].post(
+      { email: 'idempotent@example.com' },
+      { fetch: { headers } },
+    )
+    const second = await api.auth['forgot-password'].post(
+      { email: 'idempotent@example.com' },
+      { fetch: { headers } },
+    )
+    expect(first.status).toBe(202)
+    expect(second.status).toBe(202)
+
+    const events = await db
+      .select()
+      .from(schema.outboxEvents)
+      .where(eq(schema.outboxEvents.type, 'user.password_reset_requested'))
+    expect(events).toHaveLength(1)
+
+    const mismatch = await api.auth['forgot-password'].post(
+      { email: 'other@example.com' },
+      { fetch: { headers } },
+    )
+    expect(mismatch.status).toBe(409)
+  })
+})

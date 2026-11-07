@@ -21,6 +21,7 @@
     "@yongstack/database": "workspace:*",
     "@yongstack/file": "workspace:*",
     "@yongstack/http": "workspace:*",
+    "@yongstack/idempotency": "workspace:*",
     "@yongstack/i18n": "workspace:*",
     "@yongstack/rbac": "workspace:*",
     "@yongstack/redis": "workspace:*",

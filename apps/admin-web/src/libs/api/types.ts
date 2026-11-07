@@ -9,3 +9,5 @@ export type AdminUserListItem = EdenListItem<typeof api.admin.users.get>
 export type AdminRole = EdenListItem<typeof api.admin.roles.get>
 
 export type AdminFile = EdenListItem<typeof api.admin.files.get>
+
+export type AdminAuditLog = EdenListItem<typeof api.admin.audit.get>
