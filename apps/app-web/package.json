@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "typecheck": "tsr generate && tsc --noEmit"
+    "typecheck": "tsr generate && pnpm exec prettier --write src/routeTree.gen.ts >/dev/null && tsc --noEmit"
   },
   "dependencies": {
     "@elysiajs/eden": "^1.4.9",
