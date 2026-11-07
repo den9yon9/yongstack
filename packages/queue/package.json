@@ -1,0 +1,16 @@
+{
+  "name": "@nestup/queue",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nestup/redis": "workspace:*",
+    "@nestup/shared": "workspace:*",
+    "bullmq": "^5.41.0"
+  }
+}

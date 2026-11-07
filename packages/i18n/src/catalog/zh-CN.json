@@ -1,0 +1,5 @@
+{
+  "Forbidden": "无权限访问",
+  "Too many requests": "请求过于频繁，请稍后重试",
+  "Unauthorized": "未登录或登录已过期"
+}

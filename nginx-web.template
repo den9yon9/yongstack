@@ -1,0 +1,41 @@
+# 与 Vite dev 相同的分流逻辑: 带 Accept: text/html 的请求是 SPA 导航, 其余反代 API
+map $http_accept $api_request {
+    default 1;
+    ~*text/html 0;
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: https: http://localhost:8333; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" always;
+
+    location / {
+        if ($api_request) {
+            error_page 418 = @api;
+            return 418;
+        }
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Vite 产物固定在 /assets/, 静态直出不走反代
+    location /assets/ {
+        try_files $uri =404;
+    }
+
+    location @api {
+        proxy_pass ${API_UPSTREAM};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@nestup/worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch --env-file=../../.env src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "bun --env-file=../../.env test --parallel=1"
+  },
+  "dependencies": {
+    "@nestup/database": "workspace:*",
+    "@nestup/http": "workspace:*",
+    "@nestup/queue": "workspace:*",
+    "@nestup/redis": "workspace:*",
+    "@nestup/shared": "workspace:*",
+    "@sinclair/typebox": "^0.34.0"
+  }
+}

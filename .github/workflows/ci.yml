@@ -1,0 +1,169 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nestup
+          POSTGRES_PASSWORD: nestup
+          POSTGRES_DB: nestup
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nestup"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        # 版本由 package.json 的 packageManager 字段决定, 显式传 version 会与之冲突
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - uses: oven-sh/setup-bun@v2
+        with:
+          version: '1.3.14'
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check format & lint
+        run: pnpm check
+
+      - name: Check i18n catalog
+        run: pnpm i18n:check
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Check generated route tree
+        run: git diff --exit-code -- apps/admin-web/src/routeTree.gen.ts apps/storefront-web/src/routeTree.gen.ts
+
+      - name: Build
+        run: pnpm build
+
+      # 覆盖率只报告不设门槛: 看见盲区即可, 数字指标容易异化为刷分
+      - name: Run tests with coverage
+        run: pnpm exec turbo test --concurrency=1 -- --coverage
+        env:
+          TESTING_DATABASE_URL: postgres://nestup:nestup@localhost:5432/nestup_test
+          TESTING_REDIS_URL: redis://localhost:6379/1
+          TESTING_SESSION_SECRET: test-session-secret-0123456789abcdef
+          NODE_ENV: test
+
+      - name: Commit message lint
+        if: github.event_name == 'pull_request'
+        uses: wagoid/commitlint-github-action@v6
+
+      - name: Run migrations
+        run: pnpm --filter @nestup/database db:migrate
+        env:
+          DATABASE_URL: postgres://nestup:nestup@localhost:5432/nestup
+          NODE_ENV: test
+
+      - name: Prepare .env for e2e
+        run: |
+          cat > .env <<'EOF'
+          DATABASE_URL=postgres://nestup:nestup@localhost:5432/nestup
+          REDIS_URL=redis://localhost:6379
+          SESSION_SECRET=test-session-secret-0123456789abcdef
+          LOG_LEVEL=silent
+          CORS_ORIGIN=*
+          TRUST_PROXY=false
+          STOREFRONT_PORT=3000
+          ADMIN_PORT=3001
+          HEALTH_PORT=3100
+          TESTING_DATABASE_URL=postgres://nestup:nestup@localhost:5432/nestup_test
+          TESTING_REDIS_URL=redis://localhost:6379/1
+          TESTING_SESSION_SECRET=test-session-secret-0123456789abcdef
+          STORAGE_ENDPOINT=http://localhost:8333
+          STORAGE_REGION=us-east-1
+          STORAGE_BUCKET=nestup
+          STORAGE_ACCESS_KEY_ID=admin
+          STORAGE_SECRET_ACCESS_KEY=secret
+          STORAGE_FORCE_PATH_STYLE=true
+          STORAGE_PUBLIC_BASE_URL=http://localhost:8333/nestup
+          STORAGE_KEY_PREFIX=media
+          EOF
+
+      - name: Start object storage
+        run: |
+          docker run -d --name seaweedfs -p 8333:8333 \
+            chrislusf/seaweedfs:4.48 server -dir=/data -s3 -s3.port=8333 -ip.bind=0.0.0.0
+          for i in $(seq 1 30); do
+            if docker run --rm --network host \
+              -e AWS_ACCESS_KEY_ID=admin \
+              -e AWS_SECRET_ACCESS_KEY=secret \
+              amazon/aws-cli --endpoint-url http://localhost:8333 s3 ls >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker run --rm --network host \
+            -e AWS_ACCESS_KEY_ID=admin \
+            -e AWS_SECRET_ACCESS_KEY=secret \
+            amazon/aws-cli --endpoint-url http://localhost:8333 s3 mb s3://nestup || true
+          docker run --rm --network host \
+            -e AWS_ACCESS_KEY_ID=admin \
+            -e AWS_SECRET_ACCESS_KEY=secret \
+            amazon/aws-cli --endpoint-url http://localhost:8333 s3api put-bucket-policy \
+            --bucket nestup \
+            --policy '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":["s3:GetObject"],"Resource":["arn:aws:s3:::nestup/*"]}]}'
+
+      - name: Install Playwright browser
+        run: pnpm --filter @nestup/e2e exec playwright install --with-deps chromium
+
+      - name: Run e2e
+        run: pnpm e2e
+        env:
+          NODE_ENV: test
+
+      - name: Build & smoke test docker image
+        run: |
+          docker build --build-arg APP=storefront-api -t nestup-smoke .
+          docker run -d --name nestup-smoke --network=host \
+            -e DATABASE_URL=postgres://nestup:nestup@localhost:5432/nestup_test \
+            -e REDIS_URL=redis://localhost:6379/1 \
+            -e SESSION_SECRET=test-session-secret-0123456789abcdef \
+            -e NODE_ENV=test \
+            -e CORS_ORIGIN='*' \
+            -e TRUST_PROXY=false \
+            -e STOREFRONT_PORT=3000 \
+            -e LOG_LEVEL=silent \
+            nestup-smoke
+          for i in $(seq 1 30); do
+            if docker exec nestup-smoke wget -q -O /dev/null http://localhost:3000/health; then
+              echo "health ok"
+              docker rm -f nestup-smoke
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs nestup-smoke
+          docker rm -f nestup-smoke
+          exit 1

@@ -1,0 +1,185 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nestup
+      POSTGRES_PASSWORD: nestup
+      POSTGRES_DB: nestup
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nestup']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48
+    command: server -dir=/data -s3 -s3.port=8333 -ip.bind=0.0.0.0
+    ports:
+      - '8333:8333'
+    volumes:
+      - seaweeddata:/data
+    restart: unless-stopped
+
+  storage-init:
+    image: amazon/aws-cli:latest
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        set -e
+        until aws --endpoint-url http://seaweedfs:8333 s3 ls >/dev/null 2>&1; do sleep 1; done
+        aws --endpoint-url http://seaweedfs:8333 s3 mb s3://nestup 2>/dev/null || true
+        cat >/tmp/policy.json <<'EOF'
+        {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":["s3:GetObject"],"Resource":["arn:aws:s3:::nestup/*"]}]}
+        EOF
+        aws --endpoint-url http://seaweedfs:8333 s3api put-bucket-policy --bucket nestup --policy file:///tmp/policy.json
+    environment:
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: secret
+      AWS_DEFAULT_REGION: us-east-1
+    depends_on:
+      - seaweedfs
+    restart: 'no'
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        APP: worker
+    command: ['bun', 'packages/database/src/migrate.ts']
+    env_file: ../.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  storefront-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        APP: storefront-api
+    env_file: ../.env
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://localhost:3000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  admin-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        APP: admin-api
+    env_file: ../.env
+    environment:
+      STORAGE_ENDPOINT: http://seaweedfs:8333
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      storage-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://localhost:3001/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        APP: worker
+    env_file: ../.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  storefront-web:
+    build:
+      context: ..
+      dockerfile: Dockerfile.web
+      args:
+        APP: storefront-web
+    environment:
+      API_UPSTREAM: http://storefront-api:3000
+    ports:
+      - '8080:80'
+    depends_on:
+      storefront-api:
+        condition: service_started
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://localhost/']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  admin-web:
+    build:
+      context: ..
+      dockerfile: Dockerfile.web
+      args:
+        APP: admin-web
+    environment:
+      API_UPSTREAM: http://admin-api:3001
+    ports:
+      - '8081:80'
+    depends_on:
+      admin-api:
+        condition: service_started
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://localhost/']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  seaweeddata:

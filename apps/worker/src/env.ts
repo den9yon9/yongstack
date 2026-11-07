@@ -1,0 +1,29 @@
+import { parseEnv } from '@nestup/shared'
+import { type StaticDecode, Type } from '@sinclair/typebox'
+
+export const workerEnvSchema = Type.Object({
+  NODE_ENV: Type.Union(
+    [Type.Literal('development'), Type.Literal('production'), Type.Literal('test')],
+    { default: 'development' },
+  ),
+  LOG_LEVEL: Type.Union(
+    [
+      Type.Literal('debug'),
+      Type.Literal('info'),
+      Type.Literal('warn'),
+      Type.Literal('error'),
+      Type.Literal('silent'),
+    ],
+    { default: 'info' },
+  ),
+  REDIS_URL: Type.String({ format: 'uri' }),
+  DATABASE_URL: Type.String({ format: 'uri' }),
+  // 可选健康端口: 设置后起一个极简 HTTP /health(容器健康检查与 e2e 就绪探测用)
+  HEALTH_PORT: Type.Optional(Type.String({ pattern: '^\\d+$' })),
+})
+
+export type WorkerEnv = StaticDecode<typeof workerEnvSchema>
+
+export function createEnv(source: Record<string, string | undefined> = process.env): WorkerEnv {
+  return parseEnv(workerEnvSchema, source)
+}

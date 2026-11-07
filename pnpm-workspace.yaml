@@ -1,0 +1,8 @@
+packages:
+  - packages/*
+  - domains/*
+  - usecases/*
+  - apps/*
+onlyBuiltDependencies:
+  - esbuild
+  - lefthook

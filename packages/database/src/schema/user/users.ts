@@ -1,0 +1,39 @@
+import {
+  boolean,
+  index,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core'
+
+export const USER_ROLE = ['customer', 'admin'] as const
+export type UserRole = (typeof USER_ROLE)[number]
+
+export const userRole = pgEnum('user_role', USER_ROLE)
+
+export const users = pgTable(
+  'users',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name', { length: 255 }),
+    email: varchar('email', { length: 255 }).unique().notNull(),
+    passwordHash: varchar('password_hash', { length: 255 }).notNull(),
+    phone: varchar('phone', { length: 50 }),
+    avatar: text('avatar'),
+    // 用户语言偏好(注册/登录时由 Accept-Language 落库); 邮件等异步通知按此渲染
+    locale: varchar('locale', { length: 16 }).default('en').notNull(),
+    role: userRole('role').default('customer').notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (t) => ({
+    createdAtIdx: index('users_created_at_idx').on(t.createdAt),
+  }),
+)
