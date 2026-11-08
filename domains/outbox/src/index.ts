@@ -1,3 +1,4 @@
+export { type OutboxEventMap, type OutboxEventName } from './events'
 export {
   claimOutboxEvents,
   markDelivered,
@@ -5,6 +6,5 @@ export {
   OUTBOX_MAX_ATTEMPTS,
   type OutboxEvent,
   recordOutboxEvent,
-  type RecordOutboxEventInput,
   resetStaleProcessing,
 } from './service'

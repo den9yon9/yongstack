@@ -1,6 +1,10 @@
 import { type DbClient, schema } from '@yongstack/database'
 import { eq, sql } from 'drizzle-orm'
 
+import type { OutboxEventMap, OutboxEventName } from './events'
+
+export { type OutboxEventMap, type OutboxEventName } from './events'
+
 export const OUTBOX_MAX_ATTEMPTS = 5
 const STALE_PROCESSING_MS = 5 * 60 * 1000
 
@@ -16,9 +20,11 @@ export interface OutboxEvent {
   attempts: number
 }
 
-export async function recordOutboxEvent(
+// type/payload 受 OutboxEventMap 约束: 生产侧写错事件名或缺字段会直接编译失败。
+// 测试/脚手架之外的临时事件也应先注册进 events.ts。
+export async function recordOutboxEvent<K extends OutboxEventName>(
   client: DbClient,
-  input: RecordOutboxEventInput,
+  input: { type: K; payload: OutboxEventMap[K] },
 ): Promise<void> {
   await client.insert(schema.outboxEvents).values({
     type: input.type,

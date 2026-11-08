@@ -4,7 +4,7 @@ import { createLogger } from '@yongstack/shared'
 import { describe, expect, test } from 'bun:test'
 
 import { EMAIL_JOB_NAMES, type SendEmailJobData } from './jobs'
-import { dispatchOutboxEvent } from './service'
+import { dispatchOutboxEvent, OutboxPayloadError } from './service'
 
 function createFakeQueue() {
   const jobs: { name: string; data: SendEmailJobData; opts?: unknown }[] = []
@@ -82,20 +82,21 @@ describe('dispatchOutboxEvent', () => {
     expect(jobs[1].data.vars.url).toBe('https://app.example.com/reset-password?token=reset-token')
   })
 
-  test('ignores unknown event types and invalid payloads', async () => {
+  test('throws on unknown event types or payload drift so the worker can mark it failed', async () => {
     const { queue, jobs } = createFakeQueue()
-    const logger = createLogger('silent')
+    const options = {
+      emailQueue: queue,
+      appUrl: 'https://app.example.com',
+      logger: createLogger('silent'),
+    }
 
-    await dispatchOutboxEvent(event({ type: 'unknown.event' }), {
-      emailQueue: queue,
-      appUrl: 'https://app.example.com',
-      logger,
-    })
-    await dispatchOutboxEvent(event({ payload: {} }), {
-      emailQueue: queue,
-      appUrl: 'https://app.example.com',
-      logger,
-    })
+    await expect(
+      dispatchOutboxEvent(event({ type: 'unknown.event' }), options),
+    ).rejects.toBeInstanceOf(OutboxPayloadError)
+    // 注册过的字段缺失视为漂移
+    await expect(
+      dispatchOutboxEvent(event({ payload: { userId: 'u-1' } }), options),
+    ).rejects.toBeInstanceOf(OutboxPayloadError)
 
     expect(jobs).toHaveLength(0)
   })

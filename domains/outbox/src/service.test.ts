@@ -25,14 +25,19 @@ beforeEach(async () => {
 })
 
 describe('outbox', () => {
+  const payload = { email: 'a@example.com', token: 'tok', locale: 'en' } as const
+
   test('records, claims and marks an event delivered', async () => {
-    await recordOutboxEvent(db, { type: 'test.event', payload: { hello: 'world' } })
+    await recordOutboxEvent(db, {
+      type: 'user.password_reset_requested',
+      payload,
+    })
 
     const events = await claimOutboxEvents(db, 10)
     expect(events).toHaveLength(1)
     expect(events[0]).toMatchObject({
-      type: 'test.event',
-      payload: { hello: 'world' },
+      type: 'user.password_reset_requested',
+      payload,
       attempts: 0,
     })
 
@@ -43,7 +48,7 @@ describe('outbox', () => {
   })
 
   test('failed delivery increments attempts and schedules a retry', async () => {
-    await recordOutboxEvent(db, { type: 'test.event', payload: {} })
+    await recordOutboxEvent(db, { type: 'user.password_reset_requested', payload })
     const [event] = await claimOutboxEvents(db)
 
     await markFailed(db, event, new Error('boom'))
@@ -57,7 +62,12 @@ describe('outbox', () => {
   test('marks the event failed after max attempts', async () => {
     const [inserted] = await db
       .insert(schema.outboxEvents)
-      .values({ type: 'test.event', payload: {}, attempts: 4, availableAt: new Date() })
+      .values({
+        type: 'user.password_reset_requested',
+        payload: {},
+        attempts: 4,
+        availableAt: new Date(),
+      })
       .returning()
     const [event] = await claimOutboxEvents(db)
 
@@ -71,7 +81,7 @@ describe('outbox', () => {
 
   test('resets stale processing events back to pending', async () => {
     await db.insert(schema.outboxEvents).values({
-      type: 'test.event',
+      type: 'user.password_reset_requested',
       payload: {},
       status: 'processing',
       updatedAt: new Date(Date.now() - 10 * 60 * 1000),

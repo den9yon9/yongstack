@@ -1,5 +1,5 @@
-import { recordAudit } from '@yongstack/audit'
-import { listFiles, softDeleteFile } from '@yongstack/file'
+import { withAudit } from '@yongstack/audit'
+import { listFiles, softDeleteFileForActor } from '@yongstack/file'
 import * as FileModel from '@yongstack/file/model'
 import { hasPermission } from '@yongstack/session'
 import { ErrorResponse, requestMeta } from '@yongstack/shared'
@@ -8,7 +8,7 @@ import { Elysia, status, t } from 'elysia'
 import { type AdminPlugins } from '../plugins'
 
 export function createFileRoutes(plugins: AdminPlugins) {
-  const { storage } = plugins
+  const { storage, logger } = plugins
 
   return new Elysia({ name: 'file-admin', prefix: '/admin' })
     .use(plugins.localePlugin)
@@ -43,22 +43,29 @@ export function createFileRoutes(plugins: AdminPlugins) {
         if (!hasPermission(session, 'files:delete')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
-        const deleted = await softDeleteFile(params.id, db)
-        if (deleted.isErr()) {
-          return status(404, { error: deleted.error, message: i18n('File not found') })
-        }
-        await storage.delete(deleted.value.key)
-        await recordAudit(
-          {
+        const deleted = await withAudit(
+          db,
+          (result: { key: string }) => ({
             actorId: session.userId,
             action: 'admin.file.delete',
             targetType: 'file',
             targetId: params.id,
-            diff: { key: deleted.value.key },
+            diff: { key: result.key },
             ...requestMeta(request),
-          },
-          db,
+          }),
+          (tx) => softDeleteFileForActor(params.id, { userId: session.userId, isAdmin: true }, tx),
         )
+        if (deleted.isErr()) {
+          return status(404, { error: deleted.error, message: i18n('File not found') })
+        }
+        // 对象删除尽力而为; 失败时数据库记录已软删, 由清理任务兜底
+        const removed = await storage.delete(deleted.value.key)
+        if (removed.isErr()) {
+          logger.error(
+            { err: removed.error, key: deleted.value.key },
+            'storage delete failed after soft delete',
+          )
+        }
         return status(204)
       },
       {

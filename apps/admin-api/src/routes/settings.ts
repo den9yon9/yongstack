@@ -1,5 +1,5 @@
 import { Type } from '@sinclair/typebox'
-import { recordAudit } from '@yongstack/audit'
+import { withAudit } from '@yongstack/audit'
 import { hasPermission } from '@yongstack/session'
 import { listSettings, updateSettings } from '@yongstack/settings'
 import { assertNever, ErrorResponse, requestMeta } from '@yongstack/shared'
@@ -53,7 +53,17 @@ export function createSettingsRoutes(plugins: AdminPlugins) {
         if (!hasPermission(session, 'settings:write')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
-        const result = await updateSettings(body.values, db, session.userId)
+        const result = await withAudit(
+          db,
+          {
+            actorId: session.userId,
+            action: 'admin.settings.update',
+            targetType: 'settings',
+            diff: { patch: body.values },
+            ...requestMeta(request),
+          },
+          (tx) => updateSettings(body.values, tx, session.userId),
+        )
         if (result.isErr()) {
           switch (result.error.code) {
             case 'SETTING_UNKNOWN':
@@ -67,16 +77,6 @@ export function createSettingsRoutes(plugins: AdminPlugins) {
               return assertNever(result.error.code)
           }
         }
-        await recordAudit(
-          {
-            actorId: session.userId,
-            action: 'admin.settings.update',
-            targetType: 'settings',
-            diff: { keys: Object.keys(body.values) },
-            ...requestMeta(request),
-          },
-          db,
-        )
         return { items: result.value }
       },
       {

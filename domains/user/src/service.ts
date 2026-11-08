@@ -321,38 +321,43 @@ export async function requestPhoneLoginCode(
   const phone = normalizePhone(phoneInput)
   const now = new Date()
 
-  const [latest] = await client
-    .select({ createdAt: schema.phoneLoginCodes.createdAt })
-    .from(schema.phoneLoginCodes)
-    .where(eq(schema.phoneLoginCodes.phone, phone))
-    .orderBy(desc(schema.phoneLoginCodes.createdAt))
-    .limit(1)
-  if (latest) {
-    const elapsed = now.getTime() - latest.createdAt.getTime()
-    if (elapsed < PHONE_CODE_RESEND_COOLDOWN_MS) {
-      const retryAfterSeconds = Math.max(
-        1,
-        Math.ceil((PHONE_CODE_RESEND_COOLDOWN_MS - elapsed) / 1000),
-      )
-      return err(new CodeRequestedTooSoonError(retryAfterSeconds))
-    }
-  }
-
-  const [{ total }] = await client
-    .select({ total: count() })
-    .from(schema.phoneLoginCodes)
-    .where(
-      and(
-        eq(schema.phoneLoginCodes.phone, phone),
-        gt(schema.phoneLoginCodes.createdAt, new Date(now.getTime() - 60 * 60 * 1000)),
-      ),
-    )
-  if (Number(total) >= PHONE_CODE_HOURLY_LIMIT) return err('CODE_RATE_LIMITED')
-
-  const code = opts.fixedCode ?? newPhoneCode()
-  const codeHash = hashPhoneCode(phone, code, secret)
-
+  // 冷却/限额检查与插入同事务, 并对手机号取 advisory lock 先串行化:
+  // 检查-插入之间的竞态(尤其该手机号没有任何历史记录时无行可锁)由此消除,
+  // 并发请求必然一个先提交、另一个在锁上等待后看到最新记录。
   return withTransaction(client, async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${phone}))`)
+
+    const [latest] = await tx
+      .select({ createdAt: schema.phoneLoginCodes.createdAt })
+      .from(schema.phoneLoginCodes)
+      .where(eq(schema.phoneLoginCodes.phone, phone))
+      .orderBy(desc(schema.phoneLoginCodes.createdAt))
+      .limit(1)
+    if (latest) {
+      const elapsed = now.getTime() - latest.createdAt.getTime()
+      if (elapsed < PHONE_CODE_RESEND_COOLDOWN_MS) {
+        const retryAfterSeconds = Math.max(
+          1,
+          Math.ceil((PHONE_CODE_RESEND_COOLDOWN_MS - elapsed) / 1000),
+        )
+        return err(new CodeRequestedTooSoonError(retryAfterSeconds))
+      }
+    }
+
+    const [{ total }] = await tx
+      .select({ total: count() })
+      .from(schema.phoneLoginCodes)
+      .where(
+        and(
+          eq(schema.phoneLoginCodes.phone, phone),
+          gt(schema.phoneLoginCodes.createdAt, new Date(now.getTime() - 60 * 60 * 1000)),
+        ),
+      )
+    if (Number(total) >= PHONE_CODE_HOURLY_LIMIT) return err('CODE_RATE_LIMITED')
+
+    const code = opts.fixedCode ?? newPhoneCode()
+    const codeHash = hashPhoneCode(phone, code, secret)
+
     // 新码作废旧码, 避免同一手机号存在多个有效验证码
     await tx
       .update(schema.phoneLoginCodes)

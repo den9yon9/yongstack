@@ -1,13 +1,26 @@
 import type { Static } from '@sinclair/typebox'
 import { type DbClient, schema } from '@yongstack/database'
 import { err, ok, type Result } from '@yongstack/shared'
-import { and, count, desc, eq, ilike, isNull, or } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, isNotNull, isNull, lt, or } from 'drizzle-orm'
 
 import type { AttachFileInputSchema, CreateFileInputSchema, FileListQuerySchema } from './model'
 
 export type FileError = 'FILE_NOT_FOUND'
 
 type File = typeof schema.files.$inferSelect
+
+// 授权下沉: 调用方(controller/usecase)只负责把 session 映射成 actor,
+// 域函数查询条件即带 owner/admin 判定, 避免新调用方忘检越权。
+export interface FileActor {
+  userId: string
+  isAdmin: boolean
+}
+
+// owner 一律可见; admin 视为超级读者/管理者。
+function actorWhere(actor: FileActor) {
+  if (actor.isAdmin) return isNull(schema.files.deletedAt)
+  return and(eq(schema.files.ownerId, actor.userId), isNull(schema.files.deletedAt))
+}
 
 export async function createFile(
   input: Static<typeof CreateFileInputSchema>,
@@ -36,6 +49,20 @@ export async function getFileById(id: string, client: DbClient): Promise<Result<
     .select()
     .from(schema.files)
     .where(and(eq(schema.files.id, id), isNull(schema.files.deletedAt)))
+  if (!file) return err('FILE_NOT_FOUND')
+  return ok(file)
+}
+
+// 带 actor 授权的读取: 返回与 getFileById 相同的错误码, 不泄露他人文件存在性。
+export async function getFileForActor(
+  id: string,
+  actor: FileActor,
+  client: DbClient,
+): Promise<Result<File, FileError>> {
+  const [file] = await client
+    .select()
+    .from(schema.files)
+    .where(and(eq(schema.files.id, id), actorWhere(actor)))
   if (!file) return err('FILE_NOT_FOUND')
   return ok(file)
 }
@@ -80,6 +107,38 @@ export async function softDeleteFile(
 
   await client.update(schema.files).set({ deletedAt: new Date() }).where(eq(schema.files.id, id))
   return ok({ key: file.key })
+}
+
+// 带 actor 授权的软删: 校验通过后既软删 DB 记录。
+export async function softDeleteFileForActor(
+  id: string,
+  actor: FileActor,
+  client: DbClient,
+): Promise<Result<{ key: string }, FileError>> {
+  const [file] = await client
+    .select()
+    .from(schema.files)
+    .where(and(eq(schema.files.id, id), actorWhere(actor)))
+  if (!file) return err('FILE_NOT_FOUND')
+
+  await client.update(schema.files).set({ deletedAt: new Date() }).where(eq(schema.files.id, id))
+  return ok({ key: file.key })
+}
+
+// 清理任务用: 列出已软删超过 cutoff 的文件(worker 负责删除对象并调用永久删除)。
+export async function listStaleDeletedFiles(
+  cutoff: Date,
+  client: DbClient,
+): Promise<{ id: string; key: string }[]> {
+  return client
+    .select({ id: schema.files.id, key: schema.files.key })
+    .from(schema.files)
+    .where(and(isNotNull(schema.files.deletedAt), lt(schema.files.deletedAt, cutoff)))
+}
+
+// 清理任务用: 对象已删除后硬删数据库行(attachments 级联)。
+export async function permanentlyDeleteFile(id: string, client: DbClient): Promise<void> {
+  await client.delete(schema.files).where(eq(schema.files.id, id))
 }
 
 export async function attachFile(

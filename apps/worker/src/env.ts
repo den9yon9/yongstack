@@ -1,5 +1,6 @@
 import { type StaticDecode, Type } from '@sinclair/typebox'
 import { parseEnv } from '@yongstack/shared'
+import { storageEnvSchema } from '@yongstack/storage'
 
 export const workerEnvSchema = Type.Object({
   NODE_ENV: Type.Union(
@@ -36,6 +37,16 @@ export const workerEnvSchema = Type.Object({
   // outbox 轮询
   OUTBOX_POLL_INTERVAL_MS: Type.String({ pattern: '^\\d+$', default: '2000' }),
   OUTBOX_BATCH_SIZE: Type.String({ pattern: '^\\d+$', default: '20' }),
+
+  // 软删文件的对象存储清理: 已删除超过 min age 的记录硬删 DB 行并删除对象
+  FILE_CLEANUP_INTERVAL_MS: Type.String({ pattern: '^\\d+$', default: '60000' }),
+  FILE_CLEANUP_MIN_AGE_MS: Type.String({ pattern: '^\\d+$', default: '3600000' }),
+
+  // 对象存储(与 app-api 共用同名变量): 未配置时文件清理任务不启动
+  ...storageEnvSchema.properties,
+  // 放宽 app-api 中必填的两个存储变量, 便于纯邮件 worker 单独部署
+  STORAGE_BUCKET: Type.Optional(Type.String()),
+  STORAGE_PUBLIC_BASE_URL: Type.Optional(Type.String({ format: 'uri' })),
 })
 
 export type WorkerEnv = StaticDecode<typeof workerEnvSchema>

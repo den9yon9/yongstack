@@ -1,4 +1,5 @@
 {
+  "A request with this key is still processing, please retry shortly": "A request with this key is still processing, please retry shortly",
   "Account is disabled": "Account is disabled",
   "Account is not an administrator": "Account is not an administrator",
   "Cannot modify your own account": "Cannot modify your own account",
@@ -13,6 +14,7 @@
   "Hi {name}, verify your email by opening this link: {url}": "Hi {name}, verify your email by opening this link: {url}",
   "Hi {name}, your account is ready. Sign in at {url}": "Hi {name}, your account is ready. Sign in at {url}",
   "Idempotency key reused with a different request": "Idempotency key reused with a different request",
+  "Internal server error": "Internal server error",
   "Invalid email or password": "Invalid email or password",
   "Invalid phone number or verification code": "Invalid phone number or verification code",
   "Invalid setting value": "Invalid setting value",

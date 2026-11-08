@@ -1,7 +1,8 @@
 import { requestAdminPhoneLoginCode, verifyAdminPhoneLogin } from '@yongstack/account'
+import { recordAudit } from '@yongstack/audit'
 import { getUserAccess } from '@yongstack/rbac'
 import { clearSessionCookie } from '@yongstack/session'
-import { assertNever, ErrorResponse, RateLimitErrorResponse } from '@yongstack/shared'
+import { assertNever, ErrorResponse, RateLimitErrorResponse, requestMeta } from '@yongstack/shared'
 import { CodeRequestedTooSoonError, getUserById, loginUser } from '@yongstack/user'
 import * as UserModel from '@yongstack/user/model'
 import { Elysia, status } from 'elysia'
@@ -27,6 +28,16 @@ export function createAuthRoutes(plugins: AdminPlugins) {
       async ({ body, cookie, db, sessionStore, request, i18n }) => {
         const result = await loginUser(body, db)
         if (result.isErr()) {
+          // 登录失败无法定位 actor, 只记录尝试的邮箱
+          await recordAudit(
+            {
+              action: 'admin.login.failure',
+              targetType: 'user',
+              diff: { email: body.email, reason: result.error },
+              ...requestMeta(request),
+            },
+            db,
+          )
           switch (result.error) {
             case 'LOGIN_FAILED':
               return status(401, {
@@ -43,12 +54,31 @@ export function createAuthRoutes(plugins: AdminPlugins) {
         const user = result.value
         const access = await getUserAccess(user.id, db)
         if (!access.roles.includes('admin')) {
+          await recordAudit(
+            {
+              action: 'admin.login.failure',
+              targetType: 'user',
+              diff: { email: body.email, reason: 'FORBIDDEN' },
+              ...requestMeta(request),
+            },
+            db,
+          )
           return status(403, {
             error: 'FORBIDDEN',
             message: i18n('Account is not an administrator'),
           })
         }
 
+        await recordAudit(
+          {
+            actorId: user.id,
+            action: 'admin.login.success',
+            targetType: 'user',
+            targetId: user.id,
+            ...requestMeta(request),
+          },
+          db,
+        )
         await startSession({
           userId: user.id,
           access,

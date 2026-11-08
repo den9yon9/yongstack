@@ -1,9 +1,11 @@
 import { createHash } from 'node:crypto'
 
-import { createFile, getFileById, softDeleteFile } from '@yongstack/file'
+import { withAudit } from '@yongstack/audit'
+import { createFile, getFileForActor, softDeleteFileForActor } from '@yongstack/file'
 import * as FileModel from '@yongstack/file/model'
+import { isAdminSession } from '@yongstack/session'
 import { getSetting } from '@yongstack/settings'
-import { ErrorResponse } from '@yongstack/shared'
+import { ErrorResponse, ok, requestMeta } from '@yongstack/shared'
 import { Elysia, status, t } from 'elysia'
 import { fileTypeFromBuffer } from 'file-type'
 import { imageSize } from 'image-size'
@@ -11,7 +13,7 @@ import { imageSize } from 'image-size'
 import { type AppPlugins } from '../plugins'
 
 export function createFileRoutes(plugins: AppPlugins) {
-  const { dbPlugin, sessionPlugin, storage } = plugins
+  const { dbPlugin, sessionPlugin, storage, logger } = plugins
 
   return new Elysia({ name: 'file-app', prefix: '/files' })
     .use(plugins.localePlugin)
@@ -19,7 +21,7 @@ export function createFileRoutes(plugins: AppPlugins) {
     .use(sessionPlugin)
     .post(
       '/',
-      async ({ body, session, db, i18n }) => {
+      async ({ body, session, db, request, i18n }) => {
         const maxBytes = await getSetting('upload.maxBytes', db)
         if (body.file.size > maxBytes) {
           return status(413, { error: 'FILE_TOO_LARGE', message: i18n('File too large') })
@@ -63,22 +65,48 @@ export function createFileRoutes(plugins: AppPlugins) {
           })
         }
 
-        const file = await createFile(
-          {
-            ownerId: session.userId,
-            key,
-            url: storage.publicUrl(key),
-            mime,
-            size: buffer.length,
-            ...(width === null ? {} : { width }),
-            ...(height === null ? {} : { height }),
-            purpose: body.purpose ?? 'general',
-            checksum: createHash('sha256').update(buffer).digest('hex'),
-            metadata: { originalName: body.file.name },
-          },
-          db,
-        )
-        return status(201, file)
+        // 元数据写入(含审计)失败时清理已上传对象, 避免孤儿文件
+        try {
+          const file = await withAudit(
+            db,
+            {
+              actorId: session.userId,
+              action: 'app.file.upload',
+              targetType: 'file',
+              diff: { key, mime, size: buffer.length, purpose: body.purpose ?? 'general' },
+              ...requestMeta(request),
+            },
+            (tx) =>
+              createFile(
+                {
+                  ownerId: session.userId,
+                  key,
+                  url: storage.publicUrl(key),
+                  mime,
+                  size: buffer.length,
+                  ...(width === null ? {} : { width }),
+                  ...(height === null ? {} : { height }),
+                  purpose: body.purpose ?? 'general',
+                  checksum: createHash('sha256').update(buffer).digest('hex'),
+                  metadata: { originalName: body.file.name },
+                },
+                tx,
+              ).then((file) => ok(file)),
+          )
+          if (file.isErr()) throw file.error
+          return status(201, file.value)
+        } catch (error) {
+          // 元数据写入失败, 清理已上传对象避免孤儿文件(尽力而为)
+          const cleaned = await storage.delete(key)
+          if (cleaned.isErr()) {
+            logger.error({ err: cleaned.error, key }, 'orphan file cleanup failed')
+          }
+          logger.error({ err: error, key }, 'file metadata insert failed')
+          return status(503, {
+            error: 'INTERNAL_ERROR',
+            message: i18n('Internal server error'),
+          })
+        }
       },
       {
         isAuth: true,
@@ -104,15 +132,15 @@ export function createFileRoutes(plugins: AppPlugins) {
     .get(
       '/:id',
       async ({ params, session, db, i18n }) => {
-        const result = await getFileById(params.id, db)
+        const result = await getFileForActor(
+          params.id,
+          { userId: session.userId, isAdmin: isAdminSession(session) },
+          db,
+        )
         if (result.isErr()) {
           return status(404, { error: result.error, message: i18n('File not found') })
         }
-        const file = result.value
-        if (file.ownerId !== session.userId && !session.roles.includes('admin')) {
-          return status(404, { error: 'FILE_NOT_FOUND', message: i18n('File not found') })
-        }
-        return file
+        return result.value
       },
       {
         isAuth: true,
@@ -131,22 +159,35 @@ export function createFileRoutes(plugins: AppPlugins) {
     )
     .delete(
       '/:id',
-      async ({ params, session, db, i18n }) => {
-        const found = await getFileById(params.id, db)
-        if (found.isErr()) {
-          return status(404, { error: found.error, message: i18n('File not found') })
-        }
-        const file = found.value
-        if (file.ownerId !== session.userId && !session.roles.includes('admin')) {
-          return status(404, { error: 'FILE_NOT_FOUND', message: i18n('File not found') })
-        }
-
-        const deleted = await softDeleteFile(params.id, db)
+      async ({ params, session, db, request, i18n }) => {
+        const deleted = await withAudit(
+          db,
+          (softDeleted: { key: string }) => ({
+            actorId: session.userId,
+            action: 'app.file.delete',
+            targetType: 'file',
+            targetId: params.id,
+            diff: { key: softDeleted.key },
+            ...requestMeta(request),
+          }),
+          (tx) =>
+            softDeleteFileForActor(
+              params.id,
+              { userId: session.userId, isAdmin: isAdminSession(session) },
+              tx,
+            ),
+        )
         if (deleted.isErr()) {
           return status(404, { error: deleted.error, message: i18n('File not found') })
         }
-        // 对象删除尽力而为; 失败时数据库记录已软删, 由后续清理任务兜底
-        await storage.delete(deleted.value.key)
+        // 对象删除尽力而为; 失败时数据库记录已软删, 由清理任务兜底
+        const removed = await storage.delete(deleted.value.key)
+        if (removed.isErr()) {
+          logger.error(
+            { err: removed.error, key: deleted.value.key },
+            'storage delete failed after soft delete',
+          )
+        }
         return status(204)
       },
       {

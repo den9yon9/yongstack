@@ -362,10 +362,20 @@ export function createUserRoutes(plugins: AppPlugins) {
           },
         )
         if (result.isErr()) {
-          return status(409, {
-            error: result.error,
-            message: i18n('Idempotency key reused with a different request'),
-          })
+          switch (result.error) {
+            case 'IDEMPOTENCY_IN_PROGRESS':
+              return status(409, {
+                error: result.error,
+                message: i18n('A request with this key is still processing, please retry shortly'),
+              })
+            case 'IDEMPOTENCY_MISMATCH':
+              return status(409, {
+                error: result.error,
+                message: i18n('Idempotency key reused with a different request'),
+              })
+            default:
+              return assertNever(result.error)
+          }
         }
         return status(202)
       },

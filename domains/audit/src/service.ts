@@ -1,6 +1,7 @@
 import type { Static } from '@sinclair/typebox'
-import { type DbClient, schema } from '@yongstack/database'
-import { buildOffset, likePattern } from '@yongstack/shared'
+import { type DbClient, type DbTransaction, schema, withTransaction } from '@yongstack/database'
+import { buildOffset, err, ok, type Result } from '@yongstack/shared'
+import { likePattern } from '@yongstack/shared'
 import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
 
 import type { AuditLogListQuerySchema } from './model'
@@ -17,6 +18,21 @@ export interface RecordAuditInput {
 }
 
 type AuditLog = typeof schema.auditLogs.$inferSelect
+
+// 业务写与审计同事务: fn 收到 tx 执行业务写, 返回 err 时整体回滚(审计也不落)。
+// 审计条目可预构造, 或根据业务结果生成(如带上新键/新版本)。
+export async function withAudit<T, C>(
+  client: DbClient,
+  entry: RecordAuditInput | ((result: T) => RecordAuditInput),
+  fn: (tx: DbTransaction) => Promise<Result<T, C>>,
+): Promise<Result<T, C>> {
+  return withTransaction(client, async (tx) => {
+    const result = await fn(tx)
+    if (result.isErr()) return err(result.error)
+    await recordAudit(typeof entry === 'function' ? entry(result.value) : entry, tx)
+    return ok(result.value)
+  })
+}
 
 export async function recordAudit(input: RecordAuditInput, client: DbClient): Promise<AuditLog> {
   const [row] = await client

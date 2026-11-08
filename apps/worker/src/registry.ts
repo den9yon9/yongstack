@@ -1,10 +1,13 @@
+import { closeDb, createDb } from '@yongstack/database'
 import { createMailer } from '@yongstack/mailer'
 import { EMAIL_QUEUE_NAME, type SendEmailJobData } from '@yongstack/notifications'
 import { createQueue, type Queue, type Worker } from '@yongstack/queue'
 import type { Logger } from '@yongstack/shared'
+import { createStorage, type StorageEnv } from '@yongstack/storage'
 
 import { registerEmailWorker } from './emailWorker'
 import type { WorkerEnv } from './env'
+import { registerFileCleanupWorker } from './fileCleanupWorker'
 import { registerOutboxWorker } from './outboxWorker'
 
 export interface WorkerRegistration {
@@ -36,6 +39,15 @@ export function registerWorkers(env: WorkerEnv, logger: Logger): WorkerRegistrat
   const emailWorker = registerEmailWorker(env.REDIS_URL, mailer, logger)
   const outboxWorker = registerOutboxWorker(env, emailQueue, logger)
 
+  // 软删文件存储补偿; 未配置对象存储时跳过文件清理任务
+  let fileCleanupWorker: ReturnType<typeof registerFileCleanupWorker> | null = null
+  let cleanupDb: ReturnType<typeof createDb> | null = null
+  if (env.STORAGE_BUCKET !== undefined && env.STORAGE_PUBLIC_BASE_URL !== undefined) {
+    const storage = createStorage(env as unknown as StorageEnv)
+    cleanupDb = createDb(env.DATABASE_URL)
+    fileCleanupWorker = registerFileCleanupWorker(env, cleanupDb, storage, logger)
+  }
+
   logger.info({ env: env.NODE_ENV }, 'worker registry initialized')
 
   return {
@@ -45,6 +57,8 @@ export function registerWorkers(env: WorkerEnv, logger: Logger): WorkerRegistrat
       await emailWorker.close()
       await emailQueue.close()
       await outboxWorker.close()
+      if (fileCleanupWorker) await fileCleanupWorker.close()
+      if (cleanupDb) await closeDb(cleanupDb)
     },
   }
 }

@@ -202,6 +202,9 @@ importers:
       '@yongstack/account':
         specifier: workspace:*
         version: link:../../usecases/account
+      '@yongstack/audit':
+        specifier: workspace:*
+        version: link:../../domains/audit
       '@yongstack/database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -321,6 +324,9 @@ importers:
       '@yongstack/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@yongstack/file':
+        specifier: workspace:*
+        version: link:../../domains/file
       '@yongstack/http':
         specifier: workspace:*
         version: link:../../packages/http
@@ -342,6 +348,9 @@ importers:
       '@yongstack/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@yongstack/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
 
   domains/audit:
     dependencies:

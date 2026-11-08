@@ -8,7 +8,12 @@ export { auditLogs } from './audit/audit-logs'
 export { fileAttachments } from './file/file-attachments'
 export { files } from './file/files'
 // idempotency 域(幂等键)
-export { idempotencyKeys } from './idempotency/idempotency-keys'
+export {
+  IDEMPOTENCY_KEY_STATUS,
+  idempotencyKeys,
+  type IdempotencyKeyStatus,
+  idempotencyKeyStatus,
+} from './idempotency/idempotency-keys'
 // outbox 域(领域事件持久化, 事务内写入, worker 异步投递)
 export {
   OUTBOX_EVENT_STATUS,

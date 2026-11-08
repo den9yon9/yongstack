@@ -1,4 +1,5 @@
 {
+  "A request with this key is still processing, please retry shortly": "该幂等键对应请求仍在处理中，请稍后重试",
   "Account is disabled": "账号已被禁用",
   "Account is not an administrator": "不是管理员账号",
   "Cannot modify your own account": "不能修改自己的账号",
@@ -13,6 +14,7 @@
   "Hi {name}, verify your email by opening this link: {url}": "你好，{name}！请打开以下链接验证邮箱：{url}",
   "Hi {name}, your account is ready. Sign in at {url}": "你好，{name}！你的账号已就绪。登录地址：{url}",
   "Idempotency key reused with a different request": "幂等键已用于不同的请求内容",
+  "Internal server error": "服务暂不可用，请稍后重试",
   "Invalid email or password": "邮箱或密码错误",
   "Invalid phone number or verification code": "手机号或验证码错误",
   "Invalid setting value": "设置值不合法",

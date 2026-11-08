@@ -1,6 +1,6 @@
 import { Type } from '@sinclair/typebox'
 import { getUserWithRoles, listUsersWithRoles, updateUserAccess } from '@yongstack/admin-users'
-import { recordAudit } from '@yongstack/audit'
+import { recordAudit, withAudit } from '@yongstack/audit'
 import { listPermissions, listRoles } from '@yongstack/rbac'
 import { hasPermission } from '@yongstack/session'
 import { assertNever, ErrorResponse, requestMeta } from '@yongstack/shared'
@@ -96,7 +96,18 @@ export function createUserRoutes(plugins: AdminPlugins) {
         if (!hasPermission(session, 'users:write')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
-        const result = await updateUserAccess(params.id, body, session.userId, db)
+        const result = await withAudit(
+          db,
+          {
+            actorId: session.userId,
+            action: 'admin.user.update',
+            targetType: 'user',
+            targetId: params.id,
+            diff: { patch: body },
+            ...requestMeta(request),
+          },
+          (tx) => updateUserAccess(params.id, body, session.userId, tx),
+        )
         if (result.isErr()) {
           switch (result.error) {
             case 'SELF_OPERATION':
@@ -118,17 +129,6 @@ export function createUserRoutes(plugins: AdminPlugins) {
 
         // 角色/状态变更后旧会话权限立即失效
         await sessionStore.destroyAllForUser(params.id)
-        await recordAudit(
-          {
-            actorId: session.userId,
-            action: 'admin.user.update',
-            targetType: 'user',
-            targetId: params.id,
-            diff: body,
-            ...requestMeta(request),
-          },
-          db,
-        )
         return result.value
       },
       {

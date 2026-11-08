@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@yongstack/database": "workspace:*",
+    "@yongstack/file": "workspace:*",
     "@yongstack/http": "workspace:*",
     "@yongstack/i18n": "workspace:*",
     "@yongstack/mailer": "workspace:*",
@@ -18,6 +19,7 @@
     "@yongstack/outbox": "workspace:*",
     "@yongstack/queue": "workspace:*",
     "@yongstack/shared": "workspace:*",
+    "@yongstack/storage": "workspace:*",
     "@sinclair/typebox": "^0.34.0"
   }
 }

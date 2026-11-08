@@ -28,6 +28,7 @@
     "@yongstack/redis": "workspace:*",
     "@yongstack/session": "workspace:*",
     "@yongstack/settings": "workspace:*",
+    "@yongstack/audit": "workspace:*",
     "@yongstack/shared": "workspace:*",
     "@yongstack/sms": "workspace:*",
     "@yongstack/storage": "workspace:*",
