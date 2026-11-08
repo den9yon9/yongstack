@@ -1,18 +1,17 @@
 import type { OutboxEvent } from '@yongstack/outbox'
-import type { Queue } from '@yongstack/queue'
 import { createLogger } from '@yongstack/shared'
 import { describe, expect, test } from 'bun:test'
 
 import { EMAIL_JOB_NAMES, type SendEmailJobData } from './jobs'
-import { dispatchOutboxEvent, OutboxPayloadError } from './service'
+import { dispatchOutboxEvent, type EmailJobQueue, OutboxPayloadError } from './service'
 
 function createFakeQueue() {
   const jobs: { name: string; data: SendEmailJobData; opts?: unknown }[] = []
-  const queue = {
-    async add(name: string, data: SendEmailJobData, opts?: unknown) {
+  const queue: EmailJobQueue = {
+    async add(name, data, opts) {
       jobs.push({ name, data, opts })
     },
-  } as unknown as Queue<SendEmailJobData>
+  }
   return { queue, jobs }
 }
 

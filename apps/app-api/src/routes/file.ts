@@ -75,7 +75,7 @@ export function createFileRoutes(plugins: AppPlugins) {
               action: 'app.file.upload',
               targetType: 'file',
               diff: { key, mime, size: buffer.length, purpose: body.purpose ?? 'general' },
-              ...requestMeta(request),
+              ...requestMeta(request, { trustProxy: plugins.trustProxy }),
             },
             (tx) =>
               createFile(
@@ -169,7 +169,7 @@ export function createFileRoutes(plugins: AppPlugins) {
             targetType: 'file',
             targetId: params.id,
             diff: { key: softDeleted.key },
-            ...requestMeta(request),
+            ...requestMeta(request, { trustProxy: plugins.trustProxy }),
           }),
           (tx) =>
             softDeleteFileForActor(

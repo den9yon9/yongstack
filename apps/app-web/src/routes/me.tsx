@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { LogOutIcon, PencilIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -34,27 +34,19 @@ import { Separator } from '@yongstack/ui/components/separator'
 import { Spinner } from '@yongstack/ui/components/spinner'
 
 import { api } from '../libs/api/client'
-import {
-  bindPhone,
-  logout,
-  refreshSession,
-  requestPhoneBindCode,
-  unbindPhone,
-  useSession,
-} from '../libs/api/session'
 import type { AuthUser, SessionItem } from '../libs/api/types'
 
 export const Route = createFileRoute('/me')({
-  beforeLoad: async () => {
-    const user = await refreshSession()
-    if (!user) throw redirect({ to: '/login' })
+  beforeLoad: ({ context }) => {
+    if (!context.user) throw redirect({ to: '/login' })
   },
   component: MePage,
 })
 
 function MePage() {
   const navigate = useNavigate()
-  const session = useSession()
+  const router = useRouter()
+  const session = Route.useRouteContext().user
   const [editing, setEditing] = useState(false)
 
   if (session === undefined || session === null) {
@@ -132,7 +124,12 @@ function MePage() {
       <Button
         variant="destructive"
         className="w-full"
-        onClick={() => void logout().then(() => navigate({ to: '/', replace: true }))}
+        onClick={() =>
+          void api.auth.logout
+            .post({} as never)
+            .then(() => router.invalidate())
+            .then(() => navigate({ to: '/', replace: true }))
+        }
       >
         <LogOutIcon data-icon="inline-start" />
         退出登录
@@ -152,6 +149,7 @@ function ProfileDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [name, setName] = useState(user.name ?? '')
@@ -170,7 +168,7 @@ function ProfileDialog({
       setError(res.error.value.message ?? '保存失败')
       return
     }
-    await refreshSession()
+    await router.invalidate()
     onOpenChange(false)
   }
 
@@ -223,6 +221,7 @@ function ProfileDialog({
 }
 
 function PhoneSection({ user }: { user: AuthUser }) {
+  const router = useRouter()
   const [phone, setPhone] = useState(user.phone ?? '')
   const [code, setCode] = useState('')
   const [countdown, setCountdown] = useState(0)
@@ -241,10 +240,10 @@ function PhoneSection({ user }: { user: AuthUser }) {
     setError(null)
     setMessage(null)
     setSending(true)
-    const result = await requestPhoneBindCode(phone)
+    const res = await api.auth.phone.bind['request-code'].post({ phone })
     setSending(false)
-    if (result.error !== null) {
-      setError(result.error)
+    if (res.error !== null) {
+      setError(res.error.value.message ?? '发送验证码失败')
       return
     }
     setCountdown(60)
@@ -255,12 +254,13 @@ function PhoneSection({ user }: { user: AuthUser }) {
     setError(null)
     setMessage(null)
     setSubmitting(true)
-    const result = await bindPhone(phone, code)
+    const res = await api.auth.phone.bind.post({ phone, code })
     setSubmitting(false)
-    if (result.error !== null) {
-      setError(result.error)
+    if (res.error !== null) {
+      setError(res.error.value.message ?? '绑定失败')
       return
     }
+    await router.invalidate()
     setCode('')
     setMessage('手机号已绑定')
   }
@@ -268,11 +268,12 @@ function PhoneSection({ user }: { user: AuthUser }) {
   async function unbind() {
     setError(null)
     setMessage(null)
-    const result = await unbindPhone()
-    if (result.error !== null) {
-      setError(result.error)
+    const res = await api.auth.phone.delete(undefined)
+    if (res.error !== null) {
+      setError(res.error.value.message ?? '解绑失败')
       return
     }
+    await router.invalidate()
     setPhone('')
     setMessage('手机号已解绑')
   }

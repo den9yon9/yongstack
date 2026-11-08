@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
 import { Alert, AlertDescription } from '@yongstack/ui/components/alert'
@@ -22,7 +22,7 @@ import {
 import { Spinner } from '@yongstack/ui/components/spinner'
 import { ToggleGroup, ToggleGroupItem } from '@yongstack/ui/components/toggle-group'
 
-import { login, loginWithPhone, requestPhoneCode } from '../libs/api/session'
+import { api } from '../libs/api/client'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -30,6 +30,7 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const navigate = useNavigate()
+  const router = useRouter()
   const [mode, setMode] = useState<'email' | 'phone'>('email')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -50,22 +51,23 @@ function LoginPage() {
     e.preventDefault()
     setError(null)
     setSubmitting(true)
-    const result = await login(email, password)
+    const res = await api.auth.login.post({ email, password })
     setSubmitting(false)
-    if (!result.user) {
-      setError(result.error ?? '登录失败')
+    if (res.error !== null) {
+      setError(res.error.value.message ?? '登录失败')
       return
     }
+    await router.invalidate()
     navigate({ to: '/', replace: true })
   }
 
   async function sendCode() {
     setError(null)
     setSending(true)
-    const result = await requestPhoneCode(phone)
+    const res = await api.auth.phone['request-code'].post({ phone })
     setSending(false)
-    if (result.error !== null) {
-      setError(result.error)
+    if (res.error !== null) {
+      setError(res.error.value.message ?? '发送验证码失败')
       return
     }
     setCountdown(60)
@@ -75,12 +77,13 @@ function LoginPage() {
     e.preventDefault()
     setError(null)
     setSubmitting(true)
-    const result = await loginWithPhone(phone, code)
+    const res = await api.auth.phone.login.post({ phone, code })
     setSubmitting(false)
-    if (!result.user) {
-      setError(result.error ?? '登录失败')
+    if (res.error !== null) {
+      setError(res.error.value.message ?? '登录失败')
       return
     }
+    await router.invalidate()
     navigate({ to: '/', replace: true })
   }
 

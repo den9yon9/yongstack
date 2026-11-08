@@ -174,6 +174,20 @@ describe('email verification tokens', () => {
     const expired = await consumeEmailVerificationToken({ token }, db)
     expect(expired._unsafeUnwrapErr()).toBe('TOKEN_EXPIRED')
   })
+
+  test('concurrent consumption lets exactly one request win (no double spend)', async () => {
+    const user = await register('race@example.com')
+    const { token } = await createEmailVerificationToken(user.id, db)
+
+    const [winner, loser] = await Promise.all([
+      consumeEmailVerificationToken({ token }, db),
+      consumeEmailVerificationToken({ token }, db),
+    ])
+
+    expect(winner.isOk()).toBe(true)
+    expect(loser._unsafeUnwrapErr()).toBe('TOKEN_INVALID')
+    expect(winner._unsafeUnwrap().userId).toBe(user.id)
+  })
 })
 
 describe('password reset and change', () => {
@@ -204,6 +218,29 @@ describe('password reset and change', () => {
 
   test('reset token is not created for unknown email', async () => {
     expect(await createPasswordResetToken('ghost@example.com', db)).toBeNull()
+  })
+
+  test('concurrent reset consumes the token exactly once', async () => {
+    await register('race-reset@example.com')
+    const created = await createPasswordResetToken('race-reset@example.com', db)
+    if (!created) throw new Error('expected token')
+
+    const attempts = await Promise.all([
+      consumePasswordResetToken({ token: created.token, password: 'password-one-1' }, db),
+      consumePasswordResetToken({ token: created.token, password: 'password-two-2' }, db),
+    ])
+
+    expect(attempts.filter((r) => r.isOk())).toHaveLength(1)
+    expect(attempts.filter((r) => r.isErr())).toHaveLength(1)
+    for (const attempt of attempts) {
+      if (attempt.isErr()) expect(attempt.error).toBe('TOKEN_INVALID')
+    }
+
+    const [row] = await db
+      .select()
+      .from(schema.passwordResetTokens)
+      .where(eq(schema.passwordResetTokens.tokenHash, created.token))
+    expect(row?.usedAt).not.toBeNull()
   })
 
   test('change password verifies the current password', async () => {

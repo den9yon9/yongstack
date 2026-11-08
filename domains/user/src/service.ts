@@ -43,6 +43,7 @@ export type PhoneCodeError = PhoneCodeRequestError | PhoneVerifyCodeError
 export type PhoneUserError = 'USER_NOT_FOUND' | 'PHONE_ALREADY_IN_USE' | 'CANNOT_UNBIND_ONLY_LOGIN'
 
 type User = typeof schema.users.$inferSelect
+export type { User }
 
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000
@@ -224,14 +225,17 @@ export async function consumeEmailVerificationToken(
   input: Static<typeof VerifyEmailInputSchema>,
   client: DbClient,
 ): Promise<Result<{ userId: string }, TokenError>> {
-  const [row] = await client
-    .select()
-    .from(schema.emailVerificationTokens)
-    .where(eq(schema.emailVerificationTokens.tokenHash, hashToken(input.token)))
-  if (!row || row.usedAt) return err('TOKEN_INVALID')
-  if (row.expiresAt.getTime() < Date.now()) return err('TOKEN_EXPIRED')
-
+  // 原子消费: 事务内 SELECT FOR UPDATE 锁行再判定, 并发双请求只有一个能通过校验,
+  // 后到者看到 usedAt 已置位, 返回 TOKEN_INVALID(先查后改的竞在此被消除)。
   return withTransaction(client, async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(schema.emailVerificationTokens)
+      .where(eq(schema.emailVerificationTokens.tokenHash, hashToken(input.token)))
+      .for('update')
+    if (!row || row.usedAt) return err('TOKEN_INVALID')
+    if (row.expiresAt.getTime() < Date.now()) return err('TOKEN_EXPIRED')
+
     await tx
       .update(schema.users)
       .set({ emailVerifiedAt: new Date() })
@@ -267,14 +271,17 @@ export async function consumePasswordResetToken(
   input: Static<typeof ResetPasswordInputSchema>,
   client: DbClient,
 ): Promise<Result<{ userId: string }, TokenError>> {
-  const [row] = await client
-    .select()
-    .from(schema.passwordResetTokens)
-    .where(eq(schema.passwordResetTokens.tokenHash, hashToken(input.token)))
-  if (!row || row.usedAt) return err('TOKEN_INVALID')
-  if (row.expiresAt.getTime() < Date.now()) return err('TOKEN_EXPIRED')
-
+  // 原子消费: 同 consumeEmailVerificationToken, 锁行后再判定/更新,
+  // 并发重置同一令牌只有一个胜出, 避免后提交者悄悄覆盖前者的新密码。
   return withTransaction(client, async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(schema.passwordResetTokens)
+      .where(eq(schema.passwordResetTokens.tokenHash, hashToken(input.token)))
+      .for('update')
+    if (!row || row.usedAt) return err('TOKEN_INVALID')
+    if (row.expiresAt.getTime() < Date.now()) return err('TOKEN_EXPIRED')
+
     const passwordHash = await hashPassword(input.password)
     await tx.update(schema.users).set({ passwordHash }).where(eq(schema.users.id, row.userId))
     await tx

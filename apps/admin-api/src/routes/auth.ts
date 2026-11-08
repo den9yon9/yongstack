@@ -1,22 +1,22 @@
-import { requestAdminPhoneLoginCode, verifyAdminPhoneLogin } from '@yongstack/account'
-import { recordAudit } from '@yongstack/audit'
-import { getUserAccess } from '@yongstack/rbac'
-import { clearSessionCookie } from '@yongstack/session'
+import {
+  loginAdminWithPassword,
+  loginAdminWithPhone,
+  requestAdminLoginPhoneCode,
+} from '@yongstack/auth'
+import { ADMIN_ROLE_CODE, getUserAccess } from '@yongstack/rbac'
+import { clearSessionCookie, sessionCookieFrom, startSession } from '@yongstack/session'
 import { assertNever, ErrorResponse, RateLimitErrorResponse, requestMeta } from '@yongstack/shared'
-import { CodeRequestedTooSoonError, getUserById, loginUser } from '@yongstack/user'
+import { CodeRequestedTooSoonError, getUserById } from '@yongstack/user'
 import * as UserModel from '@yongstack/user/model'
 import { Elysia, status } from 'elysia'
 
 import { type AdminPlugins } from '../plugins'
-import { sessionCookieFrom, startSession } from '../session'
 
 export function createAuthRoutes(plugins: AdminPlugins) {
-  const { dbPlugin, sessionPlugin, authRateLimit, isProduction, sessionCookieName } = plugins
+  const { dbPlugin, sessionPlugin, authRateLimit, isProduction, sessionCookieName, trustProxy } =
+    plugins
   const { authRateLimitPerMinute, sms, phoneCodeSecret, smsDevCode } = plugins
-  const codeOptions =
-    smsDevCode === undefined
-      ? { secret: phoneCodeSecret }
-      : { secret: phoneCodeSecret, fixedCode: smsDevCode }
+  const codeOptions = smsDevCode === undefined ? undefined : smsDevCode
 
   return new Elysia({ name: 'auth-admin', prefix: '/auth' })
     .use(plugins.localePlugin)
@@ -26,18 +26,12 @@ export function createAuthRoutes(plugins: AdminPlugins) {
     .post(
       '/login',
       async ({ body, cookie, db, sessionStore, request, i18n }) => {
-        const result = await loginUser(body, db)
+        // 编排在 usecases/auth: 校验 → admin 角色 → 审计; 控制器只做 cookie/状态映射
+        const result = await loginAdminWithPassword(body, {
+          client: db,
+          actorMeta: requestMeta(request, { trustProxy }),
+        })
         if (result.isErr()) {
-          // 登录失败无法定位 actor, 只记录尝试的邮箱
-          await recordAudit(
-            {
-              action: 'admin.login.failure',
-              targetType: 'user',
-              diff: { email: body.email, reason: result.error },
-              ...requestMeta(request),
-            },
-            db,
-          )
           switch (result.error) {
             case 'LOGIN_FAILED':
               return status(401, {
@@ -46,47 +40,27 @@ export function createAuthRoutes(plugins: AdminPlugins) {
               })
             case 'ACCOUNT_DISABLED':
               return status(403, { error: result.error, message: i18n('Account is disabled') })
+            case 'FORBIDDEN':
+              return status(403, {
+                error: result.error,
+                message: i18n('Account is not an administrator'),
+              })
             default:
               return assertNever(result.error)
           }
         }
 
-        const user = result.value
-        const access = await getUserAccess(user.id, db)
-        if (!access.roles.includes('admin')) {
-          await recordAudit(
-            {
-              action: 'admin.login.failure',
-              targetType: 'user',
-              diff: { email: body.email, reason: 'FORBIDDEN' },
-              ...requestMeta(request),
-            },
-            db,
-          )
-          return status(403, {
-            error: 'FORBIDDEN',
-            message: i18n('Account is not an administrator'),
-          })
-        }
-
-        await recordAudit(
-          {
-            actorId: user.id,
-            action: 'admin.login.success',
-            targetType: 'user',
-            targetId: user.id,
-            ...requestMeta(request),
-          },
-          db,
-        )
+        const { user, access } = result.value
         await startSession({
           userId: user.id,
-          access,
+          roles: access.roles,
+          permissions: access.permissions,
           cookie,
           request,
           sessionStore,
           sessionCookieName,
           isProduction,
+          trustProxy,
         })
         return { ...user, ...access }
       },
@@ -108,7 +82,10 @@ export function createAuthRoutes(plugins: AdminPlugins) {
     .post(
       '/phone/request-code',
       async ({ body, db, i18n, set }) => {
-        const result = await requestAdminPhoneLoginCode(body.phone, db, codeOptions)
+        const result = await requestAdminLoginPhoneCode(body.phone, db, {
+          secret: phoneCodeSecret,
+          ...(codeOptions === undefined ? {} : { fixedCode: codeOptions }),
+        })
         if (result.isErr()) {
           if (result.error instanceof CodeRequestedTooSoonError) {
             const { retryAfterSeconds } = result.error
@@ -160,7 +137,8 @@ export function createAuthRoutes(plugins: AdminPlugins) {
     .post(
       '/phone/login',
       async ({ body, cookie, db, sessionStore, request, i18n }) => {
-        const result = await verifyAdminPhoneLogin(body.phone, body.code, db, {
+        const result = await loginAdminWithPhone(body.phone, body.code, {
+          client: db,
           secret: phoneCodeSecret,
         })
         if (result.isErr()) {
@@ -200,20 +178,17 @@ export function createAuthRoutes(plugins: AdminPlugins) {
           }
         }
 
-        const found = await getUserById(result.value.userId, db)
-        if (found.isErr()) {
-          return status(404, { error: found.error, message: i18n('User not found') })
-        }
-        const user = found.value
-        const access = await getUserAccess(user.id, db)
+        const { user, access } = result.value
         await startSession({
           userId: user.id,
-          access,
+          roles: access.roles,
+          permissions: access.permissions,
           cookie,
           request,
           sessionStore,
           sessionCookieName,
           isProduction,
+          trustProxy,
         })
         return { ...user, ...access }
       },
@@ -272,8 +247,8 @@ export function createAuthRoutes(plugins: AdminPlugins) {
         if (!user.isActive) {
           return status(403, { error: 'ACCOUNT_DISABLED', message: i18n('Account is disabled') })
         }
-        const access = await getUserAccess(session.userId, db)
-        if (!access.roles.includes('admin')) {
+        const access = await getUserAccess(user.id, db)
+        if (!access.roles.includes(ADMIN_ROLE_CODE)) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
         return { ...user, ...access }

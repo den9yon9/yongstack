@@ -51,7 +51,7 @@ export function createFileRoutes(plugins: AdminPlugins) {
             targetType: 'file',
             targetId: params.id,
             diff: { key: result.key },
-            ...requestMeta(request),
+            ...requestMeta(request, { trustProxy: plugins.trustProxy }),
           }),
           (tx) => softDeleteFileForActor(params.id, { userId: session.userId, isAdmin: true }, tx),
         )

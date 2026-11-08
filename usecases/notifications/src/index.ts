@@ -4,4 +4,8 @@ export {
   type EmailTemplate,
   type SendEmailJobData,
 } from './jobs'
-export { dispatchOutboxEvent, type NotificationDispatchOptions } from './service'
+export {
+  dispatchOutboxEvent,
+  type EmailJobQueue,
+  type NotificationDispatchOptions,
+} from './service'

@@ -104,7 +104,7 @@ export function createUserRoutes(plugins: AdminPlugins) {
             targetType: 'user',
             targetId: params.id,
             diff: { patch: body },
-            ...requestMeta(request),
+            ...requestMeta(request, { trustProxy: plugins.trustProxy }),
           },
           (tx) => updateUserAccess(params.id, body, session.userId, tx),
         )
@@ -169,7 +169,7 @@ export function createUserRoutes(plugins: AdminPlugins) {
             action: 'admin.user.sessions_revoked',
             targetType: 'user',
             targetId: params.id,
-            ...requestMeta(request),
+            ...requestMeta(request, { trustProxy: plugins.trustProxy }),
           },
           db,
         )

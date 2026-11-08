@@ -1,30 +1,22 @@
 import { Type } from '@sinclair/typebox'
 import {
   changePassword,
-  registerAccount,
   requestEmailVerification,
   requestPasswordReset,
   resetPassword,
   verifyEmail,
 } from '@yongstack/account'
+import { loginWithPassword, registerAccount } from '@yongstack/auth'
 import { resolveRequestLocale } from '@yongstack/http'
 import { hashIdempotencyRequest, withIdempotency } from '@yongstack/idempotency'
 import { getUserAccess } from '@yongstack/rbac'
-import { clearSessionCookie } from '@yongstack/session'
-import { isEmailVerificationRequired } from '@yongstack/settings'
+import { clearSessionCookie, sessionCookieFrom, startSession } from '@yongstack/session'
 import { assertNever, ErrorResponse } from '@yongstack/shared'
-import {
-  getUserById,
-  loginUser,
-  updateLastLogin,
-  updateProfile,
-  updateUserLocale,
-} from '@yongstack/user'
+import { getUserById, updateProfile } from '@yongstack/user'
 import * as UserModel from '@yongstack/user/model'
 import { Elysia, status } from 'elysia'
 
 import { type AppPlugins } from '../plugins'
-import { sessionCookieFrom, startSession } from '../session'
 
 const SessionItemSchema = Type.Object({
   id: Type.String(),
@@ -39,8 +31,10 @@ const SessionListResponseSchema = Type.Object({
   items: Type.Array(SessionItemSchema),
 })
 
+// 无响应体状态码(204)在 OpenAPI 中按无内容描述; 由 Elysia 渲染, 无 schema 需要校验。
 export function createUserRoutes(plugins: AppPlugins) {
-  const { dbPlugin, sessionPlugin, authRateLimit, isProduction, sessionCookieName } = plugins
+  const { dbPlugin, sessionPlugin, authRateLimit, isProduction, sessionCookieName, trustProxy } =
+    plugins
   const { authRateLimitPerMinute, defaultLocale } = plugins
   const requestLocale = (request: Request) => resolveRequestLocale(request, defaultLocale)
 
@@ -66,18 +60,17 @@ export function createUserRoutes(plugins: AppPlugins) {
           }
         }
 
-        const user = result.value
-        const access = await getUserAccess(user.id, db)
-        await updateLastLogin(user.id, db)
-        user.lastLoginAt = new Date()
+        const { user, access } = result.value
         await startSession({
           userId: user.id,
-          access,
+          roles: access.roles,
+          permissions: access.permissions,
           cookie,
           request,
           sessionStore,
           sessionCookieName,
           isProduction,
+          trustProxy,
         })
         return status(201, { ...user, ...access })
       },
@@ -95,7 +88,10 @@ export function createUserRoutes(plugins: AppPlugins) {
     .post(
       '/login',
       async ({ body, cookie, db, sessionStore, request, i18n }) => {
-        const result = await loginUser(body, db)
+        const result = await loginWithPassword(body, {
+          client: db,
+          locale: requestLocale(request),
+        })
         if (result.isErr()) {
           switch (result.error) {
             case 'LOGIN_FAILED':
@@ -105,36 +101,27 @@ export function createUserRoutes(plugins: AppPlugins) {
               })
             case 'ACCOUNT_DISABLED':
               return status(403, { error: result.error, message: i18n('Account is disabled') })
+            case 'EMAIL_NOT_VERIFIED':
+              return status(403, {
+                error: result.error,
+                message: i18n('Email not verified'),
+              })
             default:
               return assertNever(result.error)
           }
         }
 
-        const user = result.value
-        if ((await isEmailVerificationRequired(db)) && user.emailVerifiedAt === null) {
-          return status(403, {
-            error: 'EMAIL_NOT_VERIFIED',
-            message: i18n('Email not verified'),
-          })
-        }
-
-        const access = await getUserAccess(user.id, db)
-        const locale = requestLocale(request)
-        if (locale !== user.locale) {
-          await updateUserLocale(user.id, locale, db)
-          user.locale = locale
-        }
-        await updateLastLogin(user.id, db)
-        user.lastLoginAt = new Date()
-
+        const { user, access } = result.value
         await startSession({
           userId: user.id,
-          access,
+          roles: access.roles,
+          permissions: access.permissions,
           cookie,
           request,
           sessionStore,
           sessionCookieName,
           isProduction,
+          trustProxy,
         })
         return { ...user, ...access }
       },
@@ -233,7 +220,7 @@ export function createUserRoutes(plugins: AppPlugins) {
         detail: {
           tags: ['Auth'],
           summary: '更新个人资料',
-          description: '更新当前登录用户的姓名、手机号、头像。\n\n- 需要登录',
+          description: '更新当前登录用户的姓名、头像。\n\n- 需要登录',
         },
       },
     )
@@ -344,11 +331,14 @@ export function createUserRoutes(plugins: AppPlugins) {
       async ({ body, db, request, headers, i18n }) => {
         const locale = requestLocale(request)
         const idempotencyKey = headers['idempotency-key']
-        if (typeof idempotencyKey !== 'string' || idempotencyKey.length === 0) {
+
+        // 无幂等键: 保持原语义, 不做幂等控制
+        if (idempotencyKey === undefined || idempotencyKey.length === 0) {
           await requestPasswordReset(body.email, db, { locale })
           return status(202)
         }
 
+        // 幂等执行(单事务): 占位 + 重置令牌/事件写入同一事务, 崩溃整体回滚, 重试干净重来。
         const result = await withIdempotency(
           {
             scope: 'auth.forgot-password',
@@ -356,11 +346,12 @@ export function createUserRoutes(plugins: AppPlugins) {
             requestHash: hashIdempotencyRequest({ email: body.email }),
           },
           db,
-          async () => {
-            await requestPasswordReset(body.email, db, { locale })
+          async (tx) => {
+            await requestPasswordReset(body.email, tx, { locale })
             return { statusCode: 202, body: {} }
           },
         )
+
         if (result.isErr()) {
           switch (result.error) {
             case 'IDEMPOTENCY_IN_PROGRESS':

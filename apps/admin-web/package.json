@@ -25,7 +25,6 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",
     "@yongstack/admin-api": "workspace:*",
-    "tailwindcss": "^4.3.3",
     "vite": "^7.0.0"
   }
 }

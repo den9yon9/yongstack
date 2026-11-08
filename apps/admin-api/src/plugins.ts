@@ -20,6 +20,8 @@ export interface AdminPlugins {
   isProduction: boolean
   logger: Logger
   authRateLimitPerMinute: number
+  // 审计/会话取 IP 时是否信任 x-forwarded-for 等转发头(来自 env TRUST_PROXY)
+  trustProxy: boolean
 }
 
 export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): AdminPlugins {
@@ -63,5 +65,6 @@ export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): Adm
     isProduction,
     logger,
     authRateLimitPerMinute: options.authRateLimitPerMinute,
+    trustProxy,
   }
 }

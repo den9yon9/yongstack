@@ -1,4 +1,4 @@
-import { closeDb, createDb } from '@yongstack/database'
+import { closeDb, createDb, type Db } from '@yongstack/database'
 import { createMailer } from '@yongstack/mailer'
 import { EMAIL_QUEUE_NAME, type SendEmailJobData } from '@yongstack/notifications'
 import { createQueue, type Queue, type Worker } from '@yongstack/queue'
@@ -9,6 +9,7 @@ import { registerEmailWorker } from './emailWorker'
 import type { WorkerEnv } from './env'
 import { registerFileCleanupWorker } from './fileCleanupWorker'
 import { registerOutboxWorker } from './outboxWorker'
+import type { PeriodicTaskHandle } from './periodic'
 
 export interface WorkerRegistration {
   workers: Worker[]
@@ -37,15 +38,16 @@ export function registerWorkers(env: WorkerEnv, logger: Logger): WorkerRegistrat
 
   const emailQueue = createQueue<SendEmailJobData>(EMAIL_QUEUE_NAME, { redisUrl: env.REDIS_URL })
   const emailWorker = registerEmailWorker(env.REDIS_URL, mailer, logger)
-  const outboxWorker = registerOutboxWorker(env, emailQueue, logger)
+
+  // 共享同一个连接池: outbox 与 file cleanup 复用, 由本组装根统一关闭
+  const sharedDb: Db = createDb(env.DATABASE_URL)
+  const outboxWorker = registerOutboxWorker(env, emailQueue, sharedDb, logger)
 
   // 软删文件存储补偿; 未配置对象存储时跳过文件清理任务
-  let fileCleanupWorker: ReturnType<typeof registerFileCleanupWorker> | null = null
-  let cleanupDb: ReturnType<typeof createDb> | null = null
+  let fileCleanupWorker: PeriodicTaskHandle | null = null
   if (env.STORAGE_BUCKET !== undefined && env.STORAGE_PUBLIC_BASE_URL !== undefined) {
     const storage = createStorage(env as unknown as StorageEnv)
-    cleanupDb = createDb(env.DATABASE_URL)
-    fileCleanupWorker = registerFileCleanupWorker(env, cleanupDb, storage, logger)
+    fileCleanupWorker = registerFileCleanupWorker(env, sharedDb, storage, logger)
   }
 
   logger.info({ env: env.NODE_ENV }, 'worker registry initialized')
@@ -54,11 +56,12 @@ export function registerWorkers(env: WorkerEnv, logger: Logger): WorkerRegistrat
     workers: [emailWorker],
     queues: [{ name: EMAIL_QUEUE_NAME, queue: emailQueue }],
     close: async () => {
+      // 先停 BullMQ worker 与队列, 再停轮询任务(等在途一轮), 最后关 DB
       await emailWorker.close()
       await emailQueue.close()
       await outboxWorker.close()
       if (fileCleanupWorker) await fileCleanupWorker.close()
-      if (cleanupDb) await closeDb(cleanupDb)
+      await closeDb(sharedDb)
     },
   }
 }

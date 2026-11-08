@@ -11,6 +11,7 @@ import i18nRules from './eslint-rules/i18n.js'
 import invariantThrow from './eslint-rules/invariant-throw.js'
 import tableOwnership from './eslint-rules/table-ownership.js'
 import transactionRule from './eslint-rules/transaction.js'
+import typeBoundaries from './eslint-rules/type-boundaries.js'
 
 export default [
   {
@@ -205,6 +206,15 @@ export default [
     files: ['domains/**/*.ts', 'usecases/**/*.ts'],
     rules: {
       'error-code/screaming-snake': 'error',
+    },
+  },
+  {
+    // boundaries 只拦值导入; type-only 导入是内核反向依赖 infra 的盲区, 由本规则封死
+    plugins: { 'type-boundaries': typeBoundaries },
+    files: ['domains/**/*.ts', 'usecases/**/*.ts'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts', '**/dist/**'],
+    rules: {
+      'type-boundaries/no-infra-type-import': 'error',
     },
   },
   {

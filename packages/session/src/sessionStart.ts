@@ -1,36 +1,33 @@
-import type { UserAccess } from '@yongstack/rbac'
-import { type SessionStore, setSessionCookie } from '@yongstack/session'
+import { type RequestMeta, requestMeta } from '@yongstack/shared'
 import type { Cookie } from 'elysia'
+
+import { type SessionStore, setSessionCookie } from './sessionPlugin'
 
 export function sessionCookieFrom(cookie: unknown, name: string): Cookie<unknown> | undefined {
   return (cookie as Record<string, Cookie<unknown> | undefined>)[name]
 }
 
-function requestMeta(request: Request): { userAgent: string | null; ip: string | null } {
-  const forwarded = request.headers.get('x-forwarded-for')
-  const ip = forwarded?.split(',')[0]?.trim() ?? request.headers.get('x-real-ip')
-  return {
-    userAgent: request.headers.get('user-agent'),
-    ip,
-  }
-}
-
+// 登录/注册成功后的会话签发: 组装根(apps)持 cookie/redis 接线, 这里保持领域无关
+// (roles/permissions 是普通数组, 不 import 具体领域包)。
 export interface StartSessionOptions {
   userId: string
-  access: UserAccess
+  roles: string[]
+  permissions: string[]
   cookie: unknown
   request: Request
   sessionStore: SessionStore
   sessionCookieName: string
   isProduction: boolean
+  // 透传给 requestMeta: 仅可信代理后解析转发头里的 IP
+  trustProxy?: boolean
 }
 
 export async function startSession(options: StartSessionOptions): Promise<void> {
-  const meta = requestMeta(options.request)
+  const meta: RequestMeta = requestMeta(options.request, { trustProxy: options.trustProxy })
   const sessionId = await options.sessionStore.create({
     userId: options.userId,
-    roles: options.access.roles,
-    permissions: options.access.permissions,
+    roles: options.roles,
+    permissions: options.permissions,
     userAgent: meta.userAgent,
     ip: meta.ip,
   })

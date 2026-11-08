@@ -1,22 +1,35 @@
-import { createRootRoute, Link, Outlet, useNavigate } from '@tanstack/react-router'
+import { createRootRoute, Link, Outlet, useNavigate, useRouter } from '@tanstack/react-router'
 import { LogOutIcon } from 'lucide-react'
-import { useEffect } from 'react'
 
 import { Button, buttonVariants } from '@yongstack/ui/components/button'
 
-import { logout, refreshSession, useSession } from '../libs/api/session'
+import { api } from '../libs/api/client'
 
+// 登录态视图: 服务端 HttpOnly cookie 才是权威, 这里只经 root loader 读一份
+// (beforeLoad 每次导航执行), 登录/退出等变更后由 router.invalidate() 触发重取。
+// 不再有 localStorage/手写 store 这类第二真相源。
 export const Route = createRootRoute({
+  beforeLoad: async () => {
+    try {
+      const res = await api.auth.me.get()
+      return { user: res.error === null ? res.data : null }
+    } catch {
+      return { user: null }
+    }
+  },
   component: RootLayout,
 })
 
 function RootLayout() {
   const navigate = useNavigate()
-  const session = useSession()
+  const router = useRouter()
+  const { user } = Route.useRouteContext()
 
-  useEffect(() => {
-    void refreshSession()
-  }, [])
+  async function handleLogout() {
+    await api.auth.logout.post({} as never)
+    await router.invalidate()
+    navigate({ to: '/', replace: true })
+  }
 
   return (
     <div className="flex min-h-svh flex-col bg-muted/30 text-foreground">
@@ -40,16 +53,12 @@ function RootLayout() {
             >
               API 文档
             </a>
-            {session ? (
+            {user ? (
               <>
                 <Link to="/me" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-                  {session.name ?? session.email ?? session.phone ?? '用户'}
+                  {user.name ?? user.email ?? user.phone ?? '用户'}
                 </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void logout().then(() => navigate({ to: '/', replace: true }))}
-                >
+                <Button variant="outline" size="sm" onClick={() => void handleLogout()}>
                   <LogOutIcon data-icon="inline-start" />
                   退出
                 </Button>

@@ -19,6 +19,7 @@
     "@elysiajs/openapi": "^1.4.0",
     "@sinclair/typebox": "^0.34.0",
     "@yongstack/account": "workspace:*",
+    "@yongstack/auth": "workspace:*",
     "@yongstack/database": "workspace:*",
     "@yongstack/file": "workspace:*",
     "@yongstack/http": "workspace:*",

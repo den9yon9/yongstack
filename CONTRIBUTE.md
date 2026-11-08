@@ -14,17 +14,24 @@ pnpm + Turborepo Monorepo、Bun 运行时
 
 ## 分层架构
 
-目录即分层，依赖方向由 eslint-plugin-boundaries 编译期强制（单向无环）：
+目录即分层，依赖方向为“由外向内”，由 eslint-plugin-boundaries（值导入）+ `type-boundaries/no-infra-type-import`（type 导入）双重强制（单向无环）：
 
 ```
-apps/       presentation   可依赖一切（薄壳：装配 + HTTP 映射，不含业务逻辑）
-usecases/*  编排层         可依赖 persistence/shared/domains（跨域用例）
-domains/*   entity 域      可依赖 persistence/shared（纯业务逻辑）
-packages/   shared / persistence / infrastructure（纯工具、DB、基础设施）
+apps/       composition root + presentation   最外层, 可依赖一切(装配/HTTP 映射/cookie 与 session 签发, 不含业务编排)
+usecases/*  编排层        可依赖 domains/persistence/shared; 外部副作用只经本层定义的端口接口
+domains/*   entity 域     可依赖 persistence/shared(纯业务逻辑)
+packages/   shared / persistence( database/testkit ) / infrastructure
+            (session|queue|redis|http|storage|mailer|sms 属 infrastructure, 只有 apps 可引用)
 ```
 
-- domain 之间禁止互调；只有 usecases 能编排多个 domain
-- queue/http/session/redis/storage 全部归 infrastructure，领域层编译期封死
+- **apps 是最外层（组装根），usecase 不是**：依赖由 apps 单向流入内核；cookie 签发、限流、
+  openapi、监控装配都在 apps, 内核不知道 HTTP/Redis 的存在
+- **domain 之间禁止互调；usecase 之间也禁止互相 import**；只有被 apps 装配
+- **端口（依赖倒置）**：usecase 需要投递队列、对象存储等外部能力时, 在 usecase 内定义
+  最小端口接口并接收实现, 不 import 任何 `infrastructure` 包（含 `import type`）。
+  例：`usecases/notifications` 的 `EmailJobQueue`, 由 apps/worker 传入 BullMQ Queue
+- **务实例外**：`DbClient`(Drizzle) 视为下层数据访问, 允许 domain/usecase 直接使用——
+  这是数据存储耦合与外部系统耦合的明确分界, 也是本模板“事务脚本”风格的取舍
 - `eden-client` 提供两端共用的 treaty 类型工具
 - 新增/改名 domain 或 usecase 无需改 eslint 配置（pattern 是目录通配）
 
@@ -93,7 +100,20 @@ pnpm dev         # 自动迁移 + 全部服务 watch
 `withTransaction(client, fn)`（@yongstack/database）包住多个 domain 调用；
 回调内 `return err('CODE')` 会自动回滚整个事务（helper 内部转抛 abort 再还原为 err），
 DB 异常同理。域/用例内禁止直接调用 `.transaction(`（ESLint 强制）。
-幂等需求在事务内写唯一约束表实现（冲突时回滚整个事务，不静默跳过）。
+
+**幂等**：`withIdempotency`（@yongstack/idempotency）为单事务语义——占位、业务写、
+结果回填同事务提交：
+
+```ts
+const result = await withIdempotency({ scope, key, requestHash }, db, async (tx) => {
+  await requestPasswordReset(email, tx, { locale }) // 只写 DB, 外部副作用走 outbox
+  return { statusCode: 202, body: {} }
+})
+```
+
+- 崩溃即整体回滚, 重试是干净的重新执行; 重放返回缓存响应
+- 并发请求在 `(scope, key)` 唯一索引上短暂阻塞后拿到缓存结果（不再 409 快速失败）
+- handler 约束：只写 DB；业务校验尽量放在进入幂等区之前
 
 ### 3. 新增路由（apps/*/src/routes/）
 
@@ -161,8 +181,10 @@ export function createOrderRoutes(plugins: AppPlugins) {
   对应响应 schema 使用 `RateLimitErrorResponse`。
 - 错误码格式为 SCREAMING_SNAKE（`^[A-Z][A-Z0-9_]*$`），ESLint 强制
   （`error-code/screaming-snake`，作用于 domains/usecases）
-- 响应 schema 必须显式声明（`response: {...}`）；Elysia normalize 自动剥离未声明字段，
-  敏感字段只需在 schema 中 omit，service 层不手工剔除
+- 响应 schema 必须显式声明（`response: {...}`）；无响应体状态(204)可省略,
+  Elysia normalize 自动剥离未声明字段，敏感字段只需在 schema 中 omit，service 层不手工剔除
+- 会话签发经 `startSession`（@yongstack/session, 基础设施）；登录/注册的 DB 编排
+  （校验/验证策略/角色权限/最近登录/审计）在 `usecases/auth`, 控制器只做映射
 - 认证用 `isAuth` / `isAdmin` macro（packages/session 提供）
 - 前置守卫（不消费 ok 值的 isErr 检查）可保留 `if (x.isErr()) return status(...)` 形式
 

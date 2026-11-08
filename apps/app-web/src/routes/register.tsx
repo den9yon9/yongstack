@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { Alert, AlertDescription } from '@yongstack/ui/components/alert'
@@ -15,7 +15,7 @@ import { Field, FieldGroup, FieldLabel } from '@yongstack/ui/components/field'
 import { Input } from '@yongstack/ui/components/input'
 import { Spinner } from '@yongstack/ui/components/spinner'
 
-import { register } from '../libs/api/session'
+import { api } from '../libs/api/client'
 
 export const Route = createFileRoute('/register')({
   component: RegisterPage,
@@ -23,6 +23,7 @@ export const Route = createFileRoute('/register')({
 
 function RegisterPage() {
   const navigate = useNavigate()
+  const router = useRouter()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,12 +34,13 @@ function RegisterPage() {
     e.preventDefault()
     setError(null)
     setSubmitting(true)
-    const result = await register(name, email, password)
+    const res = await api.auth.register.post({ name, email, password })
     setSubmitting(false)
-    if (!result.user) {
-      setError(result.error ?? '注册失败')
+    if (res.error !== null) {
+      setError(res.error.value.message ?? '注册失败')
       return
     }
+    await router.invalidate()
     navigate({ to: '/', replace: true })
   }
 

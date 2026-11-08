@@ -1,15 +1,12 @@
 import { createHash } from 'node:crypto'
 
-import { type DbClient, schema } from '@yongstack/database'
+import { type DbClient, type DbTransaction, schema, withTransaction } from '@yongstack/database'
 import { err, ok, type Result } from '@yongstack/shared'
-import { and, eq, lt } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 export type IdempotencyError = 'IDEMPOTENCY_MISMATCH' | 'IDEMPOTENCY_IN_PROGRESS'
 
 const TTL_MS = 24 * 60 * 60 * 1000
-// 占位�认定的最大时长: 超过后视为持有者已崩溃, 其他请求可抢占重来。
-// 需大于业务 handler 的最坏耗时(含网络/发信队列写入), 又远小于用户重试间隔。
-const IN_PROGRESS_TIMEOUT_MS = 60 * 1000
 
 export interface IdempotencyInput {
   scope: string
@@ -21,15 +18,6 @@ export interface IdempotencyInput {
 export interface IdempotentResult {
   statusCode: number
   body: Record<string, unknown>
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === '23505'
-  )
 }
 
 export function hashIdempotencyRequest(value: unknown): string {
@@ -56,89 +44,59 @@ function completedResponse(record: IdempotencyRecord): Result<IdempotentResult, 
   return ok({ statusCode: record.statusCode, body: record.responseBody })
 }
 
+// 幂等执行(单事务语义): 占位、业务写(handler 内)、结果回填发生在同一个事务里。
+//
+// - 崩溃 → 事务整体回滚, 不存在"已执行副作用但占位未完成"的窗口, 重试是干净的重新执行。
+// - 并发 → 用 INSERT ON CONFLICT DO NOTHING 抢占(绝不在事务中途抛错, 避免事务被置为
+//   aborted): 竞争方尚未提交时本插入会等待其提交/回滚; 对方提交则让位, 对方回滚
+//   则由自己占位执行。让位方随后读回 completed 记录返回缓存结果。
+// - 响应回填含 statusCode/body, 重试时直接返回缓存。
+//
+// 约束: handler 只允许 DB 写(外部副作用走 outbox/queue, 由 worker 异步投递并幂等),
+// 且业务校验尽量放在调用 withIdempotency 之前, handler 内不返回业务错误。
 export async function withIdempotency(
   input: IdempotencyInput,
   client: DbClient,
-  handler: () => Promise<IdempotentResult>,
+  handler: (tx: DbTransaction) => Promise<IdempotentResult>,
 ): Promise<Result<IdempotentResult, IdempotencyError>> {
-  const existing = await findRecord(input, client)
-  if (existing) {
+  return withTransaction(client, async (tx) => {
+    // 抢占占位: 冲突时静默让位(返回行数为 0), 不触发语句错误(事务不中断)
+    const placed = await tx
+      .insert(schema.idempotencyKeys)
+      .values({
+        scope: input.scope,
+        key: input.key,
+        userId: input.userId ?? null,
+        requestHash: input.requestHash,
+        status: 'in_progress',
+        expiresAt: new Date(Date.now() + TTL_MS),
+      })
+      .onConflictDoNothing({
+        target: [schema.idempotencyKeys.scope, schema.idempotencyKeys.key],
+      })
+      .returning()
+
+    if (placed.length > 0) {
+      // 抢占成功: 执行业务写并回填, 全程在同一事务内
+      const result = await handler(tx)
+      await tx
+        .update(schema.idempotencyKeys)
+        .set({ status: 'completed', statusCode: result.statusCode, responseBody: result.body })
+        .where(
+          and(
+            eq(schema.idempotencyKeys.scope, input.scope),
+            eq(schema.idempotencyKeys.key, input.key),
+          ),
+        )
+      return ok(result)
+    }
+
+    // 让位: 并发事务已占位并已提交(或遗留持锁状态), 读取其结果
+    const existing = await findRecord(input, tx)
+    if (!existing) return err('IDEMPOTENCY_IN_PROGRESS')
     if (existing.requestHash !== input.requestHash) return err('IDEMPOTENCY_MISMATCH')
     if (existing.status === 'completed') return completedResponse(existing)
-
-    // in_progress: 未超时则让客户端稍后重试, 超时则尝试接管
-    const age = Date.now() - existing.createdAt.getTime()
-    if (age < IN_PROGRESS_TIMEOUT_MS) return err('IDEMPOTENCY_IN_PROGRESS')
-
-    const takeover = await client
-      .update(schema.idempotencyKeys)
-      .set({ createdAt: new Date(), expiresAt: new Date(Date.now() + TTL_MS) })
-      .where(
-        and(
-          eq(schema.idempotencyKeys.scope, input.scope),
-          eq(schema.idempotencyKeys.key, input.key),
-          eq(schema.idempotencyKeys.status, 'in_progress'),
-          lt(schema.idempotencyKeys.createdAt, new Date(Date.now() - IN_PROGRESS_TIMEOUT_MS)),
-        ),
-      )
-      .returning({ key: schema.idempotencyKeys.key })
-    if (takeover.length === 0) return err('IDEMPOTENCY_IN_PROGRESS')
-
-    return runHandler(input, client, handler)
-  }
-
-  // 先占位再执行: 唯一键保证并发请求只有一个真正运行 handler,
-  // 其余请求在占位提交后要么拿到缓存结果, 要么收到 IN_PROGRESS。
-  try {
-    await client.insert(schema.idempotencyKeys).values({
-      scope: input.scope,
-      key: input.key,
-      userId: input.userId ?? null,
-      requestHash: input.requestHash,
-      status: 'in_progress',
-      expiresAt: new Date(Date.now() + TTL_MS),
-    })
-  } catch (error) {
-    if (!isUniqueViolation(error)) throw error
-    // 并发请求已占位/完成: 与请求头对应则等待/复用, 否则拒绝
-    const raced = await findRecord(input, client)
-    if (raced) {
-      if (raced.requestHash !== input.requestHash) return err('IDEMPOTENCY_MISMATCH')
-      if (raced.status === 'completed') return completedResponse(raced)
-    }
+    // 单事务语义下占位崩溃即回滚; 出现遗留 in_progress 意味外部写入, 拒绝执行保护数据。
     return err('IDEMPOTENCY_IN_PROGRESS')
-  }
-
-  return runHandler(input, client, handler)
-}
-
-// 占位成功后执行 handler 并回填响应; 失败时删除占位, 允许客户端重试。
-async function runHandler(
-  input: IdempotencyInput,
-  client: DbClient,
-  handler: () => Promise<IdempotentResult>,
-): Promise<Result<IdempotentResult, IdempotencyError>> {
-  let result: IdempotentResult
-  try {
-    result = await handler()
-  } catch (error) {
-    await client
-      .delete(schema.idempotencyKeys)
-      .where(
-        and(
-          eq(schema.idempotencyKeys.scope, input.scope),
-          eq(schema.idempotencyKeys.key, input.key),
-          eq(schema.idempotencyKeys.status, 'in_progress'),
-        ),
-      )
-    throw error
-  }
-
-  await client
-    .update(schema.idempotencyKeys)
-    .set({ status: 'completed', statusCode: result.statusCode, responseBody: result.body })
-    .where(
-      and(eq(schema.idempotencyKeys.scope, input.scope), eq(schema.idempotencyKeys.key, input.key)),
-    )
-  return ok(result)
+  })
 }

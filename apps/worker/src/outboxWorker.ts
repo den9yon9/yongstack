@@ -1,32 +1,27 @@
-import { closeDb, createDb } from '@yongstack/database'
-import { dispatchOutboxEvent, type SendEmailJobData } from '@yongstack/notifications'
+import { type Db } from '@yongstack/database'
+import { dispatchOutboxEvent, type EmailJobQueue } from '@yongstack/notifications'
 import {
   claimOutboxEvents,
   markDelivered,
   markFailed,
   resetStaleProcessing,
 } from '@yongstack/outbox'
-import type { Queue } from '@yongstack/queue'
 import type { Logger } from '@yongstack/shared'
 
 import type { WorkerEnv } from './env'
-
-export interface OutboxWorkerHandle {
-  close: () => Promise<void>
-}
+import { type PeriodicTaskHandle, startPeriodicTask } from './periodic'
 
 export function registerOutboxWorker(
   env: WorkerEnv,
-  emailQueue: Queue<SendEmailJobData>,
+  emailQueue: EmailJobQueue,
+  db: Db,
   logger: Logger,
-): OutboxWorkerHandle {
-  const db = createDb(env.DATABASE_URL)
-  let running = false
-
-  const poll = async () => {
-    if (running) return
-    running = true
-    try {
+): PeriodicTaskHandle {
+  return startPeriodicTask({
+    name: 'outbox',
+    intervalMs: Number(env.OUTBOX_POLL_INTERVAL_MS),
+    logger,
+    run: async () => {
       const stale = await resetStaleProcessing(db)
       if (stale > 0) logger.warn({ count: stale }, 'reset stale outbox events')
 
@@ -47,21 +42,6 @@ export function registerOutboxWorker(
           await markFailed(db, event, error)
         }
       }
-    } catch (error) {
-      logger.error({ err: error }, 'outbox poll failed')
-    } finally {
-      running = false
-    }
-  }
-
-  const timer = setInterval(() => {
-    void poll()
-  }, Number(env.OUTBOX_POLL_INTERVAL_MS))
-
-  return {
-    close: async () => {
-      clearInterval(timer)
-      await closeDb(db)
     },
-  }
+  })
 }

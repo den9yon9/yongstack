@@ -15,12 +15,9 @@
   "dependencies": {
     "@yongstack/database": "workspace:*",
     "@yongstack/outbox": "workspace:*",
-    "@yongstack/rbac": "workspace:*",
     "@yongstack/shared": "workspace:*",
     "@yongstack/user": "workspace:*",
     "@sinclair/typebox": "^0.34.0"
   },
-  "devDependencies": {
-    "drizzle-orm": "^0.40.0"
-  }
+  "devDependencies": {}
 }

@@ -1,29 +1,21 @@
-import {
-  bindPhone,
-  requestPhoneBindCode,
-  requestPhoneLoginCode,
-  unbindPhone,
-  verifyPhoneLogin,
-} from '@yongstack/account'
+import { bindPhone, requestPhoneBindCode, unbindPhone } from '@yongstack/account'
+import { loginWithPhone } from '@yongstack/auth'
 import { resolveRequestLocale } from '@yongstack/http'
 import { type Translator } from '@yongstack/i18n'
-import { getUserAccess } from '@yongstack/rbac'
+import { startSession } from '@yongstack/session'
 import { assertNever, ErrorResponse, RateLimitErrorResponse } from '@yongstack/shared'
-import { CodeRequestedTooSoonError, getUserById, updateLastLogin } from '@yongstack/user'
+import { CodeRequestedTooSoonError, requestPhoneLoginCode } from '@yongstack/user'
 import * as UserModel from '@yongstack/user/model'
 import { Elysia, status } from 'elysia'
 
 import { type AppPlugins } from '../plugins'
-import { startSession } from '../session'
 
 export function createPhoneRoutes(plugins: AppPlugins) {
-  const { dbPlugin, sessionPlugin, authRateLimit, isProduction, sessionCookieName } = plugins
+  const { dbPlugin, sessionPlugin, authRateLimit, isProduction, sessionCookieName, trustProxy } =
+    plugins
   const { sms, phoneCodeSecret, smsDevCode, defaultLocale } = plugins
   const requestLocale = (request: Request) => resolveRequestLocale(request, defaultLocale)
-  const codeOptions =
-    smsDevCode === undefined
-      ? { secret: phoneCodeSecret }
-      : { secret: phoneCodeSecret, fixedCode: smsDevCode }
+  const fixedCode = smsDevCode === undefined ? undefined : smsDevCode
 
   async function sendCode(to: string, code: string, i18n: Translator) {
     const text = i18n('Your Yongstack login code is {code}. It expires in {minutes} minutes.', {
@@ -41,7 +33,12 @@ export function createPhoneRoutes(plugins: AppPlugins) {
     .post(
       '/request-code',
       async ({ body, db, i18n, set }) => {
-        const result = await requestPhoneLoginCode(body.phone, db, codeOptions)
+        const result = await requestPhoneLoginCode(
+          body.phone,
+          phoneCodeSecret,
+          db,
+          fixedCode === undefined ? {} : { fixedCode },
+        )
         if (result.isErr()) {
           if (result.error instanceof CodeRequestedTooSoonError) {
             const { retryAfterSeconds } = result.error
@@ -87,7 +84,8 @@ export function createPhoneRoutes(plugins: AppPlugins) {
     .post(
       '/login',
       async ({ body, cookie, db, sessionStore, request, i18n }) => {
-        const result = await verifyPhoneLogin(body.phone, body.code, db, {
+        const result = await loginWithPhone(body.phone, body.code, {
+          client: db,
           secret: phoneCodeSecret,
           locale: requestLocale(request),
         })
@@ -125,21 +123,17 @@ export function createPhoneRoutes(plugins: AppPlugins) {
           }
         }
 
-        const found = await getUserById(result.value.userId, db)
-        if (found.isErr()) {
-          return status(404, { error: found.error, message: i18n('User not found') })
-        }
-        const user = found.value
-        const access = await getUserAccess(user.id, db)
-        await updateLastLogin(user.id, db)
+        const { user, access } = result.value
         await startSession({
           userId: user.id,
-          access,
+          roles: access.roles,
+          permissions: access.permissions,
           cookie,
           request,
           sessionStore,
           sessionCookieName,
           isProduction,
+          trustProxy,
         })
         return { ...user, ...access }
       },
@@ -164,7 +158,10 @@ export function createPhoneRoutes(plugins: AppPlugins) {
     .post(
       '/bind/request-code',
       async ({ body, session, db, i18n, set }) => {
-        const result = await requestPhoneBindCode(session.userId, body.phone, db, codeOptions)
+        const result = await requestPhoneBindCode(session.userId, body.phone, db, {
+          secret: phoneCodeSecret,
+          ...(fixedCode === undefined ? {} : { fixedCode }),
+        })
         if (result.isErr()) {
           if (result.error instanceof CodeRequestedTooSoonError) {
             const { retryAfterSeconds } = result.error

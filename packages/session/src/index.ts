@@ -14,3 +14,4 @@ export {
   type SessionWithId,
   setSessionCookie,
 } from './sessionPlugin'
+export { sessionCookieFrom, startSession, type StartSessionOptions } from './sessionStart'

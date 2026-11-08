@@ -1,11 +1,17 @@
 import type { OutboxEvent, OutboxEventMap, OutboxEventName } from '@yongstack/outbox'
-import type { Queue } from '@yongstack/queue'
 import type { Logger } from '@yongstack/shared'
 
 import { EMAIL_JOB_NAMES, type SendEmailJobData } from './jobs'
 
+// 端口(依赖倒置): 编排层只依赖它需要的最小能力(投递一封邮件任务)。
+// BullMQ Queue 等具体适配器由边缘(apps/worker)传入, 结构化兼容本接口。
+// 这样内核不 import 任何 infrastructure 包, 换队列实现不影响本用例。
+export interface EmailJobQueue {
+  add(name: string, data: SendEmailJobData, opts?: { jobId?: string }): Promise<unknown>
+}
+
 export interface NotificationDispatchOptions {
-  emailQueue: Queue<SendEmailJobData>
+  emailQueue: EmailJobQueue
   appUrl: string
   logger: Logger
 }

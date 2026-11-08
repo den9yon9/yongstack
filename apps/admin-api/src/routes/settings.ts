@@ -60,7 +60,7 @@ export function createSettingsRoutes(plugins: AdminPlugins) {
             action: 'admin.settings.update',
             targetType: 'settings',
             diff: { patch: body.values },
-            ...requestMeta(request),
+            ...requestMeta(request, { trustProxy: plugins.trustProxy }),
           },
           (tx) => updateSettings(body.values, tx, session.userId),
         )

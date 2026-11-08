@@ -29,11 +29,11 @@
 
 ## 架构
 
-目录即分层，依赖方向由 `eslint-plugin-boundaries` 编译期强制单向无环：
+目录即分层，依赖方向“由外向内”，由 eslint-plugin-boundaries（值导入）+ 自研规则（type 导入、表归属、跨域读、事务、错误码、i18n）编译期强制：
 
 ```
-apps/       presentation   薄壳: app-api/web · admin-api/web · worker · e2e
-usecases/   编排层         跨域用例(业务落地后新增)
+apps/       composition root + presentation   最外层: 装配/HTTP 映射/cookie 签发, 不含业务编排
+usecases/   编排层         跨域用例; 外部副作用(队列等)经本层定义的端口接口注入
 domains/    实体域         纯业务逻辑(业务落地后新增)
 packages/   基础设施       database · http · queue · redis · session · storage · mailer · shared · i18n · eden-client · tsconfig
 ```
@@ -135,6 +135,7 @@ domains/
   settings/        运行时设置与功能开关
   user/            用户、邮箱验证、密码令牌
 usecases/
+  auth/            注册与登录编排(密码/验证码, app+admin)
   account/         账号生命周期编排
   admin-users/     管理端用户管理编排
   notifications/   事件 → 通知任务

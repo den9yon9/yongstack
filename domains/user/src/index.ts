@@ -26,6 +26,7 @@ export {
   updateProfile,
   updateUserLocale,
   updateUserStatus,
+  type User,
   type UserError,
   verifyPhoneLoginCode,
 } from './service'

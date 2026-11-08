@@ -28,6 +28,8 @@ export interface AppPlugins {
   logger: Logger
   authRateLimitPerMinute: number
   defaultLocale: Locale
+  // 审计/会话取 IP 时是否信任 x-forwarded-for 等转发头(来自 env TRUST_PROXY)
+  trustProxy: boolean
 }
 
 export function createPlugins(
@@ -76,5 +78,6 @@ export function createPlugins(
     logger,
     authRateLimitPerMinute: options.authRateLimitPerMinute,
     defaultLocale: options.defaultLocale,
+    trustProxy,
   }
 }

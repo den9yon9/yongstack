@@ -68,7 +68,7 @@ describe('withIdempotency', () => {
     expect(calls).toBe(2)
   })
 
-  test('concurrent requests run the handler only once', async () => {
+  test('concurrent requests run the handler only once and share the result', async () => {
     let calls = 0
     let releaseGate!: () => void
     const gate = new Promise<void>((resolve) => {
@@ -79,35 +79,34 @@ describe('withIdempotency', () => {
       key: 'race-key',
       requestHash: hashIdempotencyRequest({ value: 'race' }),
     }
-    const handler = async () => {
+
+    // 第一个请求卡在 handler 里(事务未提交), 第二个请求的占位插入在
+    // 唯一索引上阻塞, 直到第一个事务提交; 等待结束后拿到缓存结果。
+    const first = withIdempotency(input, db, async () => {
       calls += 1
       await gate
-      return { statusCode: 202, body: {} }
-    }
-
-    const first = withIdempotency(input, db, handler)
-    // 等第一个请求完成占位(执行中), 再发起第二个
-    for (let i = 0; i < 100; i += 1) {
-      const [row] = await db.select().from(schema.idempotencyKeys)
-      if (row) break
-      await new Promise((resolve) => setTimeout(resolve, 5))
-    }
-    const second = await withIdempotency(input, db, handler)
+      return { statusCode: 202, body: { from: 'first' } }
+    })
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    // 第二个请求阻塞在唯一索引上, 不能先 await: 必须先放行第一个事务
+    const second = withIdempotency(input, db, async () => {
+      calls += 1
+      return { statusCode: 202, body: { from: 'second' } }
+    })
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
     releaseGate()
     const firstResult = await first
+    const secondResult = await second
 
     expect(firstResult.isOk()).toBe(true)
-    expect(second._unsafeUnwrapErr()).toBe('IDEMPOTENCY_IN_PROGRESS')
-    expect(calls).toBe(1)
-
-    // 稍后重试拿到缓存结果
-    const retry = await withIdempotency(input, db, handler)
-    expect(retry._unsafeUnwrap()).toEqual({ statusCode: 202, body: {} })
+    expect(firstResult._unsafeUnwrap()).toEqual({ statusCode: 202, body: { from: 'first' } })
+    expect(secondResult.isOk()).toBe(true)
+    expect(secondResult._unsafeUnwrap()).toEqual({ statusCode: 202, body: { from: 'first' } })
     expect(calls).toBe(1)
   })
 
-  test('handler failure clears the placeholder and allows retry', async () => {
+  test('handler failure rolls everything back, retry is a clean re-run', async () => {
     let calls = 0
     const input = {
       scope: 'test',
@@ -127,6 +126,7 @@ describe('withIdempotency', () => {
     expect(firstTry.thrown).toBe('transient')
     expect(calls).toBe(1)
 
+    // 占位随事务回滚, 没有遗留行, 重试 = 干净地重新执行
     const retry = await withIdempotency(input, db, async () => {
       calls += 1
       return { statusCode: 202, body: {} }
@@ -139,40 +139,13 @@ describe('withIdempotency', () => {
     expect(calls).toBe(2)
   })
 
-  test('stale in_progress placeholder can be taken over', async () => {
+  test('a pre-existing in_progress placeholder is refused without running the handler', async () => {
     const input = {
       scope: 'test',
-      key: 'stale-key',
-      requestHash: hashIdempotencyRequest({ value: 'stale' }),
+      key: 'stuck-key',
+      requestHash: hashIdempotencyRequest({ value: 'stuck' }),
     }
-    // 模拟持有者崩溃后遗留的占位: 直接插入一条超过超时时限的 in_progress 记录
-    await db.insert(schema.idempotencyKeys).values({
-      scope: input.scope,
-      key: input.key,
-      requestHash: input.requestHash,
-      status: 'in_progress',
-      createdAt: new Date(Date.now() - 10 * 60 * 1000),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    })
-
-    let calls = 0
-    const result = await withIdempotency(input, db, async () => {
-      calls += 1
-      return { statusCode: 202, body: {} }
-    })
-    expect(result.isOk()).toBe(true)
-    expect(calls).toBe(1)
-
-    const [record] = await db.select().from(schema.idempotencyKeys)
-    expect(record?.status).toBe('completed')
-  })
-
-  test('fresh in_progress placeholder reports in progress without running handler', async () => {
-    const input = {
-      scope: 'test',
-      key: 'fresh-key',
-      requestHash: hashIdempotencyRequest({ value: 'fresh' }),
-    }
+    // 单事务语义下占位崩溃即回滚; 出现遗留行意味外部写入, 拒绝执行保护数据。
     await db.insert(schema.idempotencyKeys).values({
       scope: input.scope,
       key: input.key,
@@ -189,5 +162,26 @@ describe('withIdempotency', () => {
     })
     expect(result._unsafeUnwrapErr()).toBe('IDEMPOTENCY_IN_PROGRESS')
     expect(calls).toBe(0)
+  })
+
+  test('handler writes participate in the caller transaction (atomic side effect)', async () => {
+    const input = {
+      scope: 'test',
+      key: 'tx-key',
+      requestHash: hashIdempotencyRequest({ value: 'tx' }),
+    }
+
+    // handler 写一条占位外的业务行; 失败时该行必须与占位一起回滚
+    const failing = await withIdempotency(input, db, async () => {
+      throw new Error('boom')
+    }).then(
+      (r) => r,
+      (e) => ({ thrown: (e as Error).message }),
+    )
+    if (!('thrown' in failing)) throw failing
+    expect(failing.thrown).toBe('boom')
+
+    const rows = await db.select().from(schema.idempotencyKeys)
+    expect(rows).toHaveLength(0)
   })
 })
