@@ -84,10 +84,22 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/forgot-password' | '/login' | '/me' | '/register' | '/reset-password' | '/verify-email'
+    | '/'
+    | '/forgot-password'
+    | '/login'
+    | '/me'
+    | '/register'
+    | '/reset-password'
+    | '/verify-email'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/forgot-password' | '/login' | '/me' | '/register' | '/reset-password' | '/verify-email'
+    | '/'
+    | '/forgot-password'
+    | '/login'
+    | '/me'
+    | '/register'
+    | '/reset-password'
+    | '/verify-email'
   id:
     | '__root__'
     | '/'
