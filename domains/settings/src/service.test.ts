@@ -1,5 +1,6 @@
 import { closeDb, type Db, schema } from '@yongstack/database'
 import { prepareTestDb, resetDb } from '@yongstack/database/testing'
+import { createUser } from '@yongstack/testkit'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 
 import {
@@ -26,10 +27,7 @@ beforeEach(async () => {
 })
 
 async function seedUser(): Promise<string> {
-  const [user] = await db
-    .insert(schema.users)
-    .values({ name: 'Admin', email: 'admin@example.com', passwordHash: 'not-a-real-hash' })
-    .returning()
+  const { user } = await createUser(db, { name: 'Admin', email: 'admin@example.com' })
   return user.id
 }
 

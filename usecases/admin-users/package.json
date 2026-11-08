@@ -18,5 +18,8 @@
     "@yongstack/shared": "workspace:*",
     "@yongstack/user": "workspace:*",
     "@sinclair/typebox": "^0.34.0"
+  },
+  "devDependencies": {
+    "@yongstack/testkit": "workspace:*"
   }
 }

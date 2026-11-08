@@ -21,7 +21,7 @@ const trustProxy = Type.Transform(Type.String({ default: 'false' }))
   .Decode((raw: string) => raw.trim() === 'true')
   .Encode((v) => (v ? 'true' : 'false'))
 
-export const appEnvSchema = Type.Object({
+const appEnvSchema = Type.Object({
   DATABASE_URL: Type.String({ format: 'uri' }),
   REDIS_URL: Type.String({ format: 'uri' }),
   SESSION_SECRET: Type.String({ minLength: 32 }),

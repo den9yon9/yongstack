@@ -18,5 +18,8 @@
     "@yongstack/shared": "workspace:*",
     "@sinclair/typebox": "^0.34.0",
     "drizzle-orm": "^0.40.0"
+  },
+  "devDependencies": {
+    "@yongstack/testkit": "workspace:*"
   }
 }

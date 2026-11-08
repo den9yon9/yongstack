@@ -6,7 +6,7 @@ export function sessionCookieFrom(cookie: unknown, name: string): Cookie<unknown
   return (cookie as Record<string, Cookie<unknown> | undefined>)[name]
 }
 
-export function requestMeta(request: Request): { userAgent: string | null; ip: string | null } {
+function requestMeta(request: Request): { userAgent: string | null; ip: string | null } {
   const forwarded = request.headers.get('x-forwarded-for')
   const ip = forwarded?.split(',')[0]?.trim() ?? request.headers.get('x-real-ip')
   return {

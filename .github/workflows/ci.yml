@@ -58,6 +58,9 @@ jobs:
       - name: Check i18n catalog
         run: pnpm i18n:check
 
+      - name: Check unused dependencies & exports
+        run: pnpm knip
+
       - name: Type check
         run: pnpm typecheck
 

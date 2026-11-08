@@ -35,7 +35,7 @@ export const USER_REGISTERED_EVENT = 'user.registered'
 export const EMAIL_VERIFICATION_REQUESTED_EVENT = 'user.email_verification_requested'
 export const PASSWORD_RESET_REQUESTED_EVENT = 'user.password_reset_requested'
 
-export type PhoneVerifyCodeError = 'CODE_INVALID' | 'CODE_EXPIRED' | 'CODE_ATTEMPTS_EXCEEDED'
+type PhoneVerifyCodeError = 'CODE_INVALID' | 'CODE_EXPIRED' | 'CODE_ATTEMPTS_EXCEEDED'
 export type PhoneLoginError =
   PhoneVerifyCodeError | 'ACCOUNT_DISABLED' | 'PHONE_ALREADY_IN_USE' | 'USER_NOT_FOUND'
 export type AdminPhoneLoginError =

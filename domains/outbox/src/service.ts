@@ -8,11 +8,6 @@ export { type OutboxEventMap, type OutboxEventName } from './events'
 export const OUTBOX_MAX_ATTEMPTS = 5
 const STALE_PROCESSING_MS = 5 * 60 * 1000
 
-export interface RecordOutboxEventInput {
-  type: string
-  payload: Record<string, unknown>
-}
-
 export interface OutboxEvent {
   id: string
   type: string

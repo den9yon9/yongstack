@@ -2,7 +2,7 @@ import { type StaticDecode, Type } from '@sinclair/typebox'
 import { parseEnv } from '@yongstack/shared'
 import { storageEnvSchema } from '@yongstack/storage'
 
-export const workerEnvSchema = Type.Object({
+const workerEnvSchema = Type.Object({
   NODE_ENV: Type.Union(
     [Type.Literal('development'), Type.Literal('production'), Type.Literal('test')],
     { default: 'development' },

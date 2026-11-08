@@ -16,5 +16,8 @@
     "@yongstack/database": "workspace:*",
     "@yongstack/shared": "workspace:*",
     "drizzle-orm": "^0.40.0"
+  },
+  "devDependencies": {
+    "@yongstack/testkit": "workspace:*"
   }
 }

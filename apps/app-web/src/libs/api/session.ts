@@ -35,12 +35,12 @@ function notify() {
   listeners.forEach((fn) => fn())
 }
 
-export function subscribeSession(fn: () => void): () => void {
+function subscribeSession(fn: () => void): () => void {
   listeners.add(fn)
   return () => listeners.delete(fn)
 }
 
-export function getSession(): AuthUser | null | undefined {
+function getSession(): AuthUser | null | undefined {
   return current
 }
 

@@ -1,6 +1,7 @@
-import { closeDb, type Db, schema } from '@yongstack/database'
+import { closeDb, type Db } from '@yongstack/database'
 import { prepareTestDb, resetDb } from '@yongstack/database/testing'
 import { ensureRbacDefaults, getUserAccess } from '@yongstack/rbac'
+import { createUser } from '@yongstack/testkit'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 
 import { getUserWithRoles, listUsersWithRoles, updateUserAccess } from './service'
@@ -21,10 +22,7 @@ beforeEach(async () => {
 })
 
 async function seedUser(email: string, role: 'member' | 'admin' = 'member') {
-  const [user] = await db
-    .insert(schema.users)
-    .values({ name: email.split('@')[0], email, passwordHash: 'not-a-real-hash' })
-    .returning()
+  const { user } = await createUser(db, { email, emailVerified: false })
   const access = await updateUserAccess(
     user.id,
     { roles: [role] },

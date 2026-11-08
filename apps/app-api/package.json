@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@elysiajs/eden": "^1.4.9",
+    "@yongstack/testkit": "workspace:*",
     "drizzle-orm": "^0.40.0"
   }
 }

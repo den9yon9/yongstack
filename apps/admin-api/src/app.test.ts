@@ -1,13 +1,14 @@
 import { treaty } from '@elysiajs/eden'
 import { closeDb, type Db, schema } from '@yongstack/database'
 import { prepareTestDb, resetDb } from '@yongstack/database/testing'
-import { assignRoles, ensureRbacDefaults } from '@yongstack/rbac'
+import { ensureRbacDefaults } from '@yongstack/rbac'
 import { createRedisClient, type Redis } from '@yongstack/redis'
 import { flushTestRedis } from '@yongstack/redis/testing'
 import { createLogger } from '@yongstack/shared'
 import { getTestEnv } from '@yongstack/shared/testing'
 import { createMemorySmsProvider, type MemorySmsProvider } from '@yongstack/sms/testing'
 import { createInMemoryStorage, type InMemoryStorage } from '@yongstack/storage/testing'
+import { createUser } from '@yongstack/testkit'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 
@@ -68,16 +69,7 @@ function sessionCookie(res: { headers: unknown }): string {
 }
 
 async function seedUser(email: string, role: 'member' | 'admin') {
-  const [user] = await db
-    .insert(schema.users)
-    .values({
-      name: email.split('@')[0],
-      email,
-      passwordHash: await Bun.password.hash('password123', 'argon2id'),
-    })
-    .returning()
-  const assigned = await assignRoles(user.id, [role], db)
-  if (assigned.isErr()) throw new Error(assigned.error)
+  const { user } = await createUser(db, { email, role, emailVerified: false })
   return user
 }
 
@@ -355,18 +347,13 @@ function latestSmsCode(): string {
 }
 
 async function seedPhoneAdmin(phone: string) {
-  const [user] = await db
-    .insert(schema.users)
-    .values({
-      name: 'Phone Admin',
-      email: `phone-admin-${Date.now()}@example.com`,
-      passwordHash: await Bun.password.hash('password123', 'argon2id'),
-      phone,
-      phoneVerifiedAt: new Date(),
-    })
-    .returning()
-  const assigned = await assignRoles(user.id, ['admin'], db)
-  if (assigned.isErr()) throw new Error(assigned.error)
+  const { user } = await createUser(db, {
+    name: 'Phone Admin',
+    email: `phone-admin-${Date.now()}@example.com`,
+    phone,
+    role: 'admin',
+    emailVerified: false,
+  })
   return user
 }
 

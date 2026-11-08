@@ -71,7 +71,7 @@ export async function renderMetrics(metrics: Registry): Promise<string> {
 }
 
 // 归一化路径: URL 形态的动态段(uuid)替换为 :id, 防标签基数爆炸
-export function metricPath(pathname: string): string {
+function metricPath(pathname: string): string {
   return pathname.replace(/\/[0-9a-f-]{36}(?=\/|$)/g, '/:id')
 }
 
