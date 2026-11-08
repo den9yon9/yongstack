@@ -11,7 +11,7 @@ import postgres, { type Sql } from 'postgres'
 import * as schema from './schema'
 
 export { schema }
-export { emailSchema, table } from './model'
+export { emailSchema, phoneSchema, table } from './model'
 export {
   OUTBOX_EVENT_STATUS,
   type OutboxEventStatus,

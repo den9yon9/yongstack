@@ -1,5 +1,6 @@
 export { hashPassword, verifyPassword } from './crypto'
 export { parseEnv } from './env'
+export { DomainError } from './errors'
 export { createLogger, type Logger } from './logger'
 export { fromCents, toCents } from './money'
 export { getRequestContext, getRequestId, runWithRequestId } from './requestContext'
@@ -13,6 +14,7 @@ export {
   MAX_PAGE_SIZE,
   PaginatedResponse,
   PaginationQuery,
+  RateLimitErrorResponse,
   SortOrder,
   SortQuery,
 } from './schemas'

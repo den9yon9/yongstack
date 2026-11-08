@@ -4,19 +4,26 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
 import { eq } from 'drizzle-orm'
 
 import {
+  bindPhone,
   changePassword,
+  CodeRequestedTooSoonError,
   consumeEmailVerificationToken,
   consumePasswordResetToken,
   createEmailVerificationToken,
   createPasswordResetToken,
+  createPhoneUser,
+  findUserByPhone,
   getUserById,
   listUsers,
   loginUser,
   registerUser,
+  requestPhoneLoginCode,
+  unbindPhone,
   updateLastLogin,
   updateProfile,
   updateUserLocale,
   updateUserStatus,
+  verifyPhoneLoginCode,
 } from './service'
 
 let db: Db
@@ -96,16 +103,15 @@ describe('loginUser', () => {
 })
 
 describe('profile and listing', () => {
-  test('updates name, phone and avatar', async () => {
+  test('updates name and avatar', async () => {
     const user = await register('carol@example.com')
     const updated = await updateProfile(
       user.id,
-      { name: 'Carol 2', phone: '13800000000', avatar: 'https://img.example.com/c.png' },
+      { name: 'Carol 2', avatar: 'https://img.example.com/c.png' },
       db,
     )
     if (updated.isErr()) throw updated.error
     expect(updated.value.name).toBe('Carol 2')
-    expect(updated.value.phone).toBe('13800000000')
     expect(updated.value.avatar).toBe('https://img.example.com/c.png')
   })
 
@@ -218,5 +224,77 @@ describe('password reset and change', () => {
     expect(
       (await loginUser({ email: 'change@example.com', password: 'new-password-2' }, db)).isOk(),
     ).toBe(true)
+  })
+})
+
+const PHONE_SECRET = 'phone-code-test-secret'
+
+describe('phone login codes', () => {
+  const phone = '+8613800000003'
+
+  test('issues, verifies and consumes a code', async () => {
+    const requested = await requestPhoneLoginCode(phone, PHONE_SECRET, db)
+    if (requested.isErr()) throw requested.error
+    expect(requested.value.code).toMatch(/^\d{6}$/)
+
+    const verified = await verifyPhoneLoginCode(phone, requested.value.code, PHONE_SECRET, db)
+    expect(verified.isOk()).toBe(true)
+
+    const replay = await verifyPhoneLoginCode(phone, requested.value.code, PHONE_SECRET, db)
+    expect(replay.isErr()).toBe(true)
+  })
+
+  test('blocks immediate resend and locks after too many attempts', async () => {
+    await requestPhoneLoginCode(phone, PHONE_SECRET, db)
+    const again = await requestPhoneLoginCode(phone, PHONE_SECRET, db)
+    expect(again.isErr()).toBe(true)
+    if (!again.isErr() || !(again.error instanceof CodeRequestedTooSoonError)) {
+      throw new Error('expected CodeRequestedTooSoonError')
+    }
+    expect(again.error.retryAfterSeconds).toBeGreaterThan(0)
+    expect(again.error.retryAfterSeconds).toBeLessThanOrEqual(60)
+
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const result = await verifyPhoneLoginCode(phone, '000000', PHONE_SECRET, db)
+      expect(result.isErr() && result.error).toBe('CODE_INVALID')
+    }
+    const locked = await verifyPhoneLoginCode(phone, '000000', PHONE_SECRET, db)
+    expect(locked.isErr() && locked.error).toBe('CODE_ATTEMPTS_EXCEEDED')
+  })
+})
+
+describe('phone binding', () => {
+  const phone = '+8613800000004'
+
+  test('binds and unbinds a phone for an email account', async () => {
+    const user = await register('phone-bind@example.com')
+    const bound = await bindPhone(user.id, phone, db)
+    if (bound.isErr()) throw bound.error
+    expect(bound.value.phone).toBe(phone)
+    expect(bound.value.phoneVerifiedAt).not.toBeNull()
+
+    const found = await findUserByPhone(phone, db)
+    expect(found?.id).toBe(user.id)
+
+    const unbound = await unbindPhone(user.id, db)
+    expect(unbound.isOk()).toBe(true)
+    expect(await findUserByPhone(phone, db)).toBeNull()
+  })
+
+  test('rejects a phone already used by another user', async () => {
+    const first = await register('phone-first@example.com')
+    const second = await register('phone-second@example.com')
+    const bound = await bindPhone(first.id, phone, db)
+    if (bound.isErr()) throw bound.error
+
+    const conflict = await bindPhone(second.id, phone, db)
+    expect(conflict.isErr() && conflict.error).toBe('PHONE_ALREADY_IN_USE')
+  })
+
+  test('prevents unbinding the only login method', async () => {
+    const user = await createPhoneUser(phone, db)
+    if (!user) throw new Error('expected phone user')
+    const result = await unbindPhone(user.id, db)
+    expect(result.isErr() && result.error).toBe('CANNOT_UNBIND_ONLY_LOGIN')
   })
 })

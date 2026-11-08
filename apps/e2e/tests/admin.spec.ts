@@ -12,7 +12,7 @@ test('管理员登录 → 控制台 → 退出', async ({ page }) => {
   await page.goto('/login')
   await page.getByLabel('邮箱').fill('admin@example.com')
   await page.getByLabel('密码').fill('admin123456')
-  await page.getByRole('button', { name: '登录' }).click()
+  await page.getByRole('button', { name: '登录', exact: true }).click()
 
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByText('Yongstack 管理后台')).toBeVisible()
@@ -33,7 +33,7 @@ test('普通用户不能登录管理端', async ({ request, page }) => {
   await page.goto('/login')
   await page.getByLabel('邮箱').fill(email)
   await page.getByLabel('密码').fill('password123')
-  await page.getByRole('button', { name: '登录' }).click()
+  await page.getByRole('button', { name: '登录', exact: true }).click()
   await expect(page.getByText('不是管理员账号')).toBeVisible()
 })
 
@@ -47,7 +47,7 @@ test('管理员可以查看并保存运行时设置', async ({ page }) => {
   await page.goto('/login')
   await page.getByLabel('邮箱').fill('admin@example.com')
   await page.getByLabel('密码').fill('admin123456')
-  await page.getByRole('button', { name: '登录' }).click()
+  await page.getByRole('button', { name: '登录', exact: true }).click()
 
   await page.getByRole('link', { name: '设置' }).click()
   await expect(page).toHaveURL(/\/settings$/)
@@ -62,7 +62,7 @@ test('管理员可查看用户与角色页面', async ({ page }) => {
   await page.goto('/login')
   await page.getByLabel('邮箱').fill('admin@example.com')
   await page.getByLabel('密码').fill('admin123456')
-  await page.getByRole('button', { name: '登录' }).click()
+  await page.getByRole('button', { name: '登录', exact: true }).click()
 
   await page.getByRole('link', { name: '用户', exact: true }).click()
   await expect(page).toHaveURL(/\/users$/)

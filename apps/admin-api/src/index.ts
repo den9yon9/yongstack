@@ -43,7 +43,13 @@ export function buildApp(options: AdminAppOptions) {
     .use(plugins.dbPlugin)
     .use(plugins.sessionPlugin)
     .use(plugins.localePlugin)
-    .use(cors({ origin: options.corsOrigin, credentials: true, exposeHeaders: ['x-request-id'] }))
+    .use(
+      cors({
+        origin: options.corsOrigin,
+        credentials: true,
+        exposeHeaders: ['x-request-id', 'retry-after'],
+      }),
+    )
     .use(
       enableDocs
         ? openapi({

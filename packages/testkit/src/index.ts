@@ -10,6 +10,8 @@ export interface CreateUserOptions {
   email?: string
   name?: string
   password?: string
+  phone?: string
+  phoneVerified?: boolean
   role?: 'member' | 'admin'
   isActive?: boolean
   emailVerified?: boolean
@@ -26,6 +28,8 @@ export async function createUser(client: DbClient, options: CreateUserOptions = 
       name: options.name ?? email.split('@')[0],
       email,
       passwordHash,
+      phone: options.phone ?? null,
+      phoneVerifiedAt: options.phone && options.phoneVerified !== false ? new Date() : null,
       isActive: options.isActive ?? true,
       emailVerifiedAt: options.emailVerified === false ? null : new Date(),
     })

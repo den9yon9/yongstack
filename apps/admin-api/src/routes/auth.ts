@@ -1,51 +1,21 @@
-import { getUserAccess, type UserAccess } from '@yongstack/rbac'
-import { clearSessionCookie, type SessionStore, setSessionCookie } from '@yongstack/session'
-import { assertNever, ErrorResponse } from '@yongstack/shared'
-import { getUserById, loginUser } from '@yongstack/user'
+import { requestAdminPhoneLoginCode, verifyAdminPhoneLogin } from '@yongstack/account'
+import { getUserAccess } from '@yongstack/rbac'
+import { clearSessionCookie } from '@yongstack/session'
+import { assertNever, ErrorResponse, RateLimitErrorResponse } from '@yongstack/shared'
+import { CodeRequestedTooSoonError, getUserById, loginUser } from '@yongstack/user'
 import * as UserModel from '@yongstack/user/model'
-import { type Cookie, Elysia, status } from 'elysia'
+import { Elysia, status } from 'elysia'
 
 import { type AdminPlugins } from '../plugins'
-
-function sessionCookieFrom(cookie: unknown, name: string): Cookie<unknown> | undefined {
-  return (cookie as Record<string, Cookie<unknown> | undefined>)[name]
-}
-
-function requestMeta(request: Request): { userAgent: string | null; ip: string | null } {
-  const forwarded = request.headers.get('x-forwarded-for')
-  const ip = forwarded?.split(',')[0]?.trim() ?? request.headers.get('x-real-ip')
-  return { userAgent: request.headers.get('user-agent'), ip }
-}
-
-interface StartSessionOptions {
-  userId: string
-  access: UserAccess
-  cookie: unknown
-  request: Request
-  sessionStore: SessionStore
-  sessionCookieName: string
-  isProduction: boolean
-}
-
-async function startSession(options: StartSessionOptions): Promise<void> {
-  const meta = requestMeta(options.request)
-  const sessionId = await options.sessionStore.create({
-    userId: options.userId,
-    roles: options.access.roles,
-    permissions: options.access.permissions,
-    userAgent: meta.userAgent,
-    ip: meta.ip,
-  })
-  setSessionCookie(
-    sessionCookieFrom(options.cookie, options.sessionCookieName),
-    sessionId,
-    options.isProduction,
-  )
-}
+import { sessionCookieFrom, startSession } from '../session'
 
 export function createAuthRoutes(plugins: AdminPlugins) {
   const { dbPlugin, sessionPlugin, authRateLimit, isProduction, sessionCookieName } = plugins
-  const { authRateLimitPerMinute } = plugins
+  const { authRateLimitPerMinute, sms, phoneCodeSecret, smsDevCode } = plugins
+  const codeOptions =
+    smsDevCode === undefined
+      ? { secret: phoneCodeSecret }
+      : { secret: phoneCodeSecret, fixedCode: smsDevCode }
 
   return new Elysia({ name: 'auth-admin', prefix: '/auth' })
     .use(plugins.localePlugin)
@@ -102,6 +72,136 @@ export function createAuthRoutes(plugins: AdminPlugins) {
           tags: ['Auth'],
           summary: '管理员登录',
           description: `管理员登录，成功后设置签名 session cookie。\n\n- 凭据错误返回 401\n- 仅 admin 角色可登录，否则返回 403\n- 限流：60 秒内最多 ${authRateLimitPerMinute} 次尝试`,
+        },
+      },
+    )
+    .post(
+      '/phone/request-code',
+      async ({ body, db, i18n, set }) => {
+        const result = await requestAdminPhoneLoginCode(body.phone, db, codeOptions)
+        if (result.isErr()) {
+          if (result.error instanceof CodeRequestedTooSoonError) {
+            const { retryAfterSeconds } = result.error
+            set.headers['retry-after'] = String(retryAfterSeconds)
+            return status(429, {
+              error: result.error.code,
+              message: i18n('Please wait {seconds} seconds before requesting another code', {
+                seconds: String(retryAfterSeconds),
+              }),
+              retryAfterSeconds,
+            })
+          }
+
+          switch (result.error) {
+            case 'CODE_RATE_LIMITED':
+              return status(429, { error: result.error, message: i18n('Too many requests') })
+            default:
+              return assertNever(result.error)
+          }
+        }
+        // 非管理员/未绑定手机号: 仍返回 202, 不泄露账号状态
+        if (result.value === null) return status(202)
+
+        const text = i18n(
+          'Your Yongstack admin login code is {code}. It expires in {minutes} minutes.',
+          { code: result.value.code, minutes: '5' },
+        )
+        const sent = await sms.send({ to: body.phone, text })
+        if (sent.isErr()) {
+          return status(502, {
+            error: sent.error,
+            message: i18n('Failed to send verification code'),
+          })
+        }
+        return status(202)
+      },
+      {
+        body: UserModel.PhoneLoginRequestSchema,
+        rateLimit: { limit: 5, window: '60s' },
+        response: { 429: RateLimitErrorResponse, 502: ErrorResponse },
+        detail: {
+          tags: ['Auth/Phone'],
+          summary: '请求管理员手机号登录验证码',
+          description:
+            '仅已绑定手机号的管理员会收到验证码；其他情况仍返回 202。\n\n- 冷却中返回 429，响应体含 retryAfterSeconds，响应头含 Retry-After',
+        },
+      },
+    )
+    .post(
+      '/phone/login',
+      async ({ body, cookie, db, sessionStore, request, i18n }) => {
+        const result = await verifyAdminPhoneLogin(body.phone, body.code, db, {
+          secret: phoneCodeSecret,
+        })
+        if (result.isErr()) {
+          switch (result.error) {
+            case 'CODE_INVALID':
+              return status(400, {
+                error: result.error,
+                message: i18n('Invalid verification code'),
+              })
+            case 'CODE_EXPIRED':
+              return status(400, {
+                error: result.error,
+                message: i18n('Verification code expired'),
+              })
+            case 'CODE_ATTEMPTS_EXCEEDED':
+              return status(429, {
+                error: result.error,
+                message: i18n('Too many verification attempts'),
+              })
+            case 'PHONE_NOT_REGISTERED':
+              return status(401, {
+                error: result.error,
+                message: i18n('Invalid phone number or verification code'),
+              })
+            case 'ACCOUNT_DISABLED':
+              return status(403, {
+                error: result.error,
+                message: i18n('Account is disabled'),
+              })
+            case 'FORBIDDEN':
+              return status(403, {
+                error: result.error,
+                message: i18n('Account is not an administrator'),
+              })
+            default:
+              return assertNever(result.error)
+          }
+        }
+
+        const found = await getUserById(result.value.userId, db)
+        if (found.isErr()) {
+          return status(404, { error: found.error, message: i18n('User not found') })
+        }
+        const user = found.value
+        const access = await getUserAccess(user.id, db)
+        await startSession({
+          userId: user.id,
+          access,
+          cookie,
+          request,
+          sessionStore,
+          sessionCookieName,
+          isProduction,
+        })
+        return { ...user, ...access }
+      },
+      {
+        body: UserModel.PhoneLoginVerifySchema,
+        rateLimit: { limit: 10, window: '60s' },
+        response: {
+          200: UserModel.AuthUserResponseSchema,
+          400: ErrorResponse,
+          401: ErrorResponse,
+          403: ErrorResponse,
+          404: ErrorResponse,
+          429: ErrorResponse,
+        },
+        detail: {
+          tags: ['Auth/Phone'],
+          summary: '管理员手机号验证码登录',
+          description: '仅允许已绑定手机号的 admin 账号登录，不自动注册。',
         },
       },
     )

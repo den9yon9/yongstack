@@ -10,11 +10,12 @@ export type AdminUserError = 'SELF_OPERATION' | 'ROLE_NOT_FOUND' | UserError
 export interface AdminUser extends UserAccess {
   id: string
   name: string | null
-  email: string
+  email: string | null
   phone: string | null
   avatar: string | null
   locale: string
   emailVerifiedAt: Date | null
+  phoneVerifiedAt: Date | null
   lastLoginAt: Date | null
   isActive: boolean
   createdAt: Date

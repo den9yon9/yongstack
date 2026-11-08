@@ -1,5 +1,5 @@
 import { Type } from '@sinclair/typebox'
-import { emailSchema, table } from '@yongstack/database'
+import { emailSchema, phoneSchema, table } from '@yongstack/database'
 import { PaginatedResponse, PaginationQuery } from '@yongstack/shared'
 
 export const UserResponseSchema = table.select.user
@@ -24,6 +24,8 @@ export const RegisterInputSchema = Type.Intersect([
     'isActive',
     'avatar',
     'locale',
+    'phone',
+    'phoneVerifiedAt',
     'emailVerifiedAt',
     'lastLoginAt',
     'createdAt',
@@ -40,10 +42,30 @@ export const LoginInputSchema = Type.Object({
   password: Type.String({ minLength: 1, maxLength: 128 }),
 })
 
+// 手机号只能通过验证码绑定流程修改, 不在普通资料更新中开放
 export const UpdateProfileInputSchema = Type.Object({
   name: Type.Optional(Type.String({ minLength: 1, maxLength: 255 })),
-  phone: Type.Optional(Type.String({ maxLength: 50 })),
   avatar: Type.Optional(Type.String({ maxLength: 5000 })),
+})
+
+const PhoneCodeSchema = Type.String({ pattern: '^\\d{6}$', maxLength: 6 })
+
+export const PhoneLoginRequestSchema = Type.Object({
+  phone: phoneSchema,
+})
+
+export const PhoneLoginVerifySchema = Type.Object({
+  phone: phoneSchema,
+  code: PhoneCodeSchema,
+})
+
+export const PhoneBindRequestSchema = Type.Object({
+  phone: phoneSchema,
+})
+
+export const PhoneBindVerifySchema = Type.Object({
+  phone: phoneSchema,
+  code: PhoneCodeSchema,
 })
 
 export const UpdateUserInputSchema = Type.Object({

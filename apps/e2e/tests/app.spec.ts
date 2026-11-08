@@ -56,7 +56,7 @@ test('登录页显示错误密码提示', async ({ page }) => {
   await page.goto('/login')
   await page.getByLabel('邮箱').fill('ghost@example.com')
   await page.getByLabel('密码').fill('wrong-password')
-  await page.getByRole('button', { name: '登录' }).click()
+  await page.getByRole('button', { name: '登录', exact: true }).click()
   await expect(page.getByText('邮箱或密码错误')).toBeVisible()
 })
 

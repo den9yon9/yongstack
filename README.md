@@ -10,22 +10,22 @@
 
 ## 当前能力
 
-| 模块     | 说明                                                                        |
-| -------- | --------------------------------------------------------------------------- |
-| Monorepo | pnpm workspace + Turborepo，Bun 运行时，统一 lint / format / typecheck      |
-| API      | ElysiaJS + TypeBox，`/info`、`/health`、`/metrics`、`/docs`                 |
-| 前端     | React 19 + TanStack Router + Tailwind 4，Eden treaty 类型安全调用           |
-| 用户认证 | 注册/登录/登出/me/资料；邮箱验证、找回/修改密码；Argon2id + 限流            |
-| 权限     | 完整 RBAC：roles / permissions / user_roles；Session 携带 roles/permissions |
-| 会话     | 活跃会话列表、单会话撤销、退出其他设备；按应用隔离 cookie                   |
-| 队列     | BullMQ 封装与 worker 运行时，消费者与健康/指标端点                          |
-| 通知     | outbox → notifications usecase → console/SMTP 邮件；注册欢迎邮件            |
-| 设置     | 运行时设置与 `feature.*` 功能开关，管理端可视化编辑                         |
-| 后台用户 | 用户列表、角色分配、启用/禁用、撤销全部会话                                 |
-| 数据     | Drizzle ORM + postgres.js，迁移、事务 helper、测试库工具                    |
-| 存储     | S3 兼容对象存储（本地 SeaweedFS / R2 / COS）                                |
-| 可观测性 | Prometheus 指标端点 + Grafana 大屏 + 本地监控脚本                           |
-| 工程化   | ESLint boundaries、Prettier、commitlint、lefthook、GitHub Actions           |
+| 模块     | 说明                                                                                     |
+| -------- | ---------------------------------------------------------------------------------------- |
+| Monorepo | pnpm workspace + Turborepo，Bun 运行时，统一 lint / format / typecheck                   |
+| API      | ElysiaJS + TypeBox，`/info`、`/health`、`/metrics`、`/docs`                              |
+| 前端     | React 19 + TanStack Router + Tailwind 4，Eden treaty 类型安全调用                        |
+| 用户认证 | 邮箱密码 + 手机号验证码登录；注册/登出/me/资料；邮箱验证、找回/修改密码；Argon2id + 限流 |
+| 权限     | 完整 RBAC：roles / permissions / user_roles；Session 携带 roles/permissions              |
+| 会话     | 活跃会话列表、单会话撤销、退出其他设备；按应用隔离 cookie                                |
+| 队列     | BullMQ 封装与 worker 运行时，消费者与健康/指标端点                                       |
+| 通知     | outbox → notifications usecase → console/SMTP 邮件；注册欢迎邮件                         |
+| 设置     | 运行时设置与 `feature.*` 功能开关，管理端可视化编辑                                      |
+| 后台用户 | 用户列表、角色分配、启用/禁用、撤销全部会话                                              |
+| 数据     | Drizzle ORM + postgres.js，迁移、事务 helper、测试库工具                                 |
+| 存储     | S3 兼容对象存储（本地 SeaweedFS / R2 / COS）                                             |
+| 可观测性 | Prometheus 指标端点 + Grafana 大屏 + 本地监控脚本                                        |
+| 工程化   | ESLint boundaries、Prettier、commitlint、lefthook、GitHub Actions                        |
 
 ## 架构
 
@@ -72,10 +72,12 @@ admin@example.com / admin123456
 
 认证接口：
 
-| 应用      | 接口                                                                                    |
-| --------- | --------------------------------------------------------------------------------------- |
-| app-api   | `POST /auth/register` · `POST /auth/login` · `POST /auth/logout` · `GET/PATCH /auth/me` |
-| admin-api | `POST /auth/login` · `POST /auth/logout` · `GET /auth/me`（仅 admin）                   |
+| 应用      | 接口                                                                                                                                               |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| app-api   | `POST /auth/register` · `POST /auth/login` · `POST /auth/logout` · `GET/PATCH /auth/me`                                                            |
+| app-api   | `POST /auth/phone/request-code` · `POST /auth/phone/login` · `POST /auth/phone/bind/request-code` · `POST /auth/phone/bind` · `DELETE /auth/phone` |
+| admin-api | `POST /auth/login` · `POST /auth/logout` · `GET /auth/me`（仅 admin）                                                                              |
+| admin-api | `POST /auth/phone/request-code` · `POST /auth/phone/login`（仅已有 admin）                                                                         |
 
 会话 cookie 按应用隔离：app 为 `yongstack_session`，admin 为 `yongstack_admin_session`。
 
@@ -114,6 +116,7 @@ packages/
   http/            插件、指标、安全头、服务启动
   i18n/            语言协商与翻译 catalog
   mailer/          邮件 provider（console / SMTP）
+  sms/             短信 provider（console，可扩展）
   queue/           BullMQ 封装
   redis/           Redis 客户端
   session/         Redis 会话 + 限流

@@ -94,7 +94,8 @@ Tailwind 已在 `apps/admin-web/src/styles.css` 通过 `@source` 扫描 UI 包�
 - [ ] `domains/<name>` 通过 `pnpm gen domain`
 - [ ] 表定义 + 迁移生成并提交
 - [ ] `service.ts` 返回 `Result`，错误码 SCREAMING_SNAKE
-- [ ] 路由错误映射穷举 + `assertNever`
+- [ ] 需要 payload 的错误使用对象错误或 `DomainError` 子类；子类实现 `toJSON()`
+- [ ] 路由错误映射穷举 + `assertNever`（`DomainError` 子类用 `instanceof` 收窄）
 - [ ] 用户可见文案使用 `i18n(...)`，并跑 `pnpm i18n:extract`
 - [ ] 写域测试与接口测试
 - [ ] `pnpm check && pnpm typecheck && pnpm build && pnpm test && pnpm e2e`

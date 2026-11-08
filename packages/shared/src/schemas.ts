@@ -38,3 +38,10 @@ export const ErrorResponse = Type.Object({
   error: Type.String(),
   message: Type.String(),
 })
+
+// 带重试等待时间的 429; retryAfterSeconds 可选, 便于普通限流复用
+export const RateLimitErrorResponse = Type.Object({
+  error: Type.String(),
+  message: Type.String(),
+  retryAfterSeconds: Type.Optional(Type.Number()),
+})

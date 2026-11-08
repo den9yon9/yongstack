@@ -127,7 +127,13 @@ function UsersPage() {
                 <tr key={user.id}>
                   <td className="px-4 py-3">
                     <p className="font-medium text-slate-900">{user.name ?? '未设置昵称'}</p>
-                    <p className="text-xs text-slate-500">{user.email}</p>
+                    <p className="text-xs text-slate-500">{user.email ?? '未绑定邮箱'}</p>
+                    {user.phone ? (
+                      <p className="text-xs text-slate-400">
+                        {user.phone}
+                        {user.phoneVerifiedAt ? ' · 已验证' : ' · 未验证'}
+                      </p>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3">{user.roles.join(', ') || '—'}</td>
                   <td className="px-4 py-3">
@@ -219,7 +225,7 @@ function UserEditor({
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h3 className="font-semibold">编辑 {user.email}</h3>
+      <h3 className="font-semibold">编辑 {user.email ?? user.phone ?? user.id}</h3>
       <div className="mt-4 flex flex-wrap gap-4">
         {roles.map((role) => (
           <label key={role.code} className="inline-flex items-center gap-2 text-sm">

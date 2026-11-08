@@ -26,4 +26,5 @@ export { settings } from './settings/settings'
 // user 域(身份底座)
 export { emailVerificationTokens } from './user/email-verification-tokens'
 export { passwordResetTokens } from './user/password-reset-tokens'
+export { phoneLoginCodes } from './user/phone-login-codes'
 export { users } from './user/users'

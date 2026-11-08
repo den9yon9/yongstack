@@ -32,7 +32,7 @@ function RootLayout() {
             {session ? (
               <>
                 <Link to="/me" className="font-medium text-slate-900 hover:text-brand-600">
-                  {session.name ?? session.email}
+                  {session.name ?? session.email ?? session.phone ?? '用户'}
                 </Link>
                 <button
                   onClick={() => void logout().then(() => navigate({ to: '/', replace: true }))}

@@ -2,7 +2,14 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
 import { api } from '../libs/api/client'
-import { logout, refreshSession, useSession } from '../libs/api/session'
+import {
+  bindPhone,
+  logout,
+  refreshSession,
+  requestPhoneBindCode,
+  unbindPhone,
+  useSession,
+} from '../libs/api/session'
 import type { AuthUser, SessionItem } from '../libs/api/types'
 
 export const Route = createFileRoute('/me')({
@@ -28,11 +35,11 @@ function MePage() {
     <div className="flex flex-col gap-4">
       <section className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 text-xl font-bold text-brand-700">
-          {(user.name ?? user.email).slice(0, 1).toUpperCase()}
+          {(user.name ?? user.email ?? user.phone ?? 'U').slice(0, 1).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-slate-900">{user.name ?? '未设置昵称'}</p>
-          <p className="truncate text-sm text-slate-500">{user.email}</p>
+          <p className="truncate text-sm text-slate-500">{user.email ?? '未绑定邮箱'}</p>
         </div>
         {!editing ? (
           <button
@@ -50,7 +57,11 @@ function MePage() {
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex justify-between py-1 text-sm">
             <span className="text-slate-500">手机号</span>
-            <span className="text-slate-900">{user.phone ?? '未设置'}</span>
+            <span className="text-slate-900">
+              {user.phone
+                ? `${user.phone}${user.phoneVerifiedAt ? '（已验证）' : '（未验证）'}`
+                : '未设置'}
+            </span>
           </div>
           <div className="flex justify-between py-1 text-sm">
             <span className="text-slate-500">角色</span>
@@ -65,6 +76,7 @@ function MePage() {
         </section>
       )}
 
+      <PhoneSection user={user} />
       <SessionsSection />
       <ChangePasswordSection />
 
@@ -85,7 +97,6 @@ function ProfileForm({ user, onDone }: { user: AuthUser; onDone: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [name, setName] = useState(user.name ?? '')
-  const [phone, setPhone] = useState(user.phone ?? '')
   const [avatar, setAvatar] = useState(user.avatar ?? '')
 
   async function submit(e: React.FormEvent) {
@@ -94,7 +105,6 @@ function ProfileForm({ user, onDone }: { user: AuthUser; onDone: () => void }) {
     setSubmitting(true)
     const res = await api.auth.me.patch({
       ...(name ? { name } : {}),
-      ...(phone ? { phone } : {}),
       ...(avatar ? { avatar } : {}),
     })
     setSubmitting(false)
@@ -118,16 +128,6 @@ function ProfileForm({ user, onDone }: { user: AuthUser; onDone: () => void }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className={inputCls}
-        />
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-sm text-slate-600">手机号</span>
-        <input
-          type="tel"
-          inputMode="numeric"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
           className={inputCls}
         />
       </label>
@@ -157,6 +157,126 @@ function ProfileForm({ user, onDone }: { user: AuthUser; onDone: () => void }) {
         </button>
       </div>
     </form>
+  )
+}
+
+function PhoneSection({ user }: { user: AuthUser }) {
+  const [phone, setPhone] = useState(user.phone ?? '')
+  const [code, setCode] = useState('')
+  const [countdown, setCountdown] = useState(0)
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (countdown <= 0) return
+    const timer = setTimeout(() => setCountdown((value) => value - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [countdown])
+
+  async function sendCode() {
+    setError(null)
+    setMessage(null)
+    setSending(true)
+    const result = await requestPhoneBindCode(phone)
+    setSending(false)
+    if (result.error !== null) {
+      setError(result.error)
+      return
+    }
+    setCountdown(60)
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setMessage(null)
+    setSubmitting(true)
+    const result = await bindPhone(phone, code)
+    setSubmitting(false)
+    if (result.error !== null) {
+      setError(result.error)
+      return
+    }
+    setCode('')
+    setMessage('手机号已绑定')
+  }
+
+  async function unbind() {
+    setError(null)
+    setMessage(null)
+    const result = await unbindPhone()
+    if (result.error !== null) {
+      setError(result.error)
+      return
+    }
+    setPhone('')
+    setMessage('手机号已解绑')
+  }
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="font-semibold">手机号登录</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            绑定后可使用手机号验证码登录。手机号需为 E.164 格式（如 +8613800000000）。
+          </p>
+        </div>
+        {user.phone ? (
+          <button
+            onClick={() => void unbind()}
+            className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+          >
+            解绑
+          </button>
+        ) : null}
+      </div>
+      <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
+        <label className="block">
+          <span className="mb-1 block text-sm text-slate-600">手机号</span>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+8613800000000"
+            required
+            className={inputCls}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-sm text-slate-600">验证码</span>
+          <div className="flex gap-2">
+            <input
+              inputMode="numeric"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              maxLength={6}
+              required
+              className={inputCls}
+            />
+            <button
+              type="button"
+              onClick={() => void sendCode()}
+              disabled={sending || countdown > 0 || phone.length === 0}
+              className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            >
+              {countdown > 0 ? `${countdown}s` : sending ? '发送中…' : '获取验证码'}
+            </button>
+          </div>
+        </label>
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {message ? <p className="text-sm text-emerald-600">{message}</p> : null}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded-lg bg-brand-600 py-2.5 text-white hover:bg-brand-700 disabled:opacity-50"
+        >
+          {submitting ? '绑定中…' : '绑定手机号'}
+        </button>
+      </form>
+    </section>
   )
 }
 

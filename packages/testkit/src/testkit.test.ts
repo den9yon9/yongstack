@@ -40,6 +40,7 @@ describe('testkit', () => {
   test('creates users with a hashed password and role', async () => {
     const { user, password } = await createUser(db)
     expect(password).toBe(DEFAULT_PASSWORD)
+    if (user.passwordHash === null) throw new Error('expected password hash')
     expect(await verifyPassword(password, user.passwordHash)).toBe(true)
     expect(await roleCodes(user.id)).toEqual(['member'])
   })

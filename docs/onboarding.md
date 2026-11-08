@@ -50,6 +50,8 @@ macOS / Linux 直接使用；Windows 建议 WSL2。
 
 邮件默认走 `MAIL_TRANSPORT=console`（worker 日志）；生产可改为 `smtp` 并配置 `SMTP_*`、`MAIL_FROM`。
 
+手机号验证码默认走 `SMS_PROVIDER=console`（app-api/admin-api 日志）；生产需接入真实 SMS Provider。开发/e2e 可设置 `SMS_DEV_CODE` 固定验证码（生产启动会拒绝）。
+
 ## 常用参数
 
 ```bash

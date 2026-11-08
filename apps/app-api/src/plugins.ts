@@ -2,6 +2,7 @@ import { dbPlugin, type HttpMetricsBundle, localePlugin, redisPlugin } from '@yo
 import { type Locale } from '@yongstack/i18n'
 import { authRateLimit, createSessionPlugin } from '@yongstack/session'
 import { type Logger } from '@yongstack/shared'
+import { type SmsProvider } from '@yongstack/sms'
 import { type Storage } from '@yongstack/storage'
 
 import { type AppOptions } from './deps'
@@ -18,6 +19,9 @@ export interface AppPlugins {
   authRateLimit: ReturnType<typeof authRateLimit>
   sessionCookieName: string
   storage: Storage
+  sms: SmsProvider
+  phoneCodeSecret: string
+  smsDevCode?: string
   metrics: AppMetrics
   isProduction: boolean
   logger: Logger
@@ -29,8 +33,19 @@ export function createPlugins(
   options: Omit<AppOptions, 'corsOrigin'>,
   metrics: AppMetrics,
 ): AppPlugins {
-  const { db, redis, storage, sessionCookieName, sessionSecret, trustProxy, isProduction, logger } =
-    options
+  const {
+    db,
+    redis,
+    storage,
+    sms,
+    sessionCookieName,
+    sessionSecret,
+    phoneCodeSecret,
+    smsDevCode,
+    trustProxy,
+    isProduction,
+    logger,
+  } = options
   return {
     dbPlugin: dbPlugin(db),
     redisPlugin: redisPlugin(redis, { logger }),
@@ -51,6 +66,9 @@ export function createPlugins(
     }),
     sessionCookieName,
     storage,
+    sms,
+    phoneCodeSecret,
+    ...(smsDevCode === undefined ? {} : { smsDevCode }),
     metrics,
     isProduction,
     logger,

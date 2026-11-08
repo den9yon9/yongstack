@@ -13,6 +13,13 @@ export const emailSchema = Type.Transform(Type.String({ format: 'email', maxLeng
   .Decode((v) => v.toLowerCase().trim())
   .Encode((v) => v)
 
+// E.164: + 国家码 + 8-15 位号码, 例如 +8613800000000
+export const phoneSchema = Type.Transform(
+  Type.String({ pattern: '^\\+[1-9]\\d{7,14}$', maxLength: 16 }),
+)
+  .Decode((v) => v.trim())
+  .Encode((v) => v)
+
 export const table = {
   select: {
     auditLog: select(schema.auditLogs, {

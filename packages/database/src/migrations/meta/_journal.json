@@ -50,6 +50,13 @@
       "when": 1794092700783,
       "tag": "0006_heavy_tarot",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794112623062,
+      "tag": "0007_windy_umar",
+      "breakpoints": true
     }
   ]
 }

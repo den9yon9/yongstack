@@ -9,8 +9,8 @@ import {
 } from '@yongstack/account'
 import { resolveRequestLocale } from '@yongstack/http'
 import { hashIdempotencyRequest, withIdempotency } from '@yongstack/idempotency'
-import { getUserAccess, type UserAccess } from '@yongstack/rbac'
-import { clearSessionCookie, type SessionStore, setSessionCookie } from '@yongstack/session'
+import { getUserAccess } from '@yongstack/rbac'
+import { clearSessionCookie } from '@yongstack/session'
 import { isEmailVerificationRequired } from '@yongstack/settings'
 import { assertNever, ErrorResponse } from '@yongstack/shared'
 import {
@@ -21,9 +21,10 @@ import {
   updateUserLocale,
 } from '@yongstack/user'
 import * as UserModel from '@yongstack/user/model'
-import { type Cookie, Elysia, status } from 'elysia'
+import { Elysia, status } from 'elysia'
 
 import { type AppPlugins } from '../plugins'
+import { sessionCookieFrom, startSession } from '../session'
 
 const SessionItemSchema = Type.Object({
   id: Type.String(),
@@ -37,45 +38,6 @@ const SessionItemSchema = Type.Object({
 const SessionListResponseSchema = Type.Object({
   items: Type.Array(SessionItemSchema),
 })
-
-function sessionCookieFrom(cookie: unknown, name: string): Cookie<unknown> | undefined {
-  return (cookie as Record<string, Cookie<unknown> | undefined>)[name]
-}
-
-function requestMeta(request: Request): { userAgent: string | null; ip: string | null } {
-  const forwarded = request.headers.get('x-forwarded-for')
-  const ip = forwarded?.split(',')[0]?.trim() ?? request.headers.get('x-real-ip')
-  return {
-    userAgent: request.headers.get('user-agent'),
-    ip,
-  }
-}
-
-interface StartSessionOptions {
-  userId: string
-  access: UserAccess
-  cookie: unknown
-  request: Request
-  sessionStore: SessionStore
-  sessionCookieName: string
-  isProduction: boolean
-}
-
-async function startSession(options: StartSessionOptions): Promise<void> {
-  const meta = requestMeta(options.request)
-  const sessionId = await options.sessionStore.create({
-    userId: options.userId,
-    roles: options.access.roles,
-    permissions: options.access.permissions,
-    userAgent: meta.userAgent,
-    ip: meta.ip,
-  })
-  setSessionCookie(
-    sessionCookieFrom(options.cookie, options.sessionCookieName),
-    sessionId,
-    options.isProduction,
-  )
-}
 
 export function createUserRoutes(plugins: AppPlugins) {
   const { dbPlugin, sessionPlugin, authRateLimit, isProduction, sessionCookieName } = plugins

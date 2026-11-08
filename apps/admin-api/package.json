@@ -17,6 +17,8 @@
   "dependencies": {
     "@elysiajs/cors": "^1.4.2",
     "@elysiajs/openapi": "^1.4.0",
+    "@sinclair/typebox": "^0.34.0",
+    "@yongstack/account": "workspace:*",
     "@yongstack/admin-users": "workspace:*",
     "@yongstack/audit": "workspace:*",
     "@yongstack/database": "workspace:*",
@@ -28,9 +30,9 @@
     "@yongstack/session": "workspace:*",
     "@yongstack/settings": "workspace:*",
     "@yongstack/shared": "workspace:*",
+    "@yongstack/sms": "workspace:*",
     "@yongstack/storage": "workspace:*",
     "@yongstack/user": "workspace:*",
-    "@sinclair/typebox": "^0.34.0",
     "elysia": "^1.2.0"
   },
   "devDependencies": {

@@ -6,6 +6,7 @@ import { createRedisClient, type Redis } from '@yongstack/redis'
 import { flushTestRedis } from '@yongstack/redis/testing'
 import { createLogger } from '@yongstack/shared'
 import { getTestEnv } from '@yongstack/shared/testing'
+import { createMemorySmsProvider, type MemorySmsProvider } from '@yongstack/sms/testing'
 import { createInMemoryStorage, type InMemoryStorage } from '@yongstack/storage/testing'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { desc, eq } from 'drizzle-orm'
@@ -20,6 +21,7 @@ let api: ReturnType<typeof treaty<typeof app>>
 let db: Db
 let redis: Redis
 let storage: InMemoryStorage
+let sms: MemorySmsProvider
 
 beforeAll(async () => {
   db = await prepareTestDb()
@@ -27,6 +29,7 @@ beforeAll(async () => {
   redis = createRedisClient(env.TESTING_REDIS_URL)
   await redis.connect()
   storage = createInMemoryStorage()
+  sms = createMemorySmsProvider()
   app = buildApp(createTestDeps({ db, redis }))
   api = treaty<typeof app>(app)
 })
@@ -40,14 +43,17 @@ beforeEach(async () => {
   await ensureRbacDefaults(db)
   await flushTestRedis()
   storage.objects.clear()
+  sms.messages.length = 0
 })
 
 function createTestDeps(deps: { db: Db; redis: Redis }): AppOptions {
   return {
     ...deps,
     storage,
+    sms,
     sessionCookieName: APP_SESSION_COOKIE,
     sessionSecret: env.TESTING_SESSION_SECRET,
+    phoneCodeSecret: env.TESTING_SESSION_SECRET,
     corsOrigin: true,
     trustProxy: false,
     isProduction: false,
@@ -207,14 +213,10 @@ describe('auth', () => {
     })
     const cookie = sessionCookie(registered)
 
-    const updated = await api.auth.me.patch(
-      { name: 'Carol 2', phone: '13800000000' },
-      { fetch: { headers: { cookie } } },
-    )
+    const updated = await api.auth.me.patch({ name: 'Carol 2' }, { fetch: { headers: { cookie } } })
     expect(updated.status).toBe(200)
     if (updated.error !== null) throw updated.error
     expect(updated.data.name).toBe('Carol 2')
-    expect(updated.data.phone).toBe('13800000000')
   })
 })
 
@@ -540,5 +542,125 @@ describe('idempotency', () => {
       { fetch: { headers } },
     )
     expect(mismatch.status).toBe(409)
+  })
+})
+
+function latestSmsCode(): string {
+  const message = sms.messages.at(-1)
+  if (!message) throw new Error('expected an sms message')
+  const match = message.text.match(/\b(\d{6})\b/)
+  if (!match) throw new Error(`missing code in sms: ${message.text}`)
+  return match[1] as string
+}
+
+describe('phone auth', () => {
+  const phone = '+8613800000001'
+
+  test('requests a code and auto-registers on first login', async () => {
+    const requested = await api.auth.phone['request-code'].post({ phone })
+    expect(requested.status).toBe(202)
+    expect(sms.messages).toHaveLength(1)
+    expect(sms.messages[0]?.to).toBe(phone)
+
+    const login = await api.auth.phone.login.post({ phone, code: latestSmsCode() })
+    expect(login.status).toBe(200)
+    if (login.error !== null) throw login.error
+    expect(login.data.phone).toBe(phone)
+    expect(login.data.email).toBeNull()
+    expect(login.data.roles).toContain('member')
+
+    const cookie = sessionCookie(login)
+    const me = await api.auth.me.get({ fetch: { headers: { cookie } } })
+    expect(me.status).toBe(200)
+    if (me.error !== null) throw me.error
+    expect(me.data.phone).toBe(phone)
+    expect(me.data.phoneVerifiedAt).not.toBeNull()
+
+    const [user] = await db.select().from(schema.users).where(eq(schema.users.phone, phone))
+    expect(user?.email).toBeNull()
+    expect(user?.passwordHash).toBeNull()
+    expect(user?.phoneVerifiedAt).not.toBeNull()
+  })
+
+  test('rejects wrong codes and locks after five attempts', async () => {
+    await api.auth.phone['request-code'].post({ phone })
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const res = await api.auth.phone.login.post({ phone, code: '000000' })
+      expect(res.status).toBe(400)
+    }
+    const locked = await api.auth.phone.login.post({ phone, code: '000000' })
+    expect(locked.status).toBe(429)
+
+    const correct = latestSmsCode()
+    const replay = await api.auth.phone.login.post({ phone, code: correct })
+    expect(replay.status).toBe(400)
+  })
+
+  test('binds and unbinds a phone for an existing account', async () => {
+    const registered = await api.auth.register.post({
+      name: 'Binder',
+      email: 'binder@example.com',
+      password: 'password123',
+    })
+    const cookie = sessionCookie(registered)
+
+    const requested = await api.auth.phone.bind['request-code'].post(
+      { phone },
+      { fetch: { headers: { cookie } } },
+    )
+    expect(requested.status).toBe(202)
+
+    const bound = await api.auth.phone.bind.post(
+      { phone, code: latestSmsCode() },
+      { fetch: { headers: { cookie } } },
+    )
+    expect(bound.status).toBe(204)
+
+    const me = await api.auth.me.get({ fetch: { headers: { cookie } } })
+    if (me.error !== null) throw me.error
+    expect(me.data.phone).toBe(phone)
+    expect(me.data.phoneVerifiedAt).not.toBeNull()
+
+    const other = await api.auth.register.post({
+      name: 'Other',
+      email: 'other-bind@example.com',
+      password: 'password123',
+    })
+    const otherCookie = sessionCookie(other)
+    const conflict = await api.auth.phone.bind['request-code'].post(
+      { phone },
+      { fetch: { headers: { cookie: otherCookie } } },
+    )
+    expect(conflict.status).toBe(409)
+
+    const unbound = await api.auth.phone.delete(undefined, {
+      fetch: { headers: { cookie } },
+    })
+    expect(unbound.status).toBe(204)
+    const after = await api.auth.me.get({ fetch: { headers: { cookie } } })
+    if (after.error !== null) throw after.error
+    expect(after.data.phone).toBeNull()
+  })
+})
+
+describe('phone code cooldown', () => {
+  const phone = '+8613800000005'
+
+  test('returns retryAfterSeconds while resend is cooling down', async () => {
+    const first = await api.auth.phone['request-code'].post({ phone })
+    expect(first.status).toBe(202)
+
+    const second = await api.auth.phone['request-code'].post({ phone })
+    expect(second.status).toBe(429)
+    if (second.error === null || !('retryAfterSeconds' in second.error.value)) {
+      throw new Error('expected rate limit error')
+    }
+    const body = second.error.value
+    expect(body.error).toBe('CODE_REQUESTED_TOO_SOON')
+    expect(body.retryAfterSeconds).toBeGreaterThan(0)
+    expect(body.retryAfterSeconds).toBeLessThanOrEqual(60)
+    expect(new Headers(second.headers as Headers).get('retry-after')).toBe(
+      String(body.retryAfterSeconds),
+    )
   })
 })

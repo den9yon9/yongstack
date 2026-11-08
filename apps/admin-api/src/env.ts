@@ -1,5 +1,6 @@
 import { type StaticDecode, Type } from '@sinclair/typebox'
 import { parseEnv } from '@yongstack/shared'
+import { smsEnvSchema } from '@yongstack/sms'
 import { storageEnvSchema } from '@yongstack/storage'
 
 const corsOrigin = Type.Transform(Type.String({ default: '*' }))
@@ -47,6 +48,11 @@ export const adminEnvSchema = Type.Object({
   DEFAULT_LOCALE: Type.Union([Type.Literal('en'), Type.Literal('zh-CN')], { default: 'en' }),
   // 认证接口限流(次/分钟): 管理员登录。后续接入 domains/user 时生效
   AUTH_RATE_LIMIT_PER_MINUTE: Type.String({ pattern: '^\\d+$', default: '20' }),
+  // 验证码 HMAC 密钥; 未设置时回退 SESSION_SECRET
+  PHONE_CODE_SECRET: Type.Optional(Type.String({ minLength: 32 })),
+  // 仅开发/测试: 固定验证码, 便于 e2e; 生产禁止
+  SMS_DEV_CODE: Type.Optional(Type.String({ pattern: '^\\d{6}$' })),
+  ...smsEnvSchema.properties,
   ...storageEnvSchema.properties,
 })
 
@@ -58,6 +64,9 @@ export function createEnv(source: Record<string, string | undefined> = process.e
     throw new Error(
       '[ENV] CORS_ORIGIN cannot be "*" in production; set an explicit origin or comma-separated allowlist',
     )
+  }
+  if (env.NODE_ENV === 'production' && env.SMS_DEV_CODE !== undefined) {
+    throw new Error('[ENV] SMS_DEV_CODE is forbidden in production')
   }
   return env
 }

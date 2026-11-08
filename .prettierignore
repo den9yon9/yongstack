@@ -8,3 +8,6 @@ pnpm-lock.yaml
 repomix-output.xml
 .env.example
 *.sh
+
+# TanStack Router 生成文件
+**/routeTree.gen.ts

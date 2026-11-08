@@ -58,13 +58,30 @@ pnpm dev         # 自动迁移 + 全部服务 watch
 跨域取数经域函数/usecase 编排（行为性校验与展示拼装都在 usecases），apps 层禁止引用任何表。
 
 **错误码约定**：默认错误就是大写字符串 `err('CODE')`（字符串字面量推断不拓宽，零仪式）。
-只有需要附带数据时，才把该错误码升级为对象 `err({ code: 'CODE', ...payload })`。
+需要结构化 payload 时用对象 `err({ code: 'CODE', ...payload })`；需要 `instanceof`、
+栈追踪或统一错误行为时，使用 `DomainError` 子类（`@yongstack/shared`）。
+
+| 形态                                | 使用场景                              |
+| ----------------------------------- | ------------------------------------- |
+| `err('CODE')`                       | 无 payload 的普通业务失败             |
+| `err({ code: 'CODE', ...payload })` | 需要结构化 payload，且只需判别 `code` |
+| `DomainError` 子类                  | 需要 `instanceof` / 栈追踪 / 错误行为 |
+
+`DomainError` 子类约定：
+
+- 定义在所属 domain 的 `service.ts`，从 domain `index.ts` 导出；app 从 domain 包导入，禁止重复定义。
+- 子类必须实现 `toJSON()`，把额外字段一起序列化（`withTransaction` abort 信息与日志依赖它）。
+- 仅用于进程内 `Result` 流；跨 outbox / 队列 / 进程边界必须传普通数据（code + payload），
+  不能依赖 `instanceof`。
+- 控制器先用 `instanceof` 收窄，再对剩余字符串错误 `switch` 穷举。
+
 每个域/用例在 service.ts 顶部定义自己的错误联合类型。控制器必须穷举映射（见 §3），
 因此**新增错误码 = 编译错误**，强制在任何入口处补映射，杜绝静默漏处理。
 
 **失败的三种表达**（ESLint `invariant-throw/no-bare-throw` 强制，env.ts 豁免）：
 
-- 业务失败 → `return err('CODE')`：进错误契约，调用方穷举处理
+- 业务失败 → `return err('CODE')` / `err({ code, ...payload })` / `err(new DomainError(...))`：
+  进错误契约，调用方穷举处理
 - 不该发生的失败（数据不一致/程序 bug）→
   `throw new InvariantViolation(msg, { cause })`（`@yongstack/shared`）：触发回滚、
   落 500，name 可监控告警；与 `assertNever` 同族（编译期/运行时两种"不可能"）
@@ -119,6 +136,29 @@ export function createOrderRoutes(plugins: AppPlugins) {
 规范：
 
 - 用 `result.match()` 消费 Result；错误分支 switch 穷举 + `default: assertNever(e)`
+- 自定义 `DomainError` 子类用 `instanceof` 收窄，剩余字符串错误继续 `switch` + `assertNever`：
+
+  ```ts
+  if (result.error instanceof CodeRequestedTooSoonError) {
+    set.headers['retry-after'] = String(result.error.retryAfterSeconds)
+    return status(429, {
+      error: result.error.code,
+      message: i18n('Please wait {seconds} seconds before requesting another code', {
+        seconds: String(result.error.retryAfterSeconds),
+      }),
+      retryAfterSeconds: result.error.retryAfterSeconds,
+    })
+  }
+  switch (result.error) {
+    case 'CODE_RATE_LIMITED':
+      return status(429, { error: result.error, message: i18n('Too many requests') })
+    default:
+      return assertNever(result.error)
+  }
+  ```
+
+- 429 需要等待时间时，响应体带 `retryAfterSeconds`，并设置 `Retry-After` 响应头；
+  对应响应 schema 使用 `RateLimitErrorResponse`。
 - 错误码格式为 SCREAMING_SNAKE（`^[A-Z][A-Z0-9_]*$`），ESLint 强制
   （`error-code/screaming-snake`，作用于 domains/usecases）
 - 响应 schema 必须显式声明（`response: {...}`）；Elysia normalize 自动剥离未声明字段，

@@ -83,6 +83,9 @@ importers:
       '@sinclair/typebox':
         specifier: ^0.34.0
         version: 0.34.52
+      '@yongstack/account':
+        specifier: workspace:*
+        version: link:../../usecases/account
       '@yongstack/admin-users':
         specifier: workspace:*
         version: link:../../usecases/admin-users
@@ -116,6 +119,9 @@ importers:
       '@yongstack/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@yongstack/sms':
+        specifier: workspace:*
+        version: link:../../packages/sms
       '@yongstack/storage':
         specifier: workspace:*
         version: link:../../packages/storage
@@ -226,6 +232,9 @@ importers:
       '@yongstack/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@yongstack/sms':
+        specifier: workspace:*
+        version: link:../../packages/sms
       '@yongstack/storage':
         specifier: workspace:*
         version: link:../../packages/storage
@@ -543,6 +552,15 @@ importers:
       pino:
         specifier: ^10.3.1
         version: 10.3.1
+
+  packages/sms:
+    dependencies:
+      '@sinclair/typebox':
+        specifier: ^0.34.0
+        version: 0.34.52
+      '@yongstack/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   packages/storage:
     dependencies:

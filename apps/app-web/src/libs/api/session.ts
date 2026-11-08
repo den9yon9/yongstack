@@ -102,3 +102,44 @@ export async function logout(): Promise<void> {
     // 残余 cookie 由后续 401 兜底
   }
 }
+
+export async function requestPhoneCode(phone: string): Promise<{ error: string | null }> {
+  const res = await api.auth.phone['request-code'].post({ phone })
+  if (res.error !== null) return { error: res.error.value.message ?? '发送验证码失败' }
+  return { error: null }
+}
+
+export async function loginWithPhone(
+  phone: string,
+  code: string,
+): Promise<{ user: AuthUser | null; error: string | null }> {
+  const res = await api.auth.phone.login.post({ phone, code })
+  if (res.error !== null) {
+    return { user: null, error: res.error.value.message ?? '登录失败' }
+  }
+  sessionVersion += 1
+  current = res.data
+  persist(current)
+  notify()
+  return { user: res.data, error: null }
+}
+
+export async function requestPhoneBindCode(phone: string): Promise<{ error: string | null }> {
+  const res = await api.auth.phone.bind['request-code'].post({ phone })
+  if (res.error !== null) return { error: res.error.value.message ?? '发送验证码失败' }
+  return { error: null }
+}
+
+export async function bindPhone(phone: string, code: string): Promise<{ error: string | null }> {
+  const res = await api.auth.phone.bind.post({ phone, code })
+  if (res.error !== null) return { error: res.error.value.message ?? '绑定失败' }
+  await refreshSession()
+  return { error: null }
+}
+
+export async function unbindPhone(): Promise<{ error: string | null }> {
+  const res = await api.auth.phone.delete(undefined)
+  if (res.error !== null) return { error: res.error.value.message ?? '解绑失败' }
+  await refreshSession()
+  return { error: null }
+}

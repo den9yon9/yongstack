@@ -1,6 +1,7 @@
 import { dbPlugin, localePlugin, redisPlugin } from '@yongstack/http'
 import { authRateLimit, createSessionPlugin } from '@yongstack/session'
 import { type Logger } from '@yongstack/shared'
+import { type SmsProvider } from '@yongstack/sms'
 
 import { type AdminAppOptions } from './deps'
 
@@ -12,14 +13,28 @@ export interface AdminPlugins {
   authRateLimit: ReturnType<typeof authRateLimit>
   sessionCookieName: string
   storage: AdminAppOptions['storage']
+  sms: SmsProvider
+  phoneCodeSecret: string
+  smsDevCode?: string
   isProduction: boolean
   logger: Logger
   authRateLimitPerMinute: number
 }
 
 export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): AdminPlugins {
-  const { db, redis, sessionCookieName, sessionSecret, trustProxy, isProduction, logger, storage } =
-    options
+  const {
+    db,
+    redis,
+    storage,
+    sms,
+    sessionCookieName,
+    sessionSecret,
+    phoneCodeSecret,
+    smsDevCode,
+    trustProxy,
+    isProduction,
+    logger,
+  } = options
   return {
     dbPlugin: dbPlugin(db),
     redisPlugin: redisPlugin(redis, { logger }),
@@ -40,6 +55,9 @@ export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): Adm
     }),
     sessionCookieName,
     storage,
+    sms,
+    phoneCodeSecret,
+    ...(smsDevCode === undefined ? {} : { smsDevCode }),
     isProduction,
     logger,
     authRateLimitPerMinute: options.authRateLimitPerMinute,
