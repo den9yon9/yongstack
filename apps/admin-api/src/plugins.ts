@@ -1,4 +1,5 @@
 import { dbPlugin, localePlugin, redisPlugin } from '@yongstack/http'
+import { ADMIN_ROLE_CODE } from '@yongstack/rbac'
 import { authRateLimit, createSessionPlugin } from '@yongstack/session'
 import { type Logger } from '@yongstack/shared'
 import { type SmsProvider } from '@yongstack/sms'
@@ -46,6 +47,7 @@ export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): Adm
       isProduction,
       logger,
       defaultLocale: options.defaultLocale,
+      adminRoleCode: ADMIN_ROLE_CODE,
     }),
     authRateLimit: authRateLimit({
       redis,

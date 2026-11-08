@@ -30,3 +30,6 @@ export const DEFAULT_ROLES = [
 
 export type RoleCode = (typeof DEFAULT_ROLES)[number]['code']
 export const DEFAULT_ROLE_CODE: RoleCode = 'member'
+// 系统管理员角色码: admin-api 准入最低角色。会话域(isAdmin 守卫)由 apps 层传入本常量,
+// packages 不持有业务字面量。
+export const ADMIN_ROLE_CODE: RoleCode = 'admin'

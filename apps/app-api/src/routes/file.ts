@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { withAudit } from '@yongstack/audit'
 import { createFile, getFileForActor, softDeleteFileForActor } from '@yongstack/file'
 import * as FileModel from '@yongstack/file/model'
+import { ADMIN_ROLE_CODE } from '@yongstack/rbac'
 import { isAdminSession } from '@yongstack/session'
 import { getSetting } from '@yongstack/settings'
 import { ErrorResponse, ok, requestMeta } from '@yongstack/shared'
@@ -134,7 +135,7 @@ export function createFileRoutes(plugins: AppPlugins) {
       async ({ params, session, db, i18n }) => {
         const result = await getFileForActor(
           params.id,
-          { userId: session.userId, isAdmin: isAdminSession(session) },
+          { userId: session.userId, isAdmin: isAdminSession(session, ADMIN_ROLE_CODE) },
           db,
         )
         if (result.isErr()) {
@@ -173,7 +174,7 @@ export function createFileRoutes(plugins: AppPlugins) {
           (tx) =>
             softDeleteFileForActor(
               params.id,
-              { userId: session.userId, isAdmin: isAdminSession(session) },
+              { userId: session.userId, isAdmin: isAdminSession(session, ADMIN_ROLE_CODE) },
               tx,
             ),
         )

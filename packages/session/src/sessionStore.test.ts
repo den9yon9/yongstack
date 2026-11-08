@@ -107,7 +107,9 @@ describe('session helpers', () => {
     }
     expect(hasPermission(session, 'users:read')).toBe(true)
     expect(hasPermission(session, 'users:write')).toBe(false)
-    expect(isAdminSession(session)).toBe(true)
-    expect(isAdminSession({ ...session, roles: ['member'] })).toBe(false)
+    expect(isAdminSession(session, 'admin')).toBe(true)
+    expect(isAdminSession({ ...session, roles: ['member'] }, 'admin')).toBe(false)
+    // 角色码由调用方注入, 未匹配时不放行
+    expect(isAdminSession(session, 'superuser')).toBe(false)
   })
 })

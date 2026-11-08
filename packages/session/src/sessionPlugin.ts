@@ -52,8 +52,10 @@ export function hasPermission(session: Session | null, permission: string): bool
   return session?.permissions.includes(permission) ?? false
 }
 
-export function isAdminSession(session: Session | null): boolean {
-  return session?.roles.includes('admin') ?? false
+// 管理员角色码由业务层定义并显式传入(apps 从 domains/rbac 取值),
+// 本包不持有任何角色字面量,保持领域无关。
+export function isAdminSession(session: Session | null, adminRoleCode: string): boolean {
+  return session?.roles.includes(adminRoleCode) ?? false
 }
 
 function parseSession(raw: string | null): Session | null {
@@ -83,10 +85,12 @@ export interface SessionPluginOptions {
   cookieName?: string
   // 无请求语言线索时的回退语言(来自 env DEFAULT_LOCALE)
   defaultLocale?: Locale
+  // 管理员角色码(isAdmin 守卫用), 由业务层显式传入(来自 domains/rbac), 本包不设默认
+  adminRoleCode: string
 }
 
 export function createSessionPlugin(options: SessionPluginOptions) {
-  const { redis, isProduction, logger } = options
+  const { redis, isProduction, logger, adminRoleCode } = options
   const defaultLocale = options.defaultLocale ?? DEFAULT_LOCALE
   const cookieName = options.cookieName ?? DEFAULT_SESSION_COOKIE_NAME
   // 签名配置在根 app 的 Elysia 构造选项上（cookieName 由 Elysia 负责签名/验签）；插件侧只做启动校验
@@ -140,7 +144,7 @@ export function createSessionPlugin(options: SessionPluginOptions) {
               error: 'UNAUTHORIZED',
               message: translate(guardLocale(request, defaultLocale), 'Unauthorized'),
             })
-          if (!isAdminSession(session))
+          if (!isAdminSession(session, adminRoleCode))
             return status(403, {
               error: 'FORBIDDEN',
               message: translate(guardLocale(request, defaultLocale), 'Forbidden'),
