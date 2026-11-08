@@ -9,19 +9,22 @@
   },
   "dependencies": {
     "@elysiajs/eden": "^1.4.9",
-    "@yongstack/eden-client": "workspace:^",
     "@tanstack/react-router": "^1.0.0",
+    "@yongstack/eden-client": "workspace:^",
+    "@yongstack/ui": "workspace:*",
+    "lucide-react": "^0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@yongstack/app-api": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-cli": "^1.167.25",
     "@tanstack/router-plugin": "^1.0.0",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "@yongstack/app-api": "workspace:*",
     "tailwindcss": "^4.3.3",
     "vite": "^7.0.0"
   }

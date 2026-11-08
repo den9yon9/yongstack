@@ -1,6 +1,17 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 
+import { Alert, AlertDescription } from '@yongstack/ui/components/alert'
+import { buttonVariants } from '@yongstack/ui/components/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@yongstack/ui/components/card'
+import { Spinner } from '@yongstack/ui/components/spinner'
+
 import { api } from '../libs/api/client'
 
 export const Route = createFileRoute('/verify-email')({
@@ -41,18 +52,34 @@ function VerifyEmailPage() {
   }, [token])
 
   return (
-    <div className="mx-auto max-w-sm space-y-4 py-6">
-      <h1 className="text-2xl font-semibold tracking-tight">验证邮箱</h1>
-      {status === 'loading' ? <p className="text-sm text-slate-500">验证中…</p> : null}
-      {status === 'ok' ? (
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-          邮箱验证成功。
-        </p>
-      ) : null}
-      {status === 'error' ? <p className="text-sm text-red-600">{message}</p> : null}
-      <Link to="/" className="text-sm text-brand-600 hover:underline">
-        返回首页
-      </Link>
-    </div>
+    <Card className="mx-auto w-full max-w-sm">
+      <CardHeader>
+        <CardTitle>
+          <h1 className="text-xl font-semibold tracking-tight">验证邮箱</h1>
+        </CardTitle>
+        <CardDescription>正在确认你的邮箱地址。</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {status === 'loading' ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Spinner />
+            验证中…
+          </div>
+        ) : null}
+        {status === 'ok' ? (
+          <Alert>
+            <AlertDescription>邮箱验证成功。</AlertDescription>
+          </Alert>
+        ) : null}
+        {status === 'error' ? (
+          <Alert variant="destructive">
+            <AlertDescription>{message}</AlertDescription>
+          </Alert>
+        ) : null}
+        <Link to="/" className={buttonVariants({ variant: 'link', className: 'w-fit px-0' })}>
+          返回首页
+        </Link>
+      </CardContent>
+    </Card>
   )
 }

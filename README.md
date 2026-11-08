@@ -14,7 +14,7 @@
 | -------- | ---------------------------------------------------------------------------------------- |
 | Monorepo | pnpm workspace + Turborepo，Bun 运行时，统一 lint / format / typecheck                   |
 | API      | ElysiaJS + TypeBox，`/info`、`/health`、`/metrics`、`/docs`                              |
-| 前端     | React 19 + TanStack Router + Tailwind 4，Eden treaty 类型安全调用                        |
+| 前端     | React 19 + TanStack Router + Tailwind 4 + shadcn/ui，Eden treaty 类型安全调用            |
 | 用户认证 | 邮箱密码 + 手机号验证码登录；注册/登出/me/资料；邮箱验证、找回/修改密码；Argon2id + 限流 |
 | 权限     | 完整 RBAC：roles / permissions / user_roles；Session 携带 roles/permissions              |
 | 会话     | 活跃会话列表、单会话撤销、退出其他设备；按应用隔离 cookie                                |
@@ -44,7 +44,7 @@ packages/   基础设施       database · http · queue · redis · session · 
 
 ## 技术栈
 
-ElysiaJS + TypeBox（API 契约）、Drizzle + postgres.js（ORM）、BullMQ（队列）、Redis 会话、React 19 + TanStack Router + Tailwind 4（前端）、Playwright（e2e）、neverthrow（Result）、Turborepo。
+ElysiaJS + TypeBox（API 契约）、Drizzle + postgres.js（ORM）、BullMQ（队列）、Redis 会话、React 19 + TanStack Router + Tailwind 4 + shadcn/ui（前端）、Playwright（e2e）、neverthrow（Result）、Turborepo。
 
 ## 快速开始
 
@@ -124,7 +124,7 @@ packages/
   storage/         S3 兼容对象存储
   testkit/         测试数据工厂
   tsconfig/        共享 TypeScript 配置
-  ui/              通用后台组件
+  ui/              通用 UI 组件（shadcn/ui · Base UI）
 
 domains/
   audit/           操作审计日志

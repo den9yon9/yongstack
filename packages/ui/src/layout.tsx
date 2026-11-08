@@ -1,5 +1,13 @@
 import type { ReactNode } from 'react'
 
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from '@yongstack/ui/components/empty'
+
 export function PageHeader({
   title,
   description,
@@ -11,11 +19,11 @@ export function PageHeader({
 }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 className="text-lg font-semibold">{title}</h2>
-        {description ? <p className="mt-1 text-sm text-slate-500">{description}</p> : null}
+      <div className="flex flex-col gap-1">
+        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+        {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
   )
 }
@@ -30,10 +38,12 @@ export function EmptyState({
   action?: ReactNode
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
-      <p className="font-medium text-slate-700">{title}</p>
-      {description ? <p className="text-sm text-slate-500">{description}</p> : null}
-      {action ? <div className="mt-2">{action}</div> : null}
-    </div>
+    <Empty>
+      <EmptyHeader>
+        <EmptyTitle>{title}</EmptyTitle>
+        {description ? <EmptyDescription>{description}</EmptyDescription> : null}
+      </EmptyHeader>
+      {action ? <EmptyContent>{action}</EmptyContent> : null}
+    </Empty>
   )
 }

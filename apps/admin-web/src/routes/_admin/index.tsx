@@ -1,6 +1,17 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
+import { Alert, AlertDescription } from '@yongstack/ui/components/alert'
+import { Badge } from '@yongstack/ui/components/badge'
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@yongstack/ui/components/card'
+
 import { api } from '../../libs/api/client'
 
 interface ServiceInfo {
@@ -54,60 +65,58 @@ function DashboardPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
+    <div className="flex flex-col gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>
             <h2 className="text-lg font-semibold">欢迎，{adminUser.name ?? adminUser.email}</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Yongstack 通用模板，平台能力将在后续里程碑接入。
+          </CardTitle>
+          <CardDescription>Yongstack 通用模板，平台能力将在后续里程碑接入。</CardDescription>
+          <CardAction>
+            <Badge
+              variant={
+                status === 'ok' ? 'default' : status === 'error' ? 'destructive' : 'secondary'
+              }
+            >
+              {status === 'loading' ? '检测中…' : status === 'ok' ? 'API 正常' : 'API 不可达'}
+            </Badge>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          {info ? (
+            <p className="font-mono text-sm text-muted-foreground">
+              {info.service} · v{info.version} · {info.runtime}
             </p>
-          </div>
-          <span
-            className={`rounded-full px-3 py-1 text-sm font-medium ${
-              status === 'ok'
-                ? 'bg-emerald-50 text-emerald-700'
-                : status === 'error'
-                  ? 'bg-red-50 text-red-700'
-                  : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            {status === 'loading' ? '检测中…' : status === 'ok' ? 'API 正常' : 'API 不可达'}
-          </span>
-        </div>
-        {info ? (
-          <p className="mt-4 font-mono text-sm text-slate-600">
-            {info.service} · v{info.version} · {info.runtime}
-          </p>
-        ) : null}
-      </section>
+          ) : (
+            <Alert>
+              <AlertDescription>正在检测 API 状态。</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
       <section className="grid gap-4 md:grid-cols-2">
         {modules.map((item) => (
-          <div
-            key={item.title}
-            className="rounded-2xl border border-dashed border-slate-300 bg-white p-5"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">{item.title}</h3>
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-xs ${
-                  item.to ? 'bg-brand-50 text-brand-700' : 'bg-slate-100 text-slate-500'
-                }`}
-              >
-                {item.to ? '可用' : '待开发'}
-              </span>
-            </div>
-            <p className="mt-2 text-sm text-slate-500">{item.detail}</p>
+          <Card key={item.title} className="border-dashed">
+            <CardHeader>
+              <CardTitle>
+                <h3 className="text-base font-semibold">{item.title}</h3>
+              </CardTitle>
+              <CardDescription>{item.detail}</CardDescription>
+              <CardAction>
+                <Badge variant={item.to ? 'secondary' : 'outline'}>
+                  {item.to ? '可用' : '待开发'}
+                </Badge>
+              </CardAction>
+            </CardHeader>
             {item.to ? (
-              <Link
-                to={item.to}
-                className="mt-3 inline-block text-sm text-brand-600 hover:underline"
-              >
-                进入
-              </Link>
+              <CardContent>
+                <Link to={item.to} className="text-sm text-primary hover:underline">
+                  进入
+                </Link>
+              </CardContent>
             ) : null}
-          </div>
+          </Card>
         ))}
       </section>
     </div>
