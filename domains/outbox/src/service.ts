@@ -1,7 +1,10 @@
+import type { Static } from '@sinclair/typebox'
 import { type DbClient, schema } from '@yongstack/database'
-import { eq, sql } from 'drizzle-orm'
+import { buildOffset, err, likePattern, ok, type Result } from '@yongstack/shared'
+import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm'
 
 import type { OutboxEventMap, OutboxEventName } from './events'
+import type { OutboxEventListQuerySchema } from './model'
 
 export { type OutboxEventMap, type OutboxEventName } from './events'
 
@@ -13,6 +16,18 @@ export interface OutboxEvent {
   type: string
   payload: Record<string, unknown>
   attempts: number
+}
+
+export type OutboxAdminError = 'OUTBOX_EVENT_NOT_FOUND' | 'OUTBOX_EVENT_NOT_REPLAYABLE'
+
+type OutboxEventRow = typeof schema.outboxEvents.$inferSelect
+
+export interface OutboxStats {
+  pending: number
+  processing: number
+  delivered: number
+  failed: number
+  total: number
 }
 
 // type/payload 受 OutboxEventMap 约束: 生产侧写错事件名或缺字段会直接编译失败。
@@ -87,4 +102,91 @@ export async function markFailed(
       processedAt: failed ? new Date() : null,
     })
     .where(eq(schema.outboxEvents.id, event.id))
+}
+
+// 管理端: 分页查询事件, 支持状态/类型/关键词筛选。
+export async function listOutboxEvents(
+  query: Static<typeof OutboxEventListQuerySchema>,
+  client: DbClient,
+) {
+  const { page, pageSize, status, type, q, sort, order } = query
+  const conditions = []
+  if (status !== undefined) conditions.push(eq(schema.outboxEvents.status, status))
+  if (type !== undefined) conditions.push(eq(schema.outboxEvents.type, type))
+  if (q !== undefined && q.trim().length > 0) {
+    const pattern = likePattern(q)
+    conditions.push(
+      or(ilike(schema.outboxEvents.type, pattern), ilike(schema.outboxEvents.lastError, pattern))!,
+    )
+  }
+  const where = conditions.length > 0 ? and(...conditions) : undefined
+  const sortColumn =
+    sort === 'type'
+      ? schema.outboxEvents.type
+      : sort === 'availableAt'
+        ? schema.outboxEvents.availableAt
+        : schema.outboxEvents.createdAt
+
+  const rows = await client
+    .select()
+    .from(schema.outboxEvents)
+    .where(where)
+    .orderBy(order === 'asc' ? asc(sortColumn) : desc(sortColumn))
+    .limit(pageSize)
+    .offset(buildOffset(page, pageSize))
+  const [{ total }] = await client.select({ total: count() }).from(schema.outboxEvents).where(where)
+  return { items: rows, total: Number(total), page, pageSize }
+}
+
+export async function getOutboxEventById(
+  id: string,
+  client: DbClient,
+): Promise<Result<OutboxEventRow, OutboxAdminError>> {
+  const [event] = await client
+    .select()
+    .from(schema.outboxEvents)
+    .where(eq(schema.outboxEvents.id, id))
+  if (!event) return err('OUTBOX_EVENT_NOT_FOUND')
+  return ok(event)
+}
+
+// 仅 failed 终态可重放: 复位为 pending 并清空退避/错误, 下一轮轮询重新投递。
+export async function replayOutboxEvent(
+  id: string,
+  client: DbClient,
+): Promise<Result<OutboxEventRow, OutboxAdminError>> {
+  const [event] = await client
+    .select()
+    .from(schema.outboxEvents)
+    .where(eq(schema.outboxEvents.id, id))
+  if (!event) return err('OUTBOX_EVENT_NOT_FOUND')
+  if (event.status !== 'failed') return err('OUTBOX_EVENT_NOT_REPLAYABLE')
+
+  const [updated] = await client
+    .update(schema.outboxEvents)
+    .set({
+      status: 'pending',
+      attempts: 0,
+      availableAt: new Date(),
+      lastError: null,
+      processedAt: null,
+    })
+    .where(eq(schema.outboxEvents.id, id))
+    .returning()
+  return ok(updated)
+}
+
+export async function getOutboxStats(client: DbClient): Promise<OutboxStats> {
+  const rows = await client
+    .select({ status: schema.outboxEvents.status, total: count() })
+    .from(schema.outboxEvents)
+    .groupBy(schema.outboxEvents.status)
+
+  const stats: OutboxStats = { pending: 0, processing: 0, delivered: 0, failed: 0, total: 0 }
+  for (const row of rows) {
+    const value = Number(row.total)
+    stats[row.status] = value
+    stats.total += value
+  }
+  return stats
 }

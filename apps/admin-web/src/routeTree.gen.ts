@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminIndexRouteImport } from './routes/_admin/index'
 import { Route as AdminAuditLogsRouteImport } from './routes/_admin/audit-logs'
 import { Route as AdminFilesRouteImport } from './routes/_admin/files'
+import { Route as AdminOutboxRouteImport } from './routes/_admin/outbox'
 import { Route as AdminRolesRouteImport } from './routes/_admin/roles'
 import { Route as AdminSettingsRouteImport } from './routes/_admin/settings'
 import { Route as AdminUsersRouteImport } from './routes/_admin/users'
@@ -42,6 +43,11 @@ const AdminFilesRoute = AdminFilesRouteImport.update({
   path: '/files',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminOutboxRoute = AdminOutboxRouteImport.update({
+  id: '/outbox',
+  path: '/outbox',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminRolesRoute = AdminRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/audit-logs': typeof AdminAuditLogsRoute
   '/files': typeof AdminFilesRoute
+  '/outbox': typeof AdminOutboxRoute
   '/roles': typeof AdminRolesRoute
   '/settings': typeof AdminSettingsRoute
   '/users': typeof AdminUsersRoute
@@ -71,6 +78,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/audit-logs': typeof AdminAuditLogsRoute
   '/files': typeof AdminFilesRoute
+  '/outbox': typeof AdminOutboxRoute
   '/roles': typeof AdminRolesRoute
   '/settings': typeof AdminSettingsRoute
   '/users': typeof AdminUsersRoute
@@ -82,6 +90,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_admin/audit-logs': typeof AdminAuditLogsRoute
   '/_admin/files': typeof AdminFilesRoute
+  '/_admin/outbox': typeof AdminOutboxRoute
   '/_admin/roles': typeof AdminRolesRoute
   '/_admin/settings': typeof AdminSettingsRoute
   '/_admin/users': typeof AdminUsersRoute
@@ -94,6 +103,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/audit-logs'
     | '/files'
+    | '/outbox'
     | '/roles'
     | '/settings'
     | '/users'
@@ -102,6 +112,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/audit-logs'
     | '/files'
+    | '/outbox'
     | '/roles'
     | '/settings'
     | '/users'
@@ -112,6 +123,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_admin/audit-logs'
     | '/_admin/files'
+    | '/_admin/outbox'
     | '/_admin/roles'
     | '/_admin/settings'
     | '/_admin/users'
@@ -160,6 +172,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFilesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/outbox': {
+      id: '/_admin/outbox'
+      path: '/outbox'
+      fullPath: '/outbox'
+      preLoaderRoute: typeof AdminOutboxRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/roles': {
       id: '/_admin/roles'
       path: '/roles'
@@ -187,6 +206,7 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminAuditLogsRoute: typeof AdminAuditLogsRoute
   AdminFilesRoute: typeof AdminFilesRoute
+  AdminOutboxRoute: typeof AdminOutboxRoute
   AdminRolesRoute: typeof AdminRolesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -196,6 +216,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditLogsRoute: AdminAuditLogsRoute,
   AdminFilesRoute: AdminFilesRoute,
+  AdminOutboxRoute: AdminOutboxRoute,
   AdminRolesRoute: AdminRolesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,

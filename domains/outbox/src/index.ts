@@ -7,10 +7,16 @@ export {
 } from './events'
 export {
   claimOutboxEvents,
+  getOutboxEventById,
+  getOutboxStats,
+  listOutboxEvents,
   markDelivered,
   markFailed,
   OUTBOX_MAX_ATTEMPTS,
+  type OutboxAdminError,
   type OutboxEvent,
+  type OutboxStats,
   recordOutboxEvent,
+  replayOutboxEvent,
   resetStaleProcessing,
 } from './service'

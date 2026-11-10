@@ -33,6 +33,7 @@ export function createUserRoutes(plugins: AdminPlugins) {
     .use(plugins.localePlugin)
     .use(plugins.dbPlugin)
     .use(plugins.sessionPlugin)
+    .use(plugins.apiRateLimit)
     .get(
       '/users',
       async ({ query, session, db, i18n }) => {
@@ -141,7 +142,9 @@ export function createUserRoutes(plugins: AdminPlugins) {
           401: ErrorResponse,
           403: ErrorResponse,
           404: ErrorResponse,
+          429: ErrorResponse,
         },
+        rateLimit: { limit: plugins.apiRateLimitPerMinute, window: '60s' },
         detail: {
           tags: ['Admin/Users'],
           summary: '更新用户角色/状态',
@@ -178,6 +181,7 @@ export function createUserRoutes(plugins: AdminPlugins) {
       {
         isAdmin: true,
         params: Type.Object({ id: Type.String({ format: 'uuid' }) }),
+        rateLimit: { limit: plugins.apiRateLimitPerMinute, window: '60s' },
         detail: {
           tags: ['Admin/Users'],
           summary: '撤销用户全部会话',

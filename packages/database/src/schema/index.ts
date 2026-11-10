@@ -6,7 +6,7 @@
 export { auditLogs } from './audit/audit-logs'
 // file 域(文件元数据与通用附件关联)
 export { fileAttachments } from './file/file-attachments'
-export { files } from './file/files'
+export { FILE_STATUS, files, type FileStatus, fileStatus } from './file/files'
 // idempotency 域(幂等键)
 export {
   IDEMPOTENCY_KEY_STATUS,

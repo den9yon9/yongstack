@@ -60,6 +60,7 @@ function createTestDeps(deps: { db: Db; redis: Redis }): AdminAppOptions {
     isProduction: false,
     logger: createLogger('silent'),
     authRateLimitPerMinute: 20,
+    apiRateLimitPerMinute: 120,
     defaultLocale: 'en',
   }
 }
@@ -335,6 +336,64 @@ describe('admin audit', () => {
   test('requires admin authentication', async () => {
     const res = await api.admin.audit.get({ query: { page: 1, pageSize: 10 } })
     expect(res.status).toBe(401)
+  })
+})
+
+describe('admin outbox', () => {
+  test('lists events, aggregates stats and replays failed events', async () => {
+    const cookie = await loginAdmin()
+    const [failed] = await db
+      .insert(schema.outboxEvents)
+      .values({
+        type: 'user.registered',
+        payload: { userId: 'user-1', email: 'a@example.com', name: null, locale: 'en' },
+        status: 'failed',
+        attempts: 5,
+        lastError: 'boom',
+      })
+      .returning()
+    await db.insert(schema.outboxEvents).values({
+      type: 'user.password_reset_requested',
+      payload: { email: 'a@example.com', token: 'tok', locale: 'en' },
+    })
+
+    const list = await api.admin.outbox.get({
+      query: { page: 1, pageSize: 10 },
+      fetch: { headers: { cookie } },
+    })
+    expect(list.status).toBe(200)
+    if (list.error !== null) throw list.error
+    expect(list.data.total).toBe(2)
+
+    const stats = await api.admin.outbox.stats.get({ fetch: { headers: { cookie } } })
+    expect(stats.status).toBe(200)
+    if (stats.error !== null) throw stats.error
+    expect(stats.data).toMatchObject({ pending: 1, failed: 1, total: 2 })
+
+    const replay = await api.admin
+      .outbox({ id: failed.id })
+      .replay.post({} as never, { fetch: { headers: { cookie } } })
+    expect(replay.status).toBe(200)
+    if (replay.error !== null) throw replay.error
+    expect(replay.data.status).toBe('pending')
+    expect(replay.data.attempts).toBe(0)
+  })
+
+  test('returns queue job counts', async () => {
+    const cookie = await loginAdmin()
+    const res = await api.admin.queues.get({ fetch: { headers: { cookie } } })
+    expect(res.status).toBe(200)
+    if (res.error !== null) throw res.error
+    const emailQueue = res.data.items.find((item) => item.name === 'email')
+    expect(emailQueue).toBeDefined()
+    expect(emailQueue?.counts.failed).toBeGreaterThanOrEqual(0)
+  })
+
+  test('requires admin authentication', async () => {
+    const list = await api.admin.outbox.get({ query: { page: 1, pageSize: 10 } })
+    expect(list.status).toBe(401)
+    const queues = await api.admin.queues.get()
+    expect(queues.status).toBe(401)
   })
 })
 

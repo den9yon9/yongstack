@@ -19,6 +19,8 @@ import { createPlugins } from './plugins'
 import { createAuditRoutes } from './routes/audit'
 import { createAuthRoutes } from './routes/auth'
 import { createFileRoutes } from './routes/file'
+import { createOutboxRoutes } from './routes/outbox'
+import { createQueueRoutes } from './routes/queue'
 import { createSettingsRoutes } from './routes/settings'
 import { createUserRoutes } from './routes/user'
 
@@ -65,6 +67,8 @@ export function buildApp(options: AdminAppOptions) {
     .use(createUserRoutes(plugins))
     .use(createFileRoutes(plugins))
     .use(createAuditRoutes(plugins))
+    .use(createOutboxRoutes(plugins))
+    .use(createQueueRoutes(plugins))
     .get(
       '/info',
       () => ({

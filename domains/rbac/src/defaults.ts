@@ -6,6 +6,8 @@ export const DEFAULT_PERMISSIONS = [
   { code: 'settings:read', description: 'Read settings' },
   { code: 'settings:write', description: 'Manage settings' },
   { code: 'audit:read', description: 'Read audit logs' },
+  { code: 'outbox:read', description: 'Read outbox events' },
+  { code: 'outbox:write', description: 'Replay outbox events' },
   { code: 'files:read', description: 'Read files' },
   { code: 'files:write', description: 'Upload files' },
   { code: 'files:delete', description: 'Delete files' },

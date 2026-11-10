@@ -23,6 +23,16 @@ describe('createS3Storage', () => {
     expect(storage.publicUrl(key)).toBe(`https://img.test/${key}`)
   })
 
+  test('presigns PUT uploads with the declared content type', async () => {
+    const storage = createS3Storage(env)
+    const key = storage.createKey('png')
+    const result = await storage.presignPut(key, 'image/png', 120)
+    expect(result.isOk()).toBe(true)
+    if (result.isErr()) return
+    expect(result.value).toContain('X-Amz-Signature')
+    expect(result.value).toContain(key)
+  })
+
   test('requires credentials when a custom endpoint is configured', () => {
     expect(() =>
       createS3Client({
@@ -46,5 +56,23 @@ describe('createInMemoryStorage', () => {
     const deleted = await storage.delete(key)
     expect(deleted.isOk()).toBe(true)
     expect(storage.objects.has(key)).toBe(false)
+  })
+
+  test('presigns uploads and reads object metadata', async () => {
+    const storage = createInMemoryStorage({ publicBaseUrl: 'https://img.test' })
+    const key = storage.createKey('png')
+
+    const presigned = await storage.presignPut(key, 'image/png', 120)
+    expect(presigned.isOk()).toBe(true)
+    if (presigned.isErr()) return
+    expect(presigned.value).toBe(`https://img.test/${key}?signed=put`)
+
+    expect((await storage.head(key)).isErr()).toBe(true)
+
+    await storage.put(key, Uint8Array.from([1, 2, 3, 4]), 'image/png')
+    const head = await storage.head(key)
+    expect(head.isOk()).toBe(true)
+    if (head.isErr()) return
+    expect(head.value).toEqual({ size: 4, contentType: 'image/png' })
   })
 })

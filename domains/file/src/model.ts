@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox'
 import { table } from '@yongstack/database'
 import { PaginatedResponse, PaginationQuery } from '@yongstack/shared'
 
-export const FileResponseSchema = Type.Omit(table.select.file, ['deletedAt'])
+export const FileResponseSchema = Type.Omit(table.select.file, ['deletedAt', 'status'])
 
 export const CreateFileInputSchema = Type.Object({
   ownerId: Type.Optional(Type.String({ format: 'uuid' })),
@@ -15,6 +15,29 @@ export const CreateFileInputSchema = Type.Object({
   purpose: Type.Optional(Type.String({ maxLength: 100 })),
   checksum: Type.Optional(Type.String({ maxLength: 64 })),
   metadata: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
+  status: Type.Optional(Type.Union([Type.Literal('pending'), Type.Literal('ready')])),
+})
+
+export const PresignFileInputSchema = Type.Object({
+  filename: Type.String({ minLength: 1, maxLength: 255 }),
+  mime: Type.String({ minLength: 1, maxLength: 100 }),
+  size: Type.Integer({ minimum: 1 }),
+  purpose: Type.Optional(Type.String({ maxLength: 100 })),
+})
+
+export const PresignFileResponseSchema = Type.Object({
+  fileId: Type.String({ format: 'uuid' }),
+  key: Type.String(),
+  publicUrl: Type.String(),
+  uploadUrl: Type.String(),
+  headers: Type.Record(Type.String(), Type.String()),
+  expiresInSeconds: Type.Number(),
+})
+
+export const ConfirmFileInputSchema = Type.Object({
+  checksum: Type.Optional(Type.String({ maxLength: 64 })),
+  width: Type.Optional(Type.Integer({ minimum: 1 })),
+  height: Type.Optional(Type.Integer({ minimum: 1 })),
 })
 
 export const FileListQuerySchema = Type.Composite([

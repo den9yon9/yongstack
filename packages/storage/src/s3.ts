@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
@@ -86,6 +87,37 @@ export function createS3Storage(env: StorageEnv): Storage {
           { expiresIn: expiresInSeconds },
         )
         return ok(url)
+      } catch {
+        return err('STORAGE_UNAVAILABLE')
+      }
+    },
+    async presignPut(key, contentType, expiresInSeconds = 600) {
+      try {
+        // ContentType 参与签名: 客户端 PUT 时必须带同样的 Content-Type, 否则 S3 拒绝
+        const url = await getSignedUrl(
+          client,
+          new PutObjectCommand({
+            Bucket: env.STORAGE_BUCKET,
+            Key: key,
+            ContentType: contentType,
+            CacheControl: CACHE_CONTROL,
+          }),
+          { expiresIn: expiresInSeconds },
+        )
+        return ok(url)
+      } catch {
+        return err('STORAGE_UNAVAILABLE')
+      }
+    },
+    async head(key) {
+      try {
+        const result = await client.send(
+          new HeadObjectCommand({ Bucket: env.STORAGE_BUCKET, Key: key }),
+        )
+        return ok({
+          size: result.ContentLength ?? 0,
+          contentType: result.ContentType ?? null,
+        })
       } catch {
         return err('STORAGE_UNAVAILABLE')
       }

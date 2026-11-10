@@ -4,9 +4,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
 
 import {
   claimOutboxEvents,
+  getOutboxStats,
+  listOutboxEvents,
   markDelivered,
   markFailed,
   recordOutboxEvent,
+  replayOutboxEvent,
   resetStaleProcessing,
 } from './service'
 
@@ -91,5 +94,73 @@ describe('outbox', () => {
     expect(count).toBe(1)
     const [row] = await db.select().from(schema.outboxEvents)
     expect(row.status).toBe('pending')
+  })
+})
+
+describe('outbox admin', () => {
+  const payload = { email: 'a@example.com', token: 'tok', locale: 'en' } as const
+
+  test('lists events with status and type filters', async () => {
+    await recordOutboxEvent(db, { type: 'user.password_reset_requested', payload })
+    const [event] = await claimOutboxEvents(db)
+    await markDelivered(db, event.id)
+    await recordOutboxEvent(db, {
+      type: 'user.registered',
+      payload: { userId: 'u', email: 'a@example.com', name: null, locale: 'en' },
+    })
+
+    const delivered = await listOutboxEvents({ page: 1, pageSize: 10, status: 'delivered' }, db)
+    expect(delivered.total).toBe(1)
+    expect(delivered.items[0].type).toBe('user.password_reset_requested')
+
+    const byType = await listOutboxEvents({ page: 1, pageSize: 10, type: 'user.registered' }, db)
+    expect(byType.total).toBe(1)
+  })
+
+  test('aggregates stats by status', async () => {
+    await recordOutboxEvent(db, { type: 'user.password_reset_requested', payload })
+    await db.insert(schema.outboxEvents).values({
+      type: 'user.registered',
+      payload: { userId: 'u' },
+      status: 'failed',
+      attempts: 5,
+    })
+
+    const stats = await getOutboxStats(db)
+    expect(stats).toMatchObject({ pending: 1, failed: 1, total: 2 })
+  })
+
+  test('replays failed events only', async () => {
+    const [failed] = await db
+      .insert(schema.outboxEvents)
+      .values({
+        type: 'user.password_reset_requested',
+        payload,
+        status: 'failed',
+        attempts: 5,
+        lastError: 'boom',
+      })
+      .returning()
+
+    const replayed = await replayOutboxEvent(failed.id, db)
+    if (replayed.isErr()) throw replayed.error
+    expect(replayed.value).toMatchObject({
+      status: 'pending',
+      attempts: 0,
+      lastError: null,
+      processedAt: null,
+    })
+
+    const pending = await db
+      .insert(schema.outboxEvents)
+      .values({ type: 'user.password_reset_requested', payload })
+      .returning()
+    const rejected = await replayOutboxEvent(pending[0].id, db)
+    expect(rejected.isErr()).toBe(true)
+    if (rejected.isErr()) expect(rejected.error).toBe('OUTBOX_EVENT_NOT_REPLAYABLE')
+
+    const missing = await replayOutboxEvent('00000000-0000-0000-0000-000000000000', db)
+    expect(missing.isErr()).toBe(true)
+    if (missing.isErr()) expect(missing.error).toBe('OUTBOX_EVENT_NOT_FOUND')
   })
 })

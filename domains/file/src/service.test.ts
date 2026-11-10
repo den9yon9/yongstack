@@ -8,8 +8,11 @@ import {
   createFile,
   detachFile,
   getFileById,
+  getPendingFileForActor,
   listAttachments,
   listFiles,
+  listStalePendingFiles,
+  markFileReady,
   softDeleteFile,
 } from './service'
 
@@ -106,5 +109,54 @@ describe('files', () => {
 
     await detachFile(file.id, 'user', owner.id, db)
     expect(await listAttachments('user', owner.id, db)).toHaveLength(0)
+  })
+
+  test('keeps pending uploads hidden until confirmed', async () => {
+    const owner = await seedUser()
+    const file = await createFile(
+      {
+        ownerId: owner.id,
+        key: 'media/pending.png',
+        url: 'https://cdn.example.com/media/pending.png',
+        mime: 'image/png',
+        size: 0,
+        status: 'pending',
+      },
+      db,
+    )
+
+    expect((await getFileById(file.id, db)).isErr()).toBe(true)
+    expect((await listFiles({ page: 1, pageSize: 10 }, db)).total).toBe(0)
+
+    const pending = await getPendingFileForActor(file.id, { userId: owner.id, isAdmin: false }, db)
+    expect(pending.isOk()).toBe(true)
+
+    const ready = await markFileReady(file.id, { size: 2048, mime: 'image/png' }, db)
+    if (ready.isErr()) throw ready.error
+    expect(ready.value.status).toBe('ready')
+
+    expect((await listFiles({ page: 1, pageSize: 10 }, db)).total).toBe(1)
+  })
+
+  test('lists pending uploads older than the cutoff', async () => {
+    const owner = await seedUser()
+    await createFile(
+      {
+        ownerId: owner.id,
+        key: 'media/stale.png',
+        url: 'https://cdn.example.com/media/stale.png',
+        mime: 'image/png',
+        size: 0,
+        status: 'pending',
+      },
+      db,
+    )
+
+    const stale = await listStalePendingFiles(new Date(Date.now() + 1000), db)
+    expect(stale).toHaveLength(1)
+    expect(stale[0].key).toBe('media/stale.png')
+
+    const fresh = await listStalePendingFiles(new Date(Date.now() - 60_000), db)
+    expect(fresh).toHaveLength(0)
   })
 })

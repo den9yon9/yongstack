@@ -63,10 +63,26 @@ pnpm dev
 
 COS 也支持 S3 兼容 API，少数 header/签名细节与 R2 不同，切换前跑一次上传/读取 e2e。
 
+## 预签名直传（大文件推荐）
+
+服务端不转发文件内容，客户端直接 PUT 到对象存储：
+
+```
+POST /files/presign        → { fileId, key, uploadUrl, headers, expiresInSeconds }
+  (校验 size / mime，创建 files.status = 'pending')
+PUT  uploadUrl             → 客户端直传，headers 必须原样带上
+POST /files/:id/confirm    → HEAD 校验对象，files.status = 'ready'，记审计
+```
+
+- `uploadUrl` 已签名 `Content-Type` 与 `Cache-Control`，客户端必须发送返回的 `headers`，否则 S3 签名不匹配。
+- 预签名路径拿不到文件内容，**不做 magic bytes 校验**；只校验声明的 MIME（已参与签名）。
+- 未确认的 pending 记录由 worker 按 `FILE_PENDING_MAX_AGE_MS` 回收对象与行。
+- 小文件仍可用 `POST /files`（服务端读取 + magic bytes 校验）。
+
 ## 约定
 
 - 对象 key：`media/<uuid>.<ext>`，不使用用户文件名。
-- 只允许 JPEG / PNG / WebP，最大 5MB；服务端会校验 magic bytes，不只信 `Content-Type`。
+- 只允许 JPEG / PNG / WebP，最大 5MB；直传接口会校验 magic bytes，不只信 `Content-Type`。
 - 上传时设置 `Cache-Control: public, max-age=31536000, immutable`。
 - 媒体资源是公开资源；未来私有文件用 `Storage.presignGet()` 生成短期签名 URL。
-- 上传接口只允许 admin 角色（业务接入后实现）。
+- 上传接口只允许登录用户，文件按 owner 隔离。

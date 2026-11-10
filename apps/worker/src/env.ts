@@ -41,6 +41,8 @@ const workerEnvSchema = Type.Object({
   // 软删文件的对象存储清理: 已删除超过 min age 的记录硬删 DB 行并删除对象
   FILE_CLEANUP_INTERVAL_MS: Type.String({ pattern: '^\\d+$', default: '60000' }),
   FILE_CLEANUP_MIN_AGE_MS: Type.String({ pattern: '^\\d+$', default: '3600000' }),
+  // 预签名后长期未确认的上传(pending)保留时长, 超时回收对象与元数据
+  FILE_PENDING_MAX_AGE_MS: Type.String({ pattern: '^\\d+$', default: '86400000' }),
 
   // 对象存储(与 app-api 共用同名变量): 未配置时文件清理任务不启动
   ...storageEnvSchema.properties,

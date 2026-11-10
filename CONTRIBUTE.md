@@ -211,6 +211,27 @@ createEnv() → createDeps(env) → buildApp(options) → createPlugins(options)
   事件 → 通知渠道的映射放 `usecases/notifications`，模板与发送放 `apps/worker`
 - 事件投递语义为 at-least-once：下游需幂等（邮件用确定性 jobId 去重）
 
+### 5.1 限流
+
+- 认证接口用 `plugins.authRateLimit`（按 IP），业务写接口用 `plugins.apiRateLimit`
+  （登录用户按 `userId`，未登录回退 IP）
+- 只允许**路由级** `rateLimit` 宏，不要配置 nazli 顶层 `limit/window`：
+  顶层规则会生成全局 onRequest 计数，可能误伤所有接口
+- 用法：
+
+  ```ts
+  return new Elysia({ name: 'x' })
+    .use(plugins.sessionPlugin)
+    .use(plugins.apiRateLimit)
+    .post('/x', handler, {
+      isAuth: true,
+      rateLimit: { limit: plugins.apiRateLimitPerMinute, window: '60s' },
+    })
+  ```
+
+- 限流必须 `.use()` 在 session 插件之后，才能按 `userId` 计数
+- 上限来自 env `AUTH_RATE_LIMIT_PER_MINUTE` / `API_RATE_LIMIT_PER_MINUTE`
+
 ### 6. 数据库变更
 
 1. 修改 `packages/database/src/schema/*.ts`

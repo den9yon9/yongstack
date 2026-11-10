@@ -11,3 +11,7 @@ export type AdminRole = EdenListItem<typeof api.admin.roles.get>
 export type AdminFile = EdenListItem<typeof api.admin.files.get>
 
 export type AdminAuditLog = EdenListItem<typeof api.admin.audit.get>
+
+export type AdminOutboxEvent = EdenListItem<typeof api.admin.outbox.get>
+export type AdminOutboxStats = EdenData<typeof api.admin.outbox.stats.get>
+export type AdminQueue = EdenListItem<typeof api.admin.queues.get>

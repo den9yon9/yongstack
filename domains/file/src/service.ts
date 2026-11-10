@@ -16,10 +16,15 @@ export interface FileActor {
   isAdmin: boolean
 }
 
+// 只有 ready 且未软删的文件对调用方可见; pending 上传对普通读取不可见。
+function activeWhere() {
+  return and(isNull(schema.files.deletedAt), eq(schema.files.status, 'ready'))
+}
+
 // owner 一律可见; admin 视为超级读者/管理者。
 function actorWhere(actor: FileActor) {
-  if (actor.isAdmin) return isNull(schema.files.deletedAt)
-  return and(eq(schema.files.ownerId, actor.userId), isNull(schema.files.deletedAt))
+  if (actor.isAdmin) return activeWhere()
+  return and(eq(schema.files.ownerId, actor.userId), activeWhere())
 }
 
 export async function createFile(
@@ -39,6 +44,7 @@ export async function createFile(
       purpose: input.purpose ?? 'general',
       checksum: input.checksum ?? null,
       metadata: input.metadata ?? {},
+      status: input.status ?? 'ready',
     })
     .returning()
   return file
@@ -48,7 +54,27 @@ export async function getFileById(id: string, client: DbClient): Promise<Result<
   const [file] = await client
     .select()
     .from(schema.files)
-    .where(and(eq(schema.files.id, id), isNull(schema.files.deletedAt)))
+    .where(and(eq(schema.files.id, id), activeWhere()))
+  if (!file) return err('FILE_NOT_FOUND')
+  return ok(file)
+}
+
+// 预签名上传确认前读取: 仅 owner(或 admin) 可见，允许 pending 状态。
+export async function getPendingFileForActor(
+  id: string,
+  actor: FileActor,
+  client: DbClient,
+): Promise<Result<File, FileError>> {
+  const [file] = await client
+    .select()
+    .from(schema.files)
+    .where(
+      and(
+        eq(schema.files.id, id),
+        eq(schema.files.status, 'pending'),
+        actor.isAdmin ? undefined : eq(schema.files.ownerId, actor.userId),
+      ),
+    )
   if (!file) return err('FILE_NOT_FOUND')
   return ok(file)
 }
@@ -69,7 +95,7 @@ export async function getFileForActor(
 
 export async function listFiles(query: Static<typeof FileListQuerySchema>, client: DbClient) {
   const { page, pageSize, q, ownerId, purpose } = query
-  const conditions = [isNull(schema.files.deletedAt)]
+  const conditions = [isNull(schema.files.deletedAt), eq(schema.files.status, 'ready')]
   if (ownerId !== undefined) conditions.push(eq(schema.files.ownerId, ownerId))
   if (purpose !== undefined) conditions.push(eq(schema.files.purpose, purpose))
   if (q !== undefined && q.trim().length > 0) {
@@ -102,7 +128,7 @@ export async function softDeleteFile(
   const [file] = await client
     .select()
     .from(schema.files)
-    .where(and(eq(schema.files.id, id), isNull(schema.files.deletedAt)))
+    .where(and(eq(schema.files.id, id), activeWhere()))
   if (!file) return err('FILE_NOT_FOUND')
 
   await client.update(schema.files).set({ deletedAt: new Date() }).where(eq(schema.files.id, id))
@@ -125,6 +151,28 @@ export async function softDeleteFileForActor(
   return ok({ key: file.key })
 }
 
+// 预签名上传确认: 校验通过后把 pending 行补全为 ready。
+export async function markFileReady(
+  id: string,
+  patch: { size: number; mime: string; checksum?: string; width?: number; height?: number },
+  client: DbClient,
+): Promise<Result<File, FileError>> {
+  const [file] = await client
+    .update(schema.files)
+    .set({
+      status: 'ready',
+      size: patch.size,
+      mime: patch.mime,
+      checksum: patch.checksum ?? null,
+      width: patch.width ?? null,
+      height: patch.height ?? null,
+    })
+    .where(and(eq(schema.files.id, id), eq(schema.files.status, 'pending')))
+    .returning()
+  if (!file) return err('FILE_NOT_FOUND')
+  return ok(file)
+}
+
 // 清理任务用: 列出已软删超过 cutoff 的文件(worker 负责删除对象并调用永久删除)。
 export async function listStaleDeletedFiles(
   cutoff: Date,
@@ -134,6 +182,23 @@ export async function listStaleDeletedFiles(
     .select({ id: schema.files.id, key: schema.files.key })
     .from(schema.files)
     .where(and(isNotNull(schema.files.deletedAt), lt(schema.files.deletedAt, cutoff)))
+}
+
+// 清理任务用: 预签名后长期未确认的上传(pending), 回收对象与行。
+export async function listStalePendingFiles(
+  cutoff: Date,
+  client: DbClient,
+): Promise<{ id: string; key: string }[]> {
+  return client
+    .select({ id: schema.files.id, key: schema.files.key })
+    .from(schema.files)
+    .where(
+      and(
+        eq(schema.files.status, 'pending'),
+        isNull(schema.files.deletedAt),
+        lt(schema.files.createdAt, cutoff),
+      ),
+    )
 }
 
 // 清理任务用: 对象已删除后硬删数据库行(attachments 级联)。
@@ -186,6 +251,7 @@ export async function listAttachments(ownerType: string, ownerId: string, client
         eq(schema.fileAttachments.ownerType, ownerType),
         eq(schema.fileAttachments.ownerId, ownerId),
         isNull(schema.files.deletedAt),
+        eq(schema.files.status, 'ready'),
       ),
     )
     .orderBy(schema.fileAttachments.sortOrder, schema.fileAttachments.createdAt)

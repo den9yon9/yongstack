@@ -17,7 +17,7 @@
 | 8   | `domains/rbac`                                                                 | 自定义角色/权限编辑与角色管理 UI 未实现；当前仅内置 member/admin                                             | 需要自定义角色时补齐                                                |
 | 9   | `packages/session/src/sessionPlugin.ts`                                        | session 缓存 roles/permissions 快照；角色定义编辑不会使既有会话失效（用户级变更已由 destroyAllForUser 覆盖） | 引入角色定义编辑功能时，给用户加 accessVersion 版本号并在请求时比对 |
 | 10  | `apps/app-api/src/routes/phone.ts`、`apps/admin-api/src/routes/auth.ts`        | sms.send 在请求路径同步 await，真实厂商慢时会拉高登录延迟                                                    | 接入真实厂商后改走队列/outbox 异步发送                              |
-| 11  | `apps/app-api/src/routes/file.ts`                                              | 上传用 arrayBuffer 全量进内存                                                                                | 允许大文件时改为流式上传                                            |
+| 11  | `apps/app-api/src/routes/file.ts`                                              | 服务端直传仍用 arrayBuffer 全量进内存（大文件走 `/files/presign` 预签名直传，不再过 API）                    | 若需服务端流式处理时改为流式上传                                    |
 
 ## 历史结清
 

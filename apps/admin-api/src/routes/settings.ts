@@ -29,6 +29,7 @@ export function createSettingsRoutes(plugins: AdminPlugins) {
     .use(plugins.localePlugin)
     .use(plugins.dbPlugin)
     .use(plugins.sessionPlugin)
+    .use(plugins.apiRateLimit)
     .get(
       '/settings',
       async ({ db, session, i18n }) => {
@@ -88,7 +89,9 @@ export function createSettingsRoutes(plugins: AdminPlugins) {
           401: ErrorResponse,
           403: ErrorResponse,
           404: ErrorResponse,
+          429: ErrorResponse,
         },
+        rateLimit: { limit: plugins.apiRateLimitPerMinute, window: '60s' },
         detail: {
           tags: ['Admin/Settings'],
           summary: '更新运行时设置',

@@ -28,6 +28,9 @@ export const table = {
     file: select(schema.files, {
       metadata: Type.Record(Type.String(), Type.Unknown()),
     }),
+    outboxEvent: select(schema.outboxEvents, {
+      payload: Type.Record(Type.String(), Type.Unknown()),
+    }),
     user: Type.Omit(userSelect, ['passwordHash']),
   },
   insert: {

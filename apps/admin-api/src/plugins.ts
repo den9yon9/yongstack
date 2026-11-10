@@ -1,6 +1,8 @@
 import { dbPlugin, localePlugin, redisPlugin } from '@yongstack/http'
+import { EMAIL_QUEUE_NAME, type SendEmailJobData } from '@yongstack/notifications'
+import { createQueue, type Queue } from '@yongstack/queue'
 import { ADMIN_ROLE_CODE } from '@yongstack/rbac'
-import { authRateLimit, createSessionPlugin } from '@yongstack/session'
+import { apiRateLimit, authRateLimit, createSessionPlugin } from '@yongstack/session'
 import { type Logger } from '@yongstack/shared'
 import { type SmsProvider } from '@yongstack/sms'
 
@@ -12,6 +14,9 @@ export interface AdminPlugins {
   localePlugin: ReturnType<typeof localePlugin>
   sessionPlugin: ReturnType<typeof createSessionPlugin>
   authRateLimit: ReturnType<typeof authRateLimit>
+  apiRateLimit: ReturnType<typeof apiRateLimit>
+  // 队列运维: 共享 redis 连接只读 job counts(无阻塞命令, 进程退出随 redis 关闭)
+  emailQueue: Queue<SendEmailJobData>
   sessionCookieName: string
   storage: AdminAppOptions['storage']
   sms: SmsProvider
@@ -20,6 +25,7 @@ export interface AdminPlugins {
   isProduction: boolean
   logger: Logger
   authRateLimitPerMinute: number
+  apiRateLimitPerMinute: number
   // 审计/会话取 IP 时是否信任 x-forwarded-for 等转发头(来自 env TRUST_PROXY)
   trustProxy: boolean
 }
@@ -57,6 +63,13 @@ export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): Adm
       trustProxy,
       defaultLocale: options.defaultLocale,
     }),
+    apiRateLimit: apiRateLimit({
+      redis,
+      prefix: 'rl:admin:api',
+      trustProxy,
+      defaultLocale: options.defaultLocale,
+    }),
+    emailQueue: createQueue<SendEmailJobData>(EMAIL_QUEUE_NAME, { connection: redis }),
     sessionCookieName,
     storage,
     sms,
@@ -65,6 +78,7 @@ export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): Adm
     isProduction,
     logger,
     authRateLimitPerMinute: options.authRateLimitPerMinute,
+    apiRateLimitPerMinute: options.apiRateLimitPerMinute,
     trustProxy,
   }
 }

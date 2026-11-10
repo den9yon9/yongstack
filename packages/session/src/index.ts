@@ -1,4 +1,9 @@
-export { authRateLimit, type AuthRateLimitOptions } from './rateLimit'
+export {
+  apiRateLimit,
+  type ApiRateLimitOptions,
+  authRateLimit,
+  type AuthRateLimitOptions,
+} from './rateLimit'
 export {
   clearSessionCookie,
   createSessionPlugin,

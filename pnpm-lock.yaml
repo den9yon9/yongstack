@@ -104,6 +104,15 @@ importers:
       '@yongstack/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@yongstack/notifications':
+        specifier: workspace:*
+        version: link:../../usecases/notifications
+      '@yongstack/outbox':
+        specifier: workspace:*
+        version: link:../../domains/outbox
+      '@yongstack/queue':
+        specifier: workspace:*
+        version: link:../../packages/queue
       '@yongstack/rbac':
         specifier: workspace:*
         version: link:../../domains/rbac
@@ -422,9 +431,15 @@ importers:
 
   domains/outbox:
     dependencies:
+      '@sinclair/typebox':
+        specifier: ^0.34.0
+        version: 0.34.52
       '@yongstack/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@yongstack/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       drizzle-orm:
         specifier: ^0.40.0
         version: 0.40.1(@opentelemetry/api@1.9.1)(bun-types@1.3.14)(gel@2.2.0)(postgres@3.4.9)

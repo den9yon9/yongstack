@@ -1,7 +1,7 @@
 import { dbPlugin, type HttpMetricsBundle, localePlugin, redisPlugin } from '@yongstack/http'
 import { type Locale } from '@yongstack/i18n'
 import { ADMIN_ROLE_CODE } from '@yongstack/rbac'
-import { authRateLimit, createSessionPlugin } from '@yongstack/session'
+import { apiRateLimit, authRateLimit, createSessionPlugin } from '@yongstack/session'
 import { type Logger } from '@yongstack/shared'
 import { type SmsProvider } from '@yongstack/sms'
 import { type Storage } from '@yongstack/storage'
@@ -18,6 +18,7 @@ export interface AppPlugins {
   localePlugin: ReturnType<typeof localePlugin>
   sessionPlugin: ReturnType<typeof createSessionPlugin>
   authRateLimit: ReturnType<typeof authRateLimit>
+  apiRateLimit: ReturnType<typeof apiRateLimit>
   sessionCookieName: string
   storage: Storage
   sms: SmsProvider
@@ -27,6 +28,7 @@ export interface AppPlugins {
   isProduction: boolean
   logger: Logger
   authRateLimitPerMinute: number
+  apiRateLimitPerMinute: number
   defaultLocale: Locale
   // 审计/会话取 IP 时是否信任 x-forwarded-for 等转发头(来自 env TRUST_PROXY)
   trustProxy: boolean
@@ -68,6 +70,12 @@ export function createPlugins(
       trustProxy,
       defaultLocale: options.defaultLocale,
     }),
+    apiRateLimit: apiRateLimit({
+      redis,
+      prefix: 'rl:api',
+      trustProxy,
+      defaultLocale: options.defaultLocale,
+    }),
     sessionCookieName,
     storage,
     sms,
@@ -77,6 +85,7 @@ export function createPlugins(
     isProduction,
     logger,
     authRateLimitPerMinute: options.authRateLimitPerMinute,
+    apiRateLimitPerMinute: options.apiRateLimitPerMinute,
     defaultLocale: options.defaultLocale,
     trustProxy,
   }

@@ -60,6 +60,7 @@ function createTestDeps(deps: { db: Db; redis: Redis }): AppOptions {
     isProduction: false,
     logger: createLogger('silent'),
     authRateLimitPerMinute: 20,
+    apiRateLimitPerMinute: 120,
     defaultLocale: 'en',
   }
 }
@@ -407,6 +408,30 @@ async function uploadFile(cookie: string, buffer = TINY_PNG, name = 'a.png') {
   )
 }
 
+async function presignFile(cookie: string, body: { filename: string; mime: string; size: number }) {
+  return app.handle(
+    new Request('http://localhost/files/presign', {
+      method: 'POST',
+      headers: { cookie, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  )
+}
+
+async function confirmFile(
+  cookie: string,
+  id: string,
+  body: { checksum?: string; width?: number; height?: number },
+) {
+  return app.handle(
+    new Request(`http://localhost/files/${id}/confirm`, {
+      method: 'POST',
+      headers: { cookie, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  )
+}
+
 describe('files', () => {
   test('uploads, reads and deletes an owned file', async () => {
     const registered = await api.auth.register.post({
@@ -500,6 +525,101 @@ describe('files', () => {
       }),
     )
     expect(deleteDenied.status).toBe(404)
+  })
+
+  test('presigns, confirms and exposes a direct upload', async () => {
+    const registered = await api.auth.register.post({
+      name: 'Direct',
+      email: 'direct@example.com',
+      password: 'password123',
+    })
+    const cookie = sessionCookie(registered)
+
+    const presigned = await presignFile(cookie, {
+      filename: 'avatar.png',
+      mime: 'image/png',
+      size: 4,
+    })
+    expect(presigned.status).toBe(201)
+    const data = (await presigned.json()) as {
+      fileId: string
+      key: string
+      uploadUrl: string
+      headers: Record<string, string>
+    }
+    expect(data.headers['Content-Type']).toBe('image/png')
+    expect(data.uploadUrl).toContain('signed=put')
+    // pending 记录在确认前不可读
+    expect(storage.objects.has(data.key)).toBe(false)
+
+    await storage.put(data.key, Uint8Array.from([1, 2, 3, 4]), 'image/png')
+    const confirmed = await confirmFile(cookie, data.fileId, { checksum: 'abc' })
+    expect(confirmed.status).toBe(200)
+    const body = (await confirmed.json()) as { size: number; mime: string; checksum: string }
+    expect(body).toMatchObject({ size: 4, mime: 'image/png', checksum: 'abc' })
+
+    const read = await app.handle(
+      new Request(`http://localhost/files/${data.fileId}`, { headers: { cookie } }),
+    )
+    expect(read.status).toBe(200)
+  })
+
+  test('confirm rejects missing objects and other users', async () => {
+    const owner = await api.auth.register.post({
+      name: 'Presign Owner',
+      email: 'presign-owner@example.com',
+      password: 'password123',
+    })
+    const other = await api.auth.register.post({
+      name: 'Presign Other',
+      email: 'presign-other@example.com',
+      password: 'password123',
+    })
+    const ownerCookie = sessionCookie(owner)
+
+    const presigned = await presignFile(ownerCookie, {
+      filename: 'avatar.png',
+      mime: 'image/png',
+      size: 4,
+    })
+    const data = (await presigned.json()) as { fileId: string; key: string }
+
+    const missing = await confirmFile(ownerCookie, data.fileId, {})
+    expect(missing.status).toBe(404)
+
+    await storage.put(data.key, Uint8Array.from([1, 2, 3, 4]), 'image/png')
+    const denied = await confirmFile(sessionCookie(other), data.fileId, {})
+    expect(denied.status).toBe(404)
+
+    const confirmed = await confirmFile(ownerCookie, data.fileId, {})
+    expect(confirmed.status).toBe(200)
+  })
+
+  test('presign enforces type and size settings', async () => {
+    const registered = await api.auth.register.post({
+      name: 'Presign Guard',
+      email: 'presign-guard@example.com',
+      password: 'password123',
+    })
+    const cookie = sessionCookie(registered)
+
+    await db
+      .insert(schema.settings)
+      .values({ key: 'upload.maxBytes', value: 10 })
+      .onConflictDoUpdate({ target: schema.settings.key, set: { value: 10 } })
+    const oversized = await presignFile(cookie, {
+      filename: 'big.png',
+      mime: 'image/png',
+      size: 11,
+    })
+    expect(oversized.status).toBe(413)
+
+    const disallowed = await presignFile(cookie, {
+      filename: 'a.exe',
+      mime: 'application/x-msdownload',
+      size: 4,
+    })
+    expect(disallowed.status).toBe(400)
   })
 })
 
@@ -654,5 +774,32 @@ describe('phone code cooldown', () => {
     expect(new Headers(second.headers as Headers).get('retry-after')).toBe(
       String(body.retryAfterSeconds),
     )
+  })
+})
+
+describe('api rate limit', () => {
+  test('limits authenticated file writes', async () => {
+    const limited = buildApp({
+      ...createTestDeps({ db, redis }),
+      apiRateLimitPerMinute: 2,
+    })
+    const limitedApi = treaty<typeof limited>(limited)
+
+    const registered = await limitedApi.auth.register.post({
+      name: 'Limited',
+      email: 'limited@example.com',
+      password: 'password123',
+    })
+    expect(registered.status).toBe(201)
+    const cookie = sessionCookie(registered)
+
+    const options = { fetch: { headers: { cookie } } }
+    const id = '00000000-0000-0000-0000-000000000000'
+    const first = await limitedApi.files({ id }).delete(undefined, options)
+    expect(first.status).toBe(404)
+    const second = await limitedApi.files({ id }).delete(undefined, options)
+    expect(second.status).toBe(404)
+    const third = await limitedApi.files({ id }).delete(undefined, options)
+    expect(third.status).toBe(429)
   })
 })

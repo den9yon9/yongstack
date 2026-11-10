@@ -13,6 +13,7 @@ describe('worker env', () => {
     expect(env.APP_WEB_URL).toBe('http://localhost:5173')
     expect(env.OUTBOX_POLL_INTERVAL_MS).toBe('2000')
     expect(env.OUTBOX_BATCH_SIZE).toBe('20')
+    expect(env.FILE_PENDING_MAX_AGE_MS).toBe('86400000')
   })
 
   test('parses smtp config', () => {

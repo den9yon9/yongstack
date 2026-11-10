@@ -23,6 +23,7 @@ export interface AdminAppOptions {
   isProduction: boolean
   logger: Logger
   authRateLimitPerMinute: number
+  apiRateLimitPerMinute: number
   defaultLocale: Locale
 }
 
@@ -42,6 +43,7 @@ export function createAdminDeps(env: AdminEnv): AdminAppOptions {
     isProduction: env.NODE_ENV === 'production',
     logger,
     authRateLimitPerMinute: Number(env.AUTH_RATE_LIMIT_PER_MINUTE),
+    apiRateLimitPerMinute: Number(env.API_RATE_LIMIT_PER_MINUTE),
     defaultLocale: env.DEFAULT_LOCALE,
   }
 }

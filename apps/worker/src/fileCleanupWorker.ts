@@ -1,5 +1,9 @@
 import type { Db } from '@yongstack/database'
-import { listStaleDeletedFiles, permanentlyDeleteFile } from '@yongstack/file'
+import {
+  listStaleDeletedFiles,
+  listStalePendingFiles,
+  permanentlyDeleteFile,
+} from '@yongstack/file'
 import type { Logger } from '@yongstack/shared'
 import type { Storage } from '@yongstack/storage'
 
@@ -16,6 +20,8 @@ export function registerFileCleanupWorker(
   logger: Logger,
 ): PeriodicTaskHandle {
   const minAgeMs = Number(env.FILE_CLEANUP_MIN_AGE_MS)
+
+  const pendingMaxAgeMs = Number(env.FILE_PENDING_MAX_AGE_MS)
 
   return startPeriodicTask({
     name: 'file-cleanup',
@@ -39,6 +45,28 @@ export function registerFileCleanupWorker(
       }
       if (rows.length > 0) {
         logger.info({ total: rows.length, cleaned }, 'file cleanup sweep finished')
+      }
+
+      // 预签名后未确认的上传: 对象可能未上传(delete 幂等), 行直接硬删
+      const pending = await listStalePendingFiles(new Date(Date.now() - pendingMaxAgeMs), cleanupDb)
+      let pendingCleaned = 0
+      for (const row of pending) {
+        const removed = await storage.delete(row.key)
+        if (removed.isErr()) {
+          logger.warn(
+            { err: removed.error, fileId: row.id, key: row.key },
+            'pending upload cleanup failed',
+          )
+          continue
+        }
+        await permanentlyDeleteFile(row.id, cleanupDb)
+        pendingCleaned += 1
+      }
+      if (pending.length > 0) {
+        logger.info(
+          { total: pending.length, cleaned: pendingCleaned },
+          'pending upload cleanup sweep finished',
+        )
       }
     },
   })

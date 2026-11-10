@@ -7,6 +7,7 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import {
+  ActivityIcon,
   FileIcon,
   LayoutDashboardIcon,
   LogOutIcon,
@@ -63,6 +64,7 @@ const navItems = [
   { label: '用户', to: '/users', icon: UsersIcon, exact: false },
   { label: '角色', to: '/roles', icon: ShieldIcon, exact: false },
   { label: '文件', to: '/files', icon: FileIcon, exact: false },
+  { label: '事件队列', to: '/outbox', icon: ActivityIcon, exact: false },
   { label: '审计', to: '/audit-logs', icon: ScrollTextIcon, exact: false },
   { label: '设置', to: '/settings', icon: SettingsIcon, exact: false },
 ] as const

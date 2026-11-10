@@ -36,6 +36,14 @@ export function createInMemoryStorage(
       if (!objects.has(key)) return err('STORAGE_UNAVAILABLE')
       return ok(`${publicBaseUrl}/${key.replace(/^\/+/, '')}?signed=true`)
     },
+    async presignPut(key) {
+      return ok(`${publicBaseUrl}/${key.replace(/^\/+/, '')}?signed=put`)
+    },
+    async head(key) {
+      const stored = objects.get(key)
+      if (!stored) return err('STORAGE_UNAVAILABLE')
+      return ok({ size: stored.body.byteLength, contentType: stored.contentType })
+    },
     async delete(key) {
       objects.delete(key)
       return ok(undefined)

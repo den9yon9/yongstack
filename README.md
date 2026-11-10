@@ -17,13 +17,15 @@
 | 前端     | React 19 + TanStack Router + Tailwind 4 + shadcn/ui，Eden treaty 类型安全调用            |
 | 用户认证 | 邮箱密码 + 手机号验证码登录；注册/登出/me/资料；邮箱验证、找回/修改密码；Argon2id + 限流 |
 | 权限     | 完整 RBAC：roles / permissions / user_roles；Session 携带 roles/permissions              |
+| 限流     | 认证限流（IP）+ 通用业务限流（userId 优先、IP 兜底），路由级宏                           |
 | 会话     | 活跃会话列表、单会话撤销、退出其他设备；按应用隔离 cookie                                |
 | 队列     | BullMQ 封装与 worker 运行时，消费者与健康/指标端点                                       |
 | 通知     | outbox → notifications usecase → console/SMTP 邮件；注册欢迎邮件                         |
 | 设置     | 运行时设置与 `feature.*` 功能开关，管理端可视化编辑                                      |
 | 后台用户 | 用户列表、角色分配、启用/禁用、撤销全部会话                                              |
 | 数据     | Drizzle ORM + postgres.js，迁移、事务 helper、测试库工具                                 |
-| 存储     | S3 兼容对象存储（本地 SeaweedFS / R2 / COS）                                             |
+| 存储     | S3 兼容对象存储（SeaweedFS / R2 / COS）；小文件直传 + 大文件预签名直传                   |
+| 队列运维 | outbox 事件列表/统计/失败重放 + BullMQ 队列计数（管理端）                                |
 | 可观测性 | Prometheus 指标端点 + Grafana 大屏 + 本地监控脚本                                        |
 | 工程化   | ESLint boundaries、Prettier、commitlint、lefthook、GitHub Actions                        |
 
@@ -80,6 +82,9 @@ admin@example.com / admin123456
 | admin-api | `POST /auth/phone/request-code` · `POST /auth/phone/login`（仅已有 admin）                                                                         |
 
 会话 cookie 按应用隔离：app 为 `yongstack_session`，admin 为 `yongstack_admin_session`。
+
+文件上传：小文件 `POST /files`；大文件先 `POST /files/presign` 拿预签名 URL，直传后 `POST /files/:id/confirm`。
+管理端运维：`/admin/outbox`（事件列表/统计/重放）与 `/admin/queues`（队列 job 计数）。
 
 常用命令：
 

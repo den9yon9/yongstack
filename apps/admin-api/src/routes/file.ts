@@ -8,12 +8,13 @@ import { Elysia, status, t } from 'elysia'
 import { type AdminPlugins } from '../plugins'
 
 export function createFileRoutes(plugins: AdminPlugins) {
-  const { storage, logger } = plugins
+  const { storage, logger, apiRateLimitPerMinute } = plugins
 
   return new Elysia({ name: 'file-admin', prefix: '/admin' })
     .use(plugins.localePlugin)
     .use(plugins.dbPlugin)
     .use(plugins.sessionPlugin)
+    .use(plugins.apiRateLimit)
     .get(
       '/files',
       async ({ query, session, db, i18n }) => {
@@ -71,7 +72,13 @@ export function createFileRoutes(plugins: AdminPlugins) {
       {
         isAdmin: true,
         params: t.Object({ id: t.String({ format: 'uuid' }) }),
-        response: { 401: ErrorResponse, 403: ErrorResponse, 404: ErrorResponse },
+        response: {
+          401: ErrorResponse,
+          403: ErrorResponse,
+          404: ErrorResponse,
+          429: ErrorResponse,
+        },
+        rateLimit: { limit: apiRateLimitPerMinute, window: '60s' },
         detail: {
           tags: ['Admin/Files'],
           summary: '删除文件',

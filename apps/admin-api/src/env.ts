@@ -48,6 +48,8 @@ const adminEnvSchema = Type.Object({
   DEFAULT_LOCALE: Type.Union([Type.Literal('en'), Type.Literal('zh-CN')], { default: 'en' }),
   // 认证接口限流(次/分钟): 管理员登录。后续接入 domains/user 时生效
   AUTH_RATE_LIMIT_PER_MINUTE: Type.String({ pattern: '^\\d+$', default: '20' }),
+  // 通用后台写接口限流(次/分钟): 按管理员/IP 计数
+  API_RATE_LIMIT_PER_MINUTE: Type.String({ pattern: '^\\d+$', default: '120' }),
   // 验证码 HMAC 密钥; 未设置时回退 SESSION_SECRET
   PHONE_CODE_SECRET: Type.Optional(Type.String({ minLength: 32 })),
   // 仅开发/测试: 固定验证码, 便于 e2e; 生产禁止
