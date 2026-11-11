@@ -18,7 +18,7 @@ export const SETTING_DEFINITIONS = {
   },
   'upload.allowedTypes': {
     schema: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 }),
-    defaultValue: ['image/jpeg', 'image/png', 'image/webp'],
+    defaultValue: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
     description: 'Allowed upload MIME types',
   },
 } as const

@@ -1,0 +1,76 @@
+# 单体基座基础告警规则。阈值按模板默认值设定, 上线后按实际流量调整。
+groups:
+  - name: yongstack-availability
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: '{{ $labels.job }} 抓取失败'
+          description: 'Prometheus 连续 2 分钟无法抓取 {{ $labels.instance }}。'
+
+      - alert: ApiHigh5xxRate
+        expr: |
+          sum by (job) (rate(http_requests_total{status=~"5.."}[5m]))
+            /
+          clamp_min(sum by (job) (rate(http_requests_total[5m])), 1)
+            > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: '{{ $labels.job }} 5xx 比例过高'
+          description: '5xx 比例超过 5% 已持续 5 分钟。'
+
+      - alert: ApiHighP99Latency
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum by (le, job) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ $labels.job }} P99 延迟超过 2s'
+          description: 'P99 延迟持续 5 分钟超过 2 秒。'
+
+  - name: yongstack-background
+    rules:
+      - alert: OutboxFailedBacklog
+        expr: outbox_events{status="failed"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'outbox 存在失败事件'
+          description: '失败事件数 {{ $value }}，请到管理端队列运维页排查/重放。'
+
+      - alert: OutboxPendingStale
+        expr: outbox_oldest_pending_age_seconds > 600
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'outbox 最久待投递超过 10 分钟'
+          description: '最久 pending 事件已等待 {{ $value }} 秒，检查 worker 是否存活。'
+
+      - alert: QueueFailedJobs
+        expr: sum by (queue) (bullmq_queue_jobs{state="failed"}) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: '队列 {{ $labels.queue }} 存在失败 job'
+          description: '失败 job 数 {{ $value }}，请到管理端队列运维页重试/删除。'
+
+      - alert: WorkerNotReporting
+        expr: absent(up{job="worker"} == 1)
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'worker 未上报指标'
+          description: 'worker 健康/指标端点不可达，队列将停止消费。'

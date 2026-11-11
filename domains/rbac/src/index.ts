@@ -1,4 +1,5 @@
 export {
+  ADMIN_ACCESS_PERMISSION,
   ADMIN_ROLE_CODE,
   DEFAULT_PERMISSIONS,
   DEFAULT_ROLE_CODE,
@@ -9,13 +10,20 @@ export {
 export {
   assignDefaultRole,
   assignRoles,
+  createRole,
+  type CreateRoleInput,
+  deleteRole,
   ensureRbacDefaults,
   getRolesForUserIds,
   getUserAccess,
   hasRoleCode,
   listPermissions,
   listRoles,
+  listUserIdsByRole,
   type RbacError,
   type RoleWithPermissions,
+  setRolePermissions,
+  updateRole,
+  type UpdateRoleInput,
   type UserAccess,
 } from './service'

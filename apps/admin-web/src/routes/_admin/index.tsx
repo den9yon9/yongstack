@@ -27,14 +27,15 @@ export const Route = createFileRoute('/_admin/')({
 type AdminModule = {
   title: string
   detail: string
-  to?: '/users' | '/roles' | '/files' | '/outbox' | '/audit-logs' | '/settings'
+  to?: '/users' | '/roles' | '/files' | '/outbox' | '/queues' | '/audit-logs' | '/settings'
 }
 
 const modules: AdminModule[] = [
   { title: '用户管理', detail: '账号、状态与角色分配', to: '/users' },
   { title: '角色权限', detail: '角色、权限与访问控制', to: '/roles' },
-  { title: '文件管理', detail: '上传、元数据与附件关联', to: '/files' },
+  { title: '媒体资源', detail: '文件上传、预览与下载', to: '/files' },
   { title: '事件队列', detail: 'outbox 事件、投递状态与重放', to: '/outbox' },
+  { title: '队列运维', detail: 'job 重试、失败详情与计划任务', to: '/queues' },
   { title: '审计日志', detail: '关键操作与变更留痕', to: '/audit-logs' },
   { title: '系统设置', detail: '运行时配置与功能开关', to: '/settings' },
 ]

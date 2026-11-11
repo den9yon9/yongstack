@@ -29,7 +29,7 @@ export default defineConfig({
     {
       command: 'AUTH_RATE_LIMIT_PER_MINUTE=40 bun --env-file=../../.env src/index.ts',
       cwd: '../app-api',
-      url: 'http://localhost:3000/health',
+      url: 'http://localhost:3000/health/ready',
       reuseExistingServer: true,
     },
     {
@@ -42,7 +42,7 @@ export default defineConfig({
     {
       command: 'AUTH_RATE_LIMIT_PER_MINUTE=40 bun --env-file=../../.env src/index.ts',
       cwd: '../admin-api',
-      url: 'http://localhost:3001/health',
+      url: 'http://localhost:3001/health/ready',
       reuseExistingServer: true,
     },
     {
@@ -54,7 +54,7 @@ export default defineConfig({
     {
       command: 'HEALTH_PORT=3100 bun --env-file=../../.env src/index.ts',
       cwd: '../worker',
-      url: 'http://localhost:3100/health',
+      url: 'http://localhost:3100/health/ready',
       reuseExistingServer: true,
     },
   ],

@@ -10,16 +10,20 @@
     "test": "bun --env-file=../../.env test --parallel=1"
   },
   "dependencies": {
+    "@sinclair/typebox": "^0.34.0",
+    "@yongstack/audit": "workspace:*",
     "@yongstack/database": "workspace:*",
     "@yongstack/file": "workspace:*",
     "@yongstack/http": "workspace:*",
     "@yongstack/i18n": "workspace:*",
+    "@yongstack/idempotency": "workspace:*",
     "@yongstack/mailer": "workspace:*",
     "@yongstack/notifications": "workspace:*",
+    "@yongstack/observability": "workspace:*",
     "@yongstack/outbox": "workspace:*",
     "@yongstack/queue": "workspace:*",
     "@yongstack/shared": "workspace:*",
     "@yongstack/storage": "workspace:*",
-    "@sinclair/typebox": "^0.34.0"
+    "@yongstack/user": "workspace:*"
   }
 }

@@ -5,12 +5,16 @@ import {
   createMetrics,
   healthCheck,
   httpMetricsPlugin,
+  livenessCheck,
+  metricPath,
   registerHttpMetrics,
   renderMetrics,
   requestLogger,
   securityHeaders,
   startServer,
 } from '@yongstack/http'
+import { createErrorReporter } from '@yongstack/observability'
+import { getRequestId } from '@yongstack/shared'
 import { Elysia } from 'elysia'
 
 import { type AppOptions, createAppDeps } from './deps'
@@ -27,6 +31,12 @@ const InfoResponse = Type.Object({
 })
 
 export function buildApp(options: AppOptions) {
+  const errorReporter = createErrorReporter({
+    dsn: options.sentryDsn,
+    environment: options.sentryEnvironment,
+    release: options.sentryRelease,
+    logger: options.logger,
+  })
   // 监控指标: 进程级 Registry + HTTP 计数, /metrics 端点随 buildApp 挂载
   const metrics = createMetrics()
   const httpMetrics = registerHttpMetrics(metrics)
@@ -40,6 +50,17 @@ export function buildApp(options: AppOptions) {
   })
     .use(httpMetricsPlugin(httpMetrics))
     .use(requestLogger(options.logger))
+    .onError({ as: 'global' }, ({ error, request }) => {
+      const path = new URL(request.url).pathname
+      httpMetrics.httpErrors.inc({ method: request.method, path: metricPath(path) })
+      errorReporter.captureException(error, {
+        requestId: getRequestId(),
+        path,
+      })
+    })
+    .onStop(async () => {
+      await errorReporter.flush()
+    })
     .use(securityHeaders(options.isProduction))
     .use(plugins.redisPlugin)
     .use(plugins.dbPlugin)
@@ -77,6 +98,8 @@ export function buildApp(options: AppOptions) {
         detail: { tags: ['System'], summary: 'Service metadata' },
       },
     )
+    .get('/health/live', () => livenessCheck())
+    .get('/health/ready', ({ db, redis }) => healthCheck({ db, redis }))
     .get('/health', ({ db, redis }) => healthCheck({ db, redis }))
     .get(
       '/metrics',

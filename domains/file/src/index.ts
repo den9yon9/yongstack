@@ -2,6 +2,7 @@ export {
   attachFile,
   createFile,
   detachFile,
+  type File,
   type FileActor,
   type FileError,
   getFileById,

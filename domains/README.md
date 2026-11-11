@@ -1,6 +1,6 @@
 # domains
 
-实体域目录。当前工程底座阶段为空，业务域落地时按以下约定新增：
+实体域目录。当前包含 `audit`、`file`、`idempotency`、`outbox`、`rbac`、`settings`、`user`；新增业务域按以下约定：
 
 ```
 domains/<name>/

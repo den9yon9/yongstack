@@ -13,4 +13,6 @@ export interface SendEmailJobData {
   template: EmailTemplate
   locale: string
   vars: Record<string, string>
+  // 来源请求 ID: worker 消费时恢复请求上下文, 串联 API → outbox → queue → worker
+  requestId?: string
 }

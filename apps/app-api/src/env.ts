@@ -54,6 +54,10 @@ const appEnvSchema = Type.Object({
   PHONE_CODE_SECRET: Type.Optional(Type.String({ minLength: 32 })),
   // 仅开发/测试: 固定验证码, 便于 e2e; 生产禁止
   SMS_DEV_CODE: Type.Optional(Type.String({ pattern: '^\\d{6}$' })),
+  // 错误上报(可选): 未配置 DSN 时 no-op, 不影响本地/CI
+  SENTRY_DSN: Type.Optional(Type.String({ format: 'uri' })),
+  SENTRY_ENVIRONMENT: Type.Optional(Type.String({ maxLength: 100 })),
+  SENTRY_RELEASE: Type.Optional(Type.String({ maxLength: 100 })),
   ...smsEnvSchema.properties,
   ...storageEnvSchema.properties,
 })

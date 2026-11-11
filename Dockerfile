@@ -27,6 +27,8 @@ RUN bun add -g pnpm@10.7.0 && pnpm install --frozen-lockfile --prod --ignore-scr
 
 # 2. 复制子图实际源码
 COPY --from=pruner /app/out/full/ .
+# 运维脚本(seed 等)不在 workspace 子图内, 单独带入; 迁移/seed 一次性容器复用本镜像
+COPY --from=pruner /app/scripts ./scripts
 
 ENV NODE_ENV=production
 EXPOSE 3000

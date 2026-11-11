@@ -1,0 +1,1 @@
+ALTER TABLE "outbox_events" ADD COLUMN "request_id" varchar(64);

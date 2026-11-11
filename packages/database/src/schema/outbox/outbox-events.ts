@@ -22,6 +22,8 @@ export const outboxEvents = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     type: varchar('type', { length: 255 }).notNull(),
     payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
+    // 产生事件的请求 ID: worker 消费时恢复请求上下文, 让 API → outbox → worker 日志可串联
+    requestId: varchar('request_id', { length: 64 }),
     status: outboxEventStatus('status').default('pending').notNull(),
     attempts: integer('attempts').default(0).notNull(),
     availableAt: timestamp('available_at', { withTimezone: true }).defaultNow().notNull(),

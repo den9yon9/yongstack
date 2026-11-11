@@ -21,6 +21,7 @@ function event(overrides: Partial<OutboxEvent> = {}): OutboxEvent {
     type: 'user.registered',
     payload: { userId: 'u-1', email: 'alice@example.com', name: 'Alice', locale: 'zh-CN' },
     attempts: 0,
+    requestId: null,
     ...overrides,
   }
 }

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 
 import { type DbClient, type DbTransaction, schema, withTransaction } from '@yongstack/database'
 import { err, ok, type Result } from '@yongstack/shared'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 
 export type IdempotencyError = 'IDEMPOTENCY_MISMATCH' | 'IDEMPOTENCY_IN_PROGRESS'
 
@@ -99,4 +99,27 @@ export async function withIdempotency(
     // 单事务语义下占位崩溃即回滚; 出现遗留 in_progress 意味外部写入, 拒绝执行保护数据。
     return err('IDEMPOTENCY_IN_PROGRESS')
   })
+}
+
+const PRUNE_BATCH_SIZE = 1000
+
+// 数据保留: 分期删除已过期幂等键, 避免唯一索引表无限增长。
+export async function pruneExpiredIdempotencyKeys(
+  client: DbClient,
+  before: Date,
+  batchSize = PRUNE_BATCH_SIZE,
+): Promise<number> {
+  let total = 0
+  for (;;) {
+    const rows = await client.execute<{ scope: string; key: string }>(sql`
+      DELETE FROM idempotency_keys
+      WHERE (scope, key) IN (
+        SELECT scope, key FROM idempotency_keys WHERE expires_at < ${before.toISOString()} LIMIT ${batchSize}
+      )
+      RETURNING scope, key
+    `)
+    total += rows.length
+    if (rows.length < batchSize) break
+  }
+  return total
 }

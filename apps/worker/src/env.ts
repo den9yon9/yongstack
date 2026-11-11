@@ -44,6 +44,18 @@ const workerEnvSchema = Type.Object({
   // 预签名后长期未确认的上传(pending)保留时长, 超时回收对象与元数据
   FILE_PENDING_MAX_AGE_MS: Type.String({ pattern: '^\\d+$', default: '86400000' }),
 
+  // 数据保留清理(天): 每日 sweep, 0 表示关闭对应清理
+  RETENTION_OUTBOX_DELIVERED_DAYS: Type.String({ pattern: '^\\d+$', default: '30' }),
+  RETENTION_OUTBOX_FAILED_DAYS: Type.String({ pattern: '^\\d+$', default: '90' }),
+  RETENTION_TOKEN_DAYS: Type.String({ pattern: '^\\d+$', default: '7' }),
+  RETENTION_AUDIT_DAYS: Type.String({ pattern: '^\\d+$', default: '365' }),
+  RETENTION_IDEMPOTENCY_DAYS: Type.String({ pattern: '^\\d+$', default: '7' }),
+
+  // 错误上报(可选): 未配置 DSN 时 no-op
+  SENTRY_DSN: Type.Optional(Type.String({ format: 'uri' })),
+  SENTRY_ENVIRONMENT: Type.Optional(Type.String({ maxLength: 100 })),
+  SENTRY_RELEASE: Type.Optional(Type.String({ maxLength: 100 })),
+
   // 对象存储(与 app-api 共用同名变量): 未配置时文件清理任务不启动
   ...storageEnvSchema.properties,
   // 放宽 app-api 中必填的两个存储变量, 便于纯邮件 worker 单独部署

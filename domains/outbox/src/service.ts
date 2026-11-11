@@ -1,6 +1,6 @@
 import type { Static } from '@sinclair/typebox'
 import { type DbClient, schema } from '@yongstack/database'
-import { buildOffset, err, likePattern, ok, type Result } from '@yongstack/shared'
+import { buildOffset, err, getRequestId, likePattern, ok, type Result } from '@yongstack/shared'
 import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm'
 
 import type { OutboxEventMap, OutboxEventName } from './events'
@@ -16,6 +16,7 @@ export interface OutboxEvent {
   type: string
   payload: Record<string, unknown>
   attempts: number
+  requestId: string | null
 }
 
 export type OutboxAdminError = 'OUTBOX_EVENT_NOT_FOUND' | 'OUTBOX_EVENT_NOT_REPLAYABLE'
@@ -28,17 +29,20 @@ export interface OutboxStats {
   delivered: number
   failed: number
   total: number
+  oldestPendingAgeSeconds: number | null
 }
 
 // type/payload 受 OutboxEventMap 约束: 生产侧写错事件名或缺字段会直接编译失败。
 // 测试/脚手架之外的临时事件也应先注册进 events.ts。
 export async function recordOutboxEvent<K extends OutboxEventName>(
   client: DbClient,
-  input: { type: K; payload: OutboxEventMap[K] },
+  input: { type: K; payload: OutboxEventMap[K]; requestId?: string | null },
 ): Promise<void> {
   await client.insert(schema.outboxEvents).values({
     type: input.type,
     payload: input.payload,
+    // 默认取当前异步上下文; 无上下文(脚本/测试)时留空
+    requestId: input.requestId ?? getRequestId() ?? null,
   })
 }
 
@@ -54,13 +58,14 @@ export async function claimOutboxEvents(client: DbClient, limit = 20): Promise<O
       LIMIT ${limit}
       FOR UPDATE SKIP LOCKED
     )
-    RETURNING id, type, payload, attempts
+    RETURNING id, type, payload, attempts, request_id
   `)
   return rows.map((row) => ({
     id: String(row.id),
     type: String(row.type),
     payload: (row.payload ?? {}) as Record<string, unknown>,
     attempts: Number(row.attempts),
+    requestId: row.request_id == null ? null : String(row.request_id),
   }))
 }
 
@@ -182,11 +187,95 @@ export async function getOutboxStats(client: DbClient): Promise<OutboxStats> {
     .from(schema.outboxEvents)
     .groupBy(schema.outboxEvents.status)
 
-  const stats: OutboxStats = { pending: 0, processing: 0, delivered: 0, failed: 0, total: 0 }
+  const stats: OutboxStats = {
+    pending: 0,
+    processing: 0,
+    delivered: 0,
+    failed: 0,
+    total: 0,
+    oldestPendingAgeSeconds: null,
+  }
   for (const row of rows) {
     const value = Number(row.total)
     stats[row.status] = value
     stats.total += value
   }
+
+  const [oldestPending] = await client
+    .select({ createdAt: schema.outboxEvents.createdAt })
+    .from(schema.outboxEvents)
+    .where(eq(schema.outboxEvents.status, 'pending'))
+    .orderBy(asc(schema.outboxEvents.createdAt))
+    .limit(1)
+  if (oldestPending) {
+    stats.oldestPendingAgeSeconds = Math.max(
+      0,
+      Math.floor((Date.now() - oldestPending.createdAt.getTime()) / 1000),
+    )
+  }
   return stats
+}
+
+// 批量重放失败事件: 运维在大量失败(如 SMTP 故障恢复)后一次性回补。
+export async function replayFailedOutboxEvents(client: DbClient, limit = 100): Promise<number> {
+  const rows = await client.execute<{ id: string }>(sql`
+    UPDATE outbox_events
+    SET status = 'pending', attempts = 0, available_at = now(),
+        last_error = NULL, processed_at = NULL, updated_at = now()
+    WHERE id IN (
+      SELECT id FROM outbox_events
+      WHERE status = 'failed'
+      ORDER BY created_at
+      LIMIT ${limit}
+      FOR UPDATE SKIP LOCKED
+    )
+    RETURNING id
+  `)
+  return rows.length
+}
+
+const PRUNE_BATCH_SIZE = 1000
+
+async function pruneOutboxByStatus(
+  client: DbClient,
+  status: 'delivered' | 'failed',
+  before: Date,
+  batchSize: number,
+): Promise<number> {
+  let total = 0
+  for (;;) {
+    const rows = await client.execute<{ id: string }>(sql`
+      DELETE FROM outbox_events
+      WHERE id IN (
+        SELECT id FROM outbox_events
+        WHERE status = ${status}
+          AND processed_at IS NOT NULL
+          AND processed_at < ${before.toISOString()}
+        LIMIT ${batchSize}
+        FOR UPDATE SKIP LOCKED
+      )
+      RETURNING id
+    `)
+    total += rows.length
+    if (rows.length < batchSize) break
+  }
+  return total
+}
+
+// 数据保留: 分期删除已投递/终态失败事件, 避免单条 DELETE 长时间锁表。
+// delivered 保留期应覆盖审计追溯需求; failed 保留更久便于排障与重放。
+export async function pruneOutboxEvents(
+  client: DbClient,
+  options: { deliveredBefore: Date | null; failedBefore: Date | null; batchSize?: number },
+): Promise<{ delivered: number; failed: number }> {
+  const batchSize = options.batchSize ?? PRUNE_BATCH_SIZE
+  let delivered = 0
+  let failed = 0
+  if (options.deliveredBefore !== null) {
+    delivered = await pruneOutboxByStatus(client, 'delivered', options.deliveredBefore, batchSize)
+  }
+  if (options.failedBefore !== null) {
+    failed = await pruneOutboxByStatus(client, 'failed', options.failedBefore, batchSize)
+  }
+  return { delivered, failed }
 }

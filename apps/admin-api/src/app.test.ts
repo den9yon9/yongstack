@@ -1,7 +1,7 @@
 import { treaty } from '@elysiajs/eden'
 import { closeDb, type Db, schema } from '@yongstack/database'
 import { prepareTestDb, resetDb } from '@yongstack/database/testing'
-import { ensureRbacDefaults } from '@yongstack/rbac'
+import { assignRoles, ensureRbacDefaults, setRolePermissions } from '@yongstack/rbac'
 import { createRedisClient, type Redis } from '@yongstack/redis'
 import { flushTestRedis } from '@yongstack/redis/testing'
 import { createLogger } from '@yongstack/shared'
@@ -149,6 +149,128 @@ describe('admin auth', () => {
       password: 'password123',
     })
     expect(secondLogin.status).toBe(403)
+  })
+})
+
+describe('admin roles', () => {
+  test('creates, updates permissions and deletes a custom role', async () => {
+    const cookie = await loginAdmin()
+
+    const created = await api.admin.roles.post(
+      { code: 'support', name: 'Support', permissions: ['users:read'] },
+      { fetch: { headers: { cookie } } },
+    )
+    expect(created.status).toBe(201)
+    if (created.error !== null) throw created.error
+    expect(created.data.permissions).toEqual(['users:read'])
+
+    const updated = await api.admin
+      .roles({ code: 'support' })
+      .patch({ name: 'Support Team', description: 'Helpdesk' }, { fetch: { headers: { cookie } } })
+    expect(updated.status).toBe(200)
+    if (updated.error !== null) throw updated.error
+    expect(updated.data.name).toBe('Support Team')
+
+    const perms = await api.admin
+      .roles({ code: 'support' })
+      .permissions.put({ permissions: ['files:read'] }, { fetch: { headers: { cookie } } })
+    expect(perms.status).toBe(200)
+    if (perms.error !== null) throw perms.error
+    expect(perms.data.permissions).toEqual(['files:read'])
+
+    const deleted = await api.admin.roles({ code: 'support' }).delete(undefined, {
+      fetch: { headers: { cookie } },
+    })
+    expect(deleted.status).toBe(204)
+  })
+
+  test('system roles are read-only', async () => {
+    const cookie = await loginAdmin()
+    const res = await api.admin
+      .roles({ code: 'admin' })
+      .permissions.put({ permissions: [] }, { fetch: { headers: { cookie } } })
+    expect(res.status).toBe(409)
+  })
+})
+
+describe('admin access permission', () => {
+  test('custom role with admin:access can use permitted admin routes only', async () => {
+    const adminCookie = await loginAdmin()
+    const created = await api.admin.roles.post(
+      { code: 'ops', name: 'Ops', permissions: ['admin:access', 'users:read'] },
+      { fetch: { headers: { cookie: adminCookie } } },
+    )
+    expect(created.status).toBe(201)
+
+    const user = await seedUser('ops@example.com', 'member')
+    const assigned = await assignRoles(user.id, ['ops'], db)
+    if (assigned.isErr()) throw assigned.error
+
+    const login = await api.auth.login.post({
+      email: 'ops@example.com',
+      password: 'password123',
+    })
+    expect(login.status).toBe(200)
+    const cookie = sessionCookie(login)
+
+    const users = await api.admin.users.get({
+      query: { page: 1, pageSize: 20 },
+      fetch: { headers: { cookie } },
+    })
+    expect(users.status).toBe(200)
+
+    // 没有 roles:read 的自定义后台角色不能访问角色页
+    const roles = await api.admin.roles.get({ fetch: { headers: { cookie } } })
+    expect(roles.status).toBe(403)
+  })
+
+  test('auth/me refreshes stale session permissions', async () => {
+    const adminCookie = await loginAdmin()
+    const created = await api.admin.roles.post(
+      { code: 'ops', name: 'Ops', permissions: ['admin:access'] },
+      { fetch: { headers: { cookie: adminCookie } } },
+    )
+    expect(created.status).toBe(201)
+
+    const user = await seedUser('ops-stale@example.com', 'member')
+    const assigned = await assignRoles(user.id, ['ops'], db)
+    if (assigned.isErr()) throw assigned.error
+
+    const login = await api.auth.login.post({
+      email: 'ops-stale@example.com',
+      password: 'password123',
+    })
+    expect(login.status).toBe(200)
+    const cookie = sessionCookie(login)
+
+    // 直接改 DB 权限(绕过 API 的会话撤销)模拟旧 session 快照过期
+    const granted = await setRolePermissions('ops', ['admin:access', 'users:read'], db)
+    if (granted.isErr()) throw granted.error
+
+    const stale = await api.admin.users.get({
+      query: { page: 1, pageSize: 20 },
+      fetch: { headers: { cookie } },
+    })
+    expect(stale.status).toBe(403)
+
+    // /auth/me 刷新会话快照后即可访问
+    const me = await api.auth.me.get({ fetch: { headers: { cookie } } })
+    expect(me.status).toBe(200)
+
+    const refreshed = await api.admin.users.get({
+      query: { page: 1, pageSize: 20 },
+      fetch: { headers: { cookie } },
+    })
+    expect(refreshed.status).toBe(200)
+  })
+
+  test('user without admin:access cannot login to admin', async () => {
+    await seedUser('member@example.com', 'member')
+    const login = await api.auth.login.post({
+      email: 'member@example.com',
+      password: 'password123',
+    })
+    expect(login.status).toBe(403)
   })
 })
 
@@ -305,6 +427,34 @@ describe('admin files', () => {
     })
     if (after.error !== null) throw after.error
     expect(after.data.items).toHaveLength(0)
+  })
+
+  test('presigns, confirms and deletes an upload', async () => {
+    const cookie = await loginAdmin()
+    const presigned = await api.admin.files.presign.post(
+      { filename: 'new.png', mime: 'image/png', size: 3 },
+      { fetch: { headers: { cookie } } },
+    )
+    expect(presigned.status).toBe(201)
+    if (presigned.error !== null) throw presigned.error
+
+    storage.objects.set(presigned.data.key, {
+      body: Uint8Array.from([1, 2, 3]),
+      contentType: 'image/png',
+    })
+
+    const confirmed = await api.admin
+      .files({ id: presigned.data.fileId })
+      .confirm.post({}, { fetch: { headers: { cookie } } })
+    expect(confirmed.status).toBe(200)
+    if (confirmed.error !== null) throw confirmed.error
+    expect(confirmed.data.key).toBe(presigned.data.key)
+
+    const deleted = await api.admin
+      .files({ id: presigned.data.fileId })
+      .delete(undefined, { fetch: { headers: { cookie } } })
+    expect(deleted.status).toBe(204)
+    expect(storage.objects.has(presigned.data.key)).toBe(false)
   })
 
   test('requires admin authentication', async () => {

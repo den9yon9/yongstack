@@ -2,7 +2,7 @@ import type { Static } from '@sinclair/typebox'
 import { type DbClient, type DbTransaction, schema, withTransaction } from '@yongstack/database'
 import { buildOffset, err, ok, type Result } from '@yongstack/shared'
 import { likePattern } from '@yongstack/shared'
-import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm'
+import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm'
 
 import type { AuditLogListQuerySchema } from './model'
 
@@ -83,4 +83,57 @@ export async function listAuditLogs(
     .offset(buildOffset(page, pageSize))
   const [{ total }] = await client.select({ total: count() }).from(schema.auditLogs).where(where)
   return { items: rows, total: Number(total), page, pageSize }
+}
+
+const PRUNE_BATCH_SIZE = 1000
+
+// 数据保留: 分期删除超过保留期的审计日志。保留期应满足合规/追溯要求。
+export async function pruneAuditLogs(
+  client: DbClient,
+  before: Date,
+  batchSize = PRUNE_BATCH_SIZE,
+): Promise<number> {
+  let total = 0
+  for (;;) {
+    const rows = await client.execute<{ id: string }>(sql`
+      DELETE FROM audit_logs
+      WHERE id IN (SELECT id FROM audit_logs WHERE created_at < ${before.toISOString()} LIMIT ${batchSize})
+      RETURNING id
+    `)
+    total += rows.length
+    if (rows.length < batchSize) break
+  }
+  return total
+}
+
+// 导出用: 复用列表筛选条件, 不做分页(上限由调用方控制)。
+export async function exportAuditLogs(
+  query: Static<typeof AuditLogListQuerySchema>,
+  client: DbClient,
+  limit = 10_000,
+) {
+  const { q, action, actorId, targetType, targetId, sort, order } = query
+  const conditions = []
+  if (action !== undefined) conditions.push(eq(schema.auditLogs.action, action))
+  if (actorId !== undefined) conditions.push(eq(schema.auditLogs.actorId, actorId))
+  if (targetType !== undefined) conditions.push(eq(schema.auditLogs.targetType, targetType))
+  if (targetId !== undefined) conditions.push(eq(schema.auditLogs.targetId, targetId))
+  if (q !== undefined && q.trim().length > 0) {
+    const pattern = likePattern(q)
+    conditions.push(
+      or(
+        ilike(schema.auditLogs.action, pattern),
+        ilike(schema.auditLogs.targetType, pattern),
+        ilike(schema.auditLogs.targetId, pattern),
+      )!,
+    )
+  }
+  const where = conditions.length > 0 ? and(...conditions) : undefined
+  const sortColumn = sort === 'action' ? schema.auditLogs.action : schema.auditLogs.createdAt
+  return client
+    .select()
+    .from(schema.auditLogs)
+    .where(where)
+    .orderBy(order === 'asc' ? asc(sortColumn) : desc(sortColumn))
+    .limit(Math.min(Math.max(limit, 1), 50_000))
 }

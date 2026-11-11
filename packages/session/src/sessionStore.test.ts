@@ -113,3 +113,23 @@ describe('session helpers', () => {
     expect(isAdminSession(session, 'superuser')).toBe(false)
   })
 })
+
+describe('updateAccess', () => {
+  test('refreshes roles/permissions without changing the session id', async () => {
+    const store = createSessionStore(redis)
+    const sessionId = await store.create(input('u-1', ['member'], ['files:read']))
+
+    await store.updateAccess(sessionId, {
+      roles: ['ops'],
+      permissions: ['admin:access', 'files:read'],
+    })
+
+    const session = await store.read(sessionId)
+    expect(session).toMatchObject({
+      userId: 'u-1',
+      roles: ['ops'],
+      permissions: ['admin:access', 'files:read'],
+    })
+    expect(await redis.smembers('session:user:u-1')).toEqual([sessionId])
+  })
+})

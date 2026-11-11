@@ -3,7 +3,7 @@ import {
   loginAdminWithPhone,
   requestAdminLoginPhoneCode,
 } from '@yongstack/auth'
-import { ADMIN_ROLE_CODE, getUserAccess } from '@yongstack/rbac'
+import { ADMIN_ACCESS_PERMISSION, getUserAccess } from '@yongstack/rbac'
 import { clearSessionCookie, sessionCookieFrom, startSession } from '@yongstack/session'
 import { assertNever, ErrorResponse, RateLimitErrorResponse, requestMeta } from '@yongstack/shared'
 import { CodeRequestedTooSoonError, getUserById } from '@yongstack/user'
@@ -43,7 +43,7 @@ export function createAuthRoutes(plugins: AdminPlugins) {
             case 'FORBIDDEN':
               return status(403, {
                 error: result.error,
-                message: i18n('Account is not an administrator'),
+                message: i18n('No admin console access'),
               })
             default:
               return assertNever(result.error)
@@ -75,7 +75,7 @@ export function createAuthRoutes(plugins: AdminPlugins) {
         detail: {
           tags: ['Auth'],
           summary: '管理员登录',
-          description: `管理员登录，成功后设置签名 session cookie。\n\n- 凭据错误返回 401\n- 仅 admin 角色可登录，否则返回 403\n- 限流：60 秒内最多 ${authRateLimitPerMinute} 次尝试`,
+          description: `管理员登录，成功后设置签名 session cookie。\n\n- 凭据错误返回 401\n- 仅拥有 admin:access 权限的角色可登录，否则返回 403\n- 限流：60 秒内最多 ${authRateLimitPerMinute} 次尝试`,
         },
       },
     )
@@ -171,7 +171,7 @@ export function createAuthRoutes(plugins: AdminPlugins) {
             case 'FORBIDDEN':
               return status(403, {
                 error: result.error,
-                message: i18n('Account is not an administrator'),
+                message: i18n('No admin console access'),
               })
             default:
               return assertNever(result.error)
@@ -233,7 +233,7 @@ export function createAuthRoutes(plugins: AdminPlugins) {
     )
     .get(
       '/me',
-      async ({ session, db, i18n }) => {
+      async ({ session, db, cookie, sessionStore, i18n }) => {
         const result = await getUserById(session.userId, db)
         if (result.isErr()) {
           switch (result.error) {
@@ -248,13 +248,22 @@ export function createAuthRoutes(plugins: AdminPlugins) {
           return status(403, { error: 'ACCOUNT_DISABLED', message: i18n('Account is disabled') })
         }
         const access = await getUserAccess(user.id, db)
-        if (!access.roles.includes(ADMIN_ROLE_CODE)) {
+        if (!access.permissions.includes(ADMIN_ACCESS_PERMISSION)) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
+        }
+
+        // 权限可能因角色编辑/默认权限同步而变化; /me 是前端导航入口, 在这里刷新会话快照。
+        const sessionId = sessionCookieFrom(cookie, sessionCookieName)?.value
+        if (typeof sessionId === 'string' && sessionId.length > 0) {
+          const changed =
+            session.roles.join('\0') !== access.roles.join('\0') ||
+            session.permissions.join('\0') !== access.permissions.join('\0')
+          if (changed) await sessionStore.updateAccess(sessionId, access)
         }
         return { ...user, ...access }
       },
       {
-        isAdmin: true,
+        isAuth: true,
         response: {
           200: UserModel.AuthUserResponseSchema,
           401: ErrorResponse,
@@ -264,7 +273,7 @@ export function createAuthRoutes(plugins: AdminPlugins) {
         detail: {
           tags: ['Auth'],
           summary: '当前管理员信息',
-          description: '获取当前登录管理员的信息与 roles/permissions。\n\n- 需要 admin 角色',
+          description: '获取当前登录管理员的信息与 roles/permissions。\n\n- 需要 admin:access 权限',
         },
       },
     )

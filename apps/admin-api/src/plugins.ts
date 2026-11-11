@@ -1,7 +1,7 @@
 import { dbPlugin, localePlugin, redisPlugin } from '@yongstack/http'
 import { EMAIL_QUEUE_NAME, type SendEmailJobData } from '@yongstack/notifications'
-import { createQueue, type Queue } from '@yongstack/queue'
-import { ADMIN_ROLE_CODE } from '@yongstack/rbac'
+import { createQueue, MAINTENANCE_QUEUE_NAME, type Queue } from '@yongstack/queue'
+import { ADMIN_ACCESS_PERMISSION } from '@yongstack/rbac'
 import { apiRateLimit, authRateLimit, createSessionPlugin } from '@yongstack/session'
 import { type Logger } from '@yongstack/shared'
 import { type SmsProvider } from '@yongstack/sms'
@@ -17,6 +17,7 @@ export interface AdminPlugins {
   apiRateLimit: ReturnType<typeof apiRateLimit>
   // 队列运维: 共享 redis 连接只读 job counts(无阻塞命令, 进程退出随 redis 关闭)
   emailQueue: Queue<SendEmailJobData>
+  queues: Record<string, Queue>
   sessionCookieName: string
   storage: AdminAppOptions['storage']
   sms: SmsProvider
@@ -55,7 +56,7 @@ export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): Adm
       isProduction,
       logger,
       defaultLocale: options.defaultLocale,
-      adminRoleCode: ADMIN_ROLE_CODE,
+      adminAccessPermission: ADMIN_ACCESS_PERMISSION,
     }),
     authRateLimit: authRateLimit({
       redis,
@@ -70,6 +71,10 @@ export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): Adm
       defaultLocale: options.defaultLocale,
     }),
     emailQueue: createQueue<SendEmailJobData>(EMAIL_QUEUE_NAME, { connection: redis }),
+    queues: {
+      [EMAIL_QUEUE_NAME]: createQueue<SendEmailJobData>(EMAIL_QUEUE_NAME, { connection: redis }),
+      [MAINTENANCE_QUEUE_NAME]: createQueue(MAINTENANCE_QUEUE_NAME, { connection: redis }),
+    },
     sessionCookieName,
     storage,
     sms,

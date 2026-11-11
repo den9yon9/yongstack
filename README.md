@@ -10,24 +10,27 @@
 
 ## 当前能力
 
-| 模块     | 说明                                                                                     |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Monorepo | pnpm workspace + Turborepo，Bun 运行时，统一 lint / format / typecheck                   |
-| API      | ElysiaJS + TypeBox，`/info`、`/health`、`/metrics`、`/docs`                              |
-| 前端     | React 19 + TanStack Router + Tailwind 4 + shadcn/ui，Eden treaty 类型安全调用            |
-| 用户认证 | 邮箱密码 + 手机号验证码登录；注册/登出/me/资料；邮箱验证、找回/修改密码；Argon2id + 限流 |
-| 权限     | 完整 RBAC：roles / permissions / user_roles；Session 携带 roles/permissions              |
-| 限流     | 认证限流（IP）+ 通用业务限流（userId 优先、IP 兜底），路由级宏                           |
-| 会话     | 活跃会话列表、单会话撤销、退出其他设备；按应用隔离 cookie                                |
-| 队列     | BullMQ 封装与 worker 运行时，消费者与健康/指标端点                                       |
-| 通知     | outbox → notifications usecase → console/SMTP 邮件；注册欢迎邮件                         |
-| 设置     | 运行时设置与 `feature.*` 功能开关，管理端可视化编辑                                      |
-| 后台用户 | 用户列表、角色分配、启用/禁用、撤销全部会话                                              |
-| 数据     | Drizzle ORM + postgres.js，迁移、事务 helper、测试库工具                                 |
-| 存储     | S3 兼容对象存储（SeaweedFS / R2 / COS）；小文件直传 + 大文件预签名直传                   |
-| 队列运维 | outbox 事件列表/统计/失败重放 + BullMQ 队列计数（管理端）                                |
-| 可观测性 | Prometheus 指标端点 + Grafana 大屏 + 本地监控脚本                                        |
-| 工程化   | ESLint boundaries、Prettier、commitlint、lefthook、GitHub Actions                        |
+| 模块     | 说明                                                                                            |
+| -------- | ----------------------------------------------------------------------------------------------- |
+| Monorepo | pnpm workspace + Turborepo，Bun 运行时，统一 lint / format / typecheck                          |
+| API      | ElysiaJS + TypeBox，`/info`、`/health`、`/metrics`、`/docs`                                     |
+| 前端     | React 19 + TanStack Router + Tailwind 4 + shadcn/ui，Eden treaty 类型安全调用                   |
+| 用户认证 | 邮箱密码 + 手机号验证码登录；注册/登出/me/资料；邮箱验证、找回/修改密码；Argon2id + 限流        |
+| 权限     | 完整 RBAC：roles / permissions / user_roles；后台准入按 `admin:access` 权限，支持自定义后台角色 |
+| 限流     | 认证限流（IP）+ 通用业务限流（userId 优先、IP 兜底），路由级宏                                  |
+| 会话     | 活跃会话列表、单会话撤销、退出其他设备；按应用隔离 cookie                                       |
+| 队列     | BullMQ 封装与 worker 运行时，消费者与健康/指标端点                                              |
+| 通知     | outbox → notifications usecase → console/SMTP 邮件；注册欢迎邮件                                |
+| 设置     | 运行时设置与 `feature.*` 功能开关，管理端可视化编辑                                             |
+| 后台用户 | 用户列表、角色分配、启用/禁用、撤销全部会话；角色/权限自助 CRUD、系统角色复制                   |
+| 数据     | Drizzle ORM + postgres.js，迁移、事务 helper、测试库工具                                        |
+| 存储     | S3 兼容对象存储（SeaweedFS / R2 / COS）；小文件直传 + 大文件预签名直传                          |
+| 媒体资源 | 管理端上传图片/PDF、列表、图片预览、复制 URL、下载与软删除                                      |
+| 队列运维 | outbox 事件列表/统计/批量重放 + BullMQ job 详情/重试/删除/scheduler（管理端）                   |
+| 可观测性 | Prometheus 指标 + Grafana 大屏 + Alertmanager 告警规则 + Sentry 异常上报（可选 DSN）            |
+| 数据保留 | outbox/令牌/验证码/审计/幂等键按天清理；BullMQ scheduler 驱动每日 sweep                         |
+| 备份部署 | 单机生产 compose（Caddy TLS）+ pg_dump 备份/恢复脚本 + 部署/恢复文档                            |
+| 工程化   | ESLint boundaries、Prettier、commitlint、lefthook、GitHub Actions、knip                         |
 
 ## 架构
 
@@ -100,6 +103,10 @@ pnpm e2e
 pnpm build
 pnpm i18n:extract       # 生成/更新翻译 catalog
 pnpm i18n:check         # 校验漏译/陈旧 key
+pnpm db:rbac-sync       # 同步默认角色/权限(新增权限码后执行)
+pnpm db:backup          # PostgreSQL 全量备份
+pnpm db:restore <file>   # 恢复备份
+pnpm prod:up            # 单机生产 compose 启动
 ```
 
 测试需要本地 postgres + redis；e2e 还需要 SeaweedFS（`TESTING_*` 与 `STORAGE_*` 配置见 `.env.example`）。
@@ -118,9 +125,11 @@ apps/
 packages/
   database/        Drizzle schema / 迁移 / 事务
   eden-client/     Eden 类型工具
+  i18n-web/        前端轻量 i18n（Provider + 语言切换）
   http/            插件、指标、安全头、服务启动
   i18n/            语言协商与翻译 catalog
   mailer/          邮件 provider（console / SMTP）
+  observability/   Sentry 错误上报适配（无 DSN 时 no-op）
   sms/             短信 provider（console，可扩展）
   queue/           BullMQ 封装
   redis/           Redis 客户端
@@ -143,6 +152,8 @@ usecases/
   auth/            注册与登录编排(密码/验证码, app+admin)
   account/         账号生命周期编排
   admin-users/     管理端用户管理编排
+  admin-roles/     管理端角色/权限编排
+  media/           管理端文件上传/确认编排
   notifications/   事件 → 通知任务
 ```
 
@@ -156,6 +167,7 @@ usecases/
 4. ~~媒体上传与文件元数据~~
 5. ~~审计日志与核心数据原语~~
 6. ~~领域生成器、通用后台组件、测试工厂~~
+7. ~~数据保留/定时任务、队列运维、错误上报/告警、备份/生产部署、角色自助管理~~
 
 ## 文档索引
 
@@ -166,6 +178,8 @@ usecases/
 | [docs/onboarding.md](docs/onboarding.md)         | 新手上手与本地环境              |
 | [docs/i18n.md](docs/i18n.md)                     | 后端用户文案 i18n               |
 | [docs/object-storage.md](docs/object-storage.md) | 对象存储：R2 / COS / SeaweedFS  |
+| [docs/deploy.md](docs/deploy.md)                 | 单机生产部署与升级回滚          |
+| [docs/backup-restore.md](docs/backup-restore.md) | 备份、恢复与演练                |
 | [docs/tech-debt.md](docs/tech-debt.md)           | 技术债索引（`ponytail:` 标注）  |
 
 ## License

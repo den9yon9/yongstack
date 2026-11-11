@@ -2,7 +2,7 @@ import { closeDb, type Db, schema } from '@yongstack/database'
 import { prepareTestDb, resetDb } from '@yongstack/database/testing'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 
-import { hashIdempotencyRequest, withIdempotency } from './service'
+import { hashIdempotencyRequest, pruneExpiredIdempotencyKeys, withIdempotency } from './service'
 
 let db: Db
 
@@ -183,5 +183,41 @@ describe('withIdempotency', () => {
 
     const rows = await db.select().from(schema.idempotencyKeys)
     expect(rows).toHaveLength(0)
+  })
+})
+
+describe('pruneExpiredIdempotencyKeys', () => {
+  const cutoff = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+  const oldDate = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+  const recentDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+  test('deletes expired keys only', async () => {
+    await db.insert(schema.idempotencyKeys).values([
+      {
+        scope: 'test',
+        key: 'old',
+        requestHash: 'hash',
+        status: 'completed',
+        statusCode: 200,
+        responseBody: {},
+        expiresAt: oldDate,
+      },
+      {
+        scope: 'test',
+        key: 'recent',
+        requestHash: 'hash',
+        status: 'completed',
+        statusCode: 200,
+        responseBody: {},
+        expiresAt: recentDate,
+      },
+    ])
+
+    const deleted = await pruneExpiredIdempotencyKeys(db, cutoff)
+    expect(deleted).toBe(1)
+
+    const rows = await db.select().from(schema.idempotencyKeys)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].key).toBe('recent')
   })
 })

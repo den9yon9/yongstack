@@ -76,3 +76,14 @@ describe('createInMemoryStorage', () => {
     expect(head.value).toEqual({ size: 4, contentType: 'image/png' })
   })
 })
+
+describe('presigned URL checksum', () => {
+  test('does not embed automatic CRC32 checksum parameters', async () => {
+    const storage = createS3Storage(env)
+    const key = storage.createKey('png')
+    const result = await storage.presignPut(key, 'image/png', 120)
+    if (result.isErr()) throw result.error
+    expect(result.value).not.toContain('x-amz-checksum-crc32')
+    expect(result.value).not.toContain('x-amz-sdk-checksum-algorithm')
+  })
+})

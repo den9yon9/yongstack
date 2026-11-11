@@ -515,3 +515,51 @@ export async function unbindPhone(
     .where(eq(schema.users.id, userId))
   return ok({ userId })
 }
+
+const RETENTION_BATCH_SIZE = 1000
+
+export interface UserTokenRetentionCounts {
+  emailVerificationTokens: number
+  passwordResetTokens: number
+  phoneLoginCodes: number
+}
+
+async function pruneExpiredRows(
+  client: DbClient,
+  table: 'email_verification_tokens' | 'password_reset_tokens' | 'phone_login_codes',
+  before: Date,
+  batchSize: number,
+): Promise<number> {
+  let total = 0
+  for (;;) {
+    const rows = await client.execute<{ id: string }>(sql`
+      DELETE FROM ${sql.raw(table)}
+      WHERE id IN (
+        SELECT id FROM ${sql.raw(table)} WHERE expires_at < ${before.toISOString()} LIMIT ${batchSize}
+      )
+      RETURNING id
+    `)
+    total += rows.length
+    if (rows.length < batchSize) break
+  }
+  return total
+}
+
+// 数据保留: 清理过期邮箱验证/密码重置令牌与手机验证码。
+// 已使用但未过期的令牌保留到自然过期, 不提前删(避免审计/排障丢失线索)。
+export async function pruneExpiredUserTokens(
+  client: DbClient,
+  before: Date,
+  batchSize = RETENTION_BATCH_SIZE,
+): Promise<UserTokenRetentionCounts> {
+  return {
+    emailVerificationTokens: await pruneExpiredRows(
+      client,
+      'email_verification_tokens',
+      before,
+      batchSize,
+    ),
+    passwordResetTokens: await pruneExpiredRows(client, 'password_reset_tokens', before, batchSize),
+    phoneLoginCodes: await pruneExpiredRows(client, 'phone_login_codes', before, batchSize),
+  }
+}

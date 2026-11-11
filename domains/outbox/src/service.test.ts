@@ -8,6 +8,7 @@ import {
   listOutboxEvents,
   markDelivered,
   markFailed,
+  pruneOutboxEvents,
   recordOutboxEvent,
   replayOutboxEvent,
   resetStaleProcessing,
@@ -162,5 +163,65 @@ describe('outbox admin', () => {
     const missing = await replayOutboxEvent('00000000-0000-0000-0000-000000000000', db)
     expect(missing.isErr()).toBe(true)
     if (missing.isErr()) expect(missing.error).toBe('OUTBOX_EVENT_NOT_FOUND')
+  })
+})
+
+describe('outbox retention', () => {
+  const payload = { email: 'a@example.com', token: 'tok', locale: 'en' } as const
+  const cutoff = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+  const oldDate = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+  const recentDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+
+  test('prunes delivered/failed events older than cutoff and keeps pending', async () => {
+    await db.insert(schema.outboxEvents).values([
+      {
+        type: 'user.password_reset_requested',
+        payload,
+        status: 'delivered',
+        processedAt: oldDate,
+      },
+      {
+        type: 'user.password_reset_requested',
+        payload,
+        status: 'failed',
+        processedAt: oldDate,
+        attempts: 5,
+      },
+      {
+        type: 'user.password_reset_requested',
+        payload,
+        status: 'delivered',
+        processedAt: recentDate,
+      },
+      {
+        type: 'user.password_reset_requested',
+        payload,
+        status: 'pending',
+        createdAt: oldDate,
+      },
+    ])
+
+    const result = await pruneOutboxEvents(db, {
+      deliveredBefore: cutoff,
+      failedBefore: cutoff,
+    })
+    expect(result).toEqual({ delivered: 1, failed: 1 })
+
+    const rows = await db.select().from(schema.outboxEvents)
+    expect(rows).toHaveLength(2)
+    expect(rows.map((row) => row.status).sort()).toEqual(['delivered', 'pending'])
+  })
+
+  test('skips disabled status when cutoff is null', async () => {
+    await db.insert(schema.outboxEvents).values({
+      type: 'user.password_reset_requested',
+      payload,
+      status: 'delivered',
+      processedAt: oldDate,
+    })
+
+    const result = await pruneOutboxEvents(db, { deliveredBefore: null, failedBefore: cutoff })
+    expect(result).toEqual({ delivered: 0, failed: 0 })
+    expect(await db.select().from(schema.outboxEvents)).toHaveLength(1)
   })
 })

@@ -85,12 +85,12 @@ export interface SessionPluginOptions {
   cookieName?: string
   // 无请求语言线索时的回退语言(来自 env DEFAULT_LOCALE)
   defaultLocale?: Locale
-  // 管理员角色码(isAdmin 守卫用), 由业务层显式传入(来自 domains/rbac), 本包不设默认
-  adminRoleCode: string
+  // 后台准入权限码(isAdmin 守卫用), 由业务层显式传入(来自 domains/rbac), 本包不设默认
+  adminAccessPermission: string
 }
 
 export function createSessionPlugin(options: SessionPluginOptions) {
-  const { redis, isProduction, logger, adminRoleCode } = options
+  const { redis, isProduction, logger, adminAccessPermission } = options
   const defaultLocale = options.defaultLocale ?? DEFAULT_LOCALE
   const cookieName = options.cookieName ?? DEFAULT_SESSION_COOKIE_NAME
   // 签名配置在根 app 的 Elysia 构造选项上（cookieName 由 Elysia 负责签名/验签）；插件侧只做启动校验
@@ -144,7 +144,7 @@ export function createSessionPlugin(options: SessionPluginOptions) {
               error: 'UNAUTHORIZED',
               message: translate(guardLocale(request, defaultLocale), 'Unauthorized'),
             })
-          if (!isAdminSession(session, adminRoleCode))
+          if (!hasPermission(session, adminAccessPermission))
             return status(403, {
               error: 'FORBIDDEN',
               message: translate(guardLocale(request, defaultLocale), 'Forbidden'),
@@ -190,6 +190,8 @@ export interface SessionStore {
   destroy(sessionId: string): Promise<void>
   destroyAllForUser(userId: string): Promise<void>
   destroyOtherSessions(userId: string, keepSessionId: string): Promise<void>
+  // 权限/角色变更后刷新会话快照, 避免旧会话一直携带过期权限
+  updateAccess(sessionId: string, access: { roles: string[]; permissions: string[] }): Promise<void>
 }
 
 // per-user 会话索引: 每次登录 SADD, 使 destroyAllForUser 免全量 scanStream(O(1) SMEMBERS)。
@@ -254,6 +256,17 @@ export function createSessionStore(redis: Redis): SessionStore {
         await redis.del(...others.map((id) => `session:${id}`))
         await redis.srem(key, ...others)
       }
+    },
+    async updateAccess(sessionId, access) {
+      if (!sessionId) return
+      const session = parseSession(await redis.get(`session:${sessionId}`))
+      if (!session) return
+      const updated: Session = {
+        ...session,
+        roles: access.roles,
+        permissions: access.permissions,
+      }
+      await redis.set(`session:${sessionId}`, JSON.stringify(updated), 'EX', SESSION_TTL_SECONDS)
     },
   }
 }

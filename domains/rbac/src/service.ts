@@ -1,10 +1,15 @@
 import { type DbClient, schema, withTransaction } from '@yongstack/database'
 import { err, ok, type Result } from '@yongstack/shared'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, count, eq, inArray } from 'drizzle-orm'
 
 import { DEFAULT_PERMISSIONS, DEFAULT_ROLE_CODE, DEFAULT_ROLES, type RoleCode } from './defaults'
 
-export type RbacError = 'ROLE_NOT_FOUND'
+export type RbacError =
+  | 'ROLE_NOT_FOUND'
+  | 'ROLE_CODE_EXISTS'
+  | 'SYSTEM_ROLE_READONLY'
+  | 'ROLE_IN_USE'
+  | 'PERMISSION_NOT_FOUND'
 
 export interface UserAccess {
   roles: string[]
@@ -52,15 +57,15 @@ export async function ensureRbacDefaults(client: DbClient): Promise<void> {
       const roleRow = roleByCode.get(role.code)
       if (!roleRow) continue
 
-      await tx.delete(schema.rolePermissions).where(eq(schema.rolePermissions.roleId, roleRow.id))
-
+      // 非破坏性同步: 只补缺失的默认权限, 不删除自定义添加的权限。
+      // 默认角色权限视为"最低集合"; 需要永久移除默认权限时再引入 roles.isCustomized。
       for (const permissionCode of role.permissions) {
         const permissionRow = permissionByCode.get(permissionCode)
         if (!permissionRow) continue
-        await tx.insert(schema.rolePermissions).values({
-          roleId: roleRow.id,
-          permissionId: permissionRow.id,
-        })
+        await tx
+          .insert(schema.rolePermissions)
+          .values({ roleId: roleRow.id, permissionId: permissionRow.id })
+          .onConflictDoNothing()
       }
     }
 
@@ -98,11 +103,13 @@ export async function assignDefaultRole(userId: string, client: DbClient): Promi
   await client.insert(schema.userRoles).values({ userId, roleId: role.id }).onConflictDoNothing()
 }
 
+export type RoleAssignmentError = 'ROLE_NOT_FOUND'
+
 export async function assignRoles(
   userId: string,
   roleCodes: string[],
   client: DbClient,
-): Promise<Result<UserAccess, RbacError>> {
+): Promise<Result<UserAccess, RoleAssignmentError>> {
   const uniqueCodes = [...new Set(roleCodes)]
   if (uniqueCodes.length === 0) return err('ROLE_NOT_FOUND')
 
@@ -190,4 +197,155 @@ export async function hasRoleCode(
     .innerJoin(schema.roles, eq(schema.roles.id, schema.userRoles.roleId))
     .where(and(eq(schema.userRoles.userId, userId), eq(schema.roles.code, roleCode)))
   return row !== undefined
+}
+
+async function getRoleWithPermissions(
+  code: string,
+  client: DbClient,
+): Promise<RoleWithPermissions | null> {
+  const [role] = await client.select().from(schema.roles).where(eq(schema.roles.code, code))
+  if (!role) return null
+  const permissionRows = await client
+    .select({ code: schema.permissions.code })
+    .from(schema.rolePermissions)
+    .innerJoin(schema.permissions, eq(schema.permissions.id, schema.rolePermissions.permissionId))
+    .where(eq(schema.rolePermissions.roleId, role.id))
+  return {
+    code: role.code,
+    name: role.name,
+    description: role.description,
+    isSystem: role.isSystem,
+    permissions: permissionRows.map((row) => row.code).sort(),
+  }
+}
+
+async function replacePermissions(
+  roleId: string,
+  permissionCodes: string[],
+  client: DbClient,
+): Promise<Result<void, 'PERMISSION_NOT_FOUND'>> {
+  const unique = [...new Set(permissionCodes)]
+  if (unique.length > 0) {
+    const rows = await client
+      .select({ id: schema.permissions.id, code: schema.permissions.code })
+      .from(schema.permissions)
+      .where(inArray(schema.permissions.code, unique))
+    if (rows.length !== unique.length) return err('PERMISSION_NOT_FOUND')
+    await client.delete(schema.rolePermissions).where(eq(schema.rolePermissions.roleId, roleId))
+    await client
+      .insert(schema.rolePermissions)
+      .values(rows.map((row) => ({ roleId, permissionId: row.id })))
+    return ok(undefined)
+  }
+  await client.delete(schema.rolePermissions).where(eq(schema.rolePermissions.roleId, roleId))
+  return ok(undefined)
+}
+
+export interface CreateRoleInput {
+  code: string
+  name: string
+  description?: string | null
+  permissions?: string[]
+}
+
+export async function createRole(
+  input: CreateRoleInput,
+  client: DbClient,
+): Promise<Result<RoleWithPermissions, RbacError>> {
+  return withTransaction(client, async (tx) => {
+    const [existing] = await tx
+      .select({ id: schema.roles.id })
+      .from(schema.roles)
+      .where(eq(schema.roles.code, input.code))
+    if (existing) return err('ROLE_CODE_EXISTS')
+
+    const [role] = await tx
+      .insert(schema.roles)
+      .values({
+        code: input.code,
+        name: input.name,
+        description: input.description ?? null,
+        isSystem: false,
+      })
+      .returning()
+
+    const result = await replacePermissions(role.id, input.permissions ?? [], tx)
+    if (result.isErr()) return err(result.error)
+    const created = await getRoleWithPermissions(input.code, tx)
+    if (!created) return err('ROLE_NOT_FOUND')
+    return ok(created)
+  })
+}
+
+export interface UpdateRoleInput {
+  name?: string
+  description?: string | null
+}
+
+export async function updateRole(
+  code: string,
+  input: UpdateRoleInput,
+  client: DbClient,
+): Promise<Result<RoleWithPermissions, RbacError>> {
+  return withTransaction(client, async (tx) => {
+    const [role] = await tx.select().from(schema.roles).where(eq(schema.roles.code, code))
+    if (!role) return err('ROLE_NOT_FOUND')
+    if (role.isSystem) return err('SYSTEM_ROLE_READONLY')
+
+    await tx
+      .update(schema.roles)
+      .set({
+        ...(input.name === undefined ? {} : { name: input.name }),
+        ...(input.description === undefined ? {} : { description: input.description }),
+      })
+      .where(eq(schema.roles.id, role.id))
+
+    const updated = await getRoleWithPermissions(code, tx)
+    if (!updated) return err('ROLE_NOT_FOUND')
+    return ok(updated)
+  })
+}
+
+export async function setRolePermissions(
+  code: string,
+  permissionCodes: string[],
+  client: DbClient,
+): Promise<Result<RoleWithPermissions, RbacError>> {
+  return withTransaction(client, async (tx) => {
+    const [role] = await tx.select().from(schema.roles).where(eq(schema.roles.code, code))
+    if (!role) return err('ROLE_NOT_FOUND')
+    if (role.isSystem) return err('SYSTEM_ROLE_READONLY')
+
+    const result = await replacePermissions(role.id, permissionCodes, tx)
+    if (result.isErr()) return err(result.error)
+    const updated = await getRoleWithPermissions(code, tx)
+    if (!updated) return err('ROLE_NOT_FOUND')
+    return ok(updated)
+  })
+}
+
+export async function deleteRole(code: string, client: DbClient): Promise<Result<void, RbacError>> {
+  return withTransaction(client, async (tx) => {
+    const [role] = await tx.select().from(schema.roles).where(eq(schema.roles.code, code))
+    if (!role) return err('ROLE_NOT_FOUND')
+    if (role.isSystem) return err('SYSTEM_ROLE_READONLY')
+
+    const [{ total }] = await tx
+      .select({ total: count() })
+      .from(schema.userRoles)
+      .where(eq(schema.userRoles.roleId, role.id))
+    if (Number(total) > 0) return err('ROLE_IN_USE')
+
+    await tx.delete(schema.roles).where(eq(schema.roles.id, role.id))
+    return ok(undefined)
+  })
+}
+
+export async function listUserIdsByRole(code: string, client: DbClient): Promise<string[]> {
+  const rows = await client
+    .select({ userId: schema.userRoles.userId })
+    .from(schema.userRoles)
+    .innerJoin(schema.roles, eq(schema.roles.id, schema.userRoles.roleId))
+    .where(eq(schema.roles.code, code))
+  return rows.map((row) => row.userId)
 }

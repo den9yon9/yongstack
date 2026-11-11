@@ -6,7 +6,12 @@ import {
   recordOutboxEvent,
   USER_REGISTERED_EVENT,
 } from '@yongstack/outbox'
-import { ADMIN_ROLE_CODE, assignDefaultRole, getUserAccess, type UserAccess } from '@yongstack/rbac'
+import {
+  ADMIN_ACCESS_PERMISSION,
+  assignDefaultRole,
+  getUserAccess,
+  type UserAccess,
+} from '@yongstack/rbac'
 import { isEmailVerificationRequired } from '@yongstack/settings'
 import { err, InvariantViolation, ok, type Result } from '@yongstack/shared'
 import {
@@ -144,7 +149,7 @@ export async function loginAdminWithPassword(
 
   const user = result.value
   const access = await getUserAccess(user.id, client)
-  if (!access.roles.includes(ADMIN_ROLE_CODE)) {
+  if (!access.permissions.includes(ADMIN_ACCESS_PERMISSION)) {
     await recordAudit(
       {
         action: 'admin.login.failure',
@@ -220,7 +225,7 @@ export async function requestAdminLoginPhoneCode(
   if (!user || user.phoneVerifiedAt === null) return ok(null)
 
   const access = await getUserAccess(user.id, client)
-  if (!access.roles.includes(ADMIN_ROLE_CODE)) return ok(null)
+  if (!access.permissions.includes(ADMIN_ACCESS_PERMISSION)) return ok(null)
 
   return requestPhoneLoginCode(
     phone,
@@ -244,6 +249,6 @@ export async function loginAdminWithPhone(
   if (!user.isActive) return err('ACCOUNT_DISABLED')
 
   const access = await getUserAccess(user.id, client)
-  if (!access.roles.includes(ADMIN_ROLE_CODE)) return err('FORBIDDEN')
+  if (!access.permissions.includes(ADMIN_ACCESS_PERMISSION)) return err('FORBIDDEN')
   return ok({ user, access })
 }

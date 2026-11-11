@@ -15,9 +15,20 @@ services:
       - '9090:9090'
     volumes:
       - ./prometheus.docker.yml:/etc/prometheus/prometheus.yml:ro
+      - ../monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
     # Linux 宿主机也支持 host.docker.internal(Compose 自动写入 host-gateway)
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+    restart: unless-stopped
+    depends_on:
+      - alertmanager
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    ports:
+      - '9093:9093'
+    volumes:
+      - ../monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
     restart: unless-stopped
 
   grafana:

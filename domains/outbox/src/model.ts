@@ -24,4 +24,5 @@ export const OutboxStatsResponseSchema = Type.Object({
   delivered: Type.Number(),
   failed: Type.Number(),
   total: Type.Number(),
+  oldestPendingAgeSeconds: Type.Union([Type.Number(), Type.Null()]),
 })

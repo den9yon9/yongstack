@@ -201,6 +201,13 @@ createEnv() → createDeps(env) → buildApp(options) → createPlugins(options)
   测试直接注入 test 依赖（db/redis/secret），测试文件零 env 依赖
 - 路由工厂的插件参数类型：`Omit<AppOptions, 'corsOrigin'>`
 
+### 4.1 后台准入与自定义角色
+
+- 后台登录与 `isAdmin` 守卫看 **`admin:access` 权限**，不看角色码；拥有该权限的自定义角色也能登录管理端。
+- `admin` / `member` 是系统角色：不可删除、不可改 code、不可直接编辑；需要调整时在角色页「复制为自定义角色」，再勾选 `admin:access` + 细粒度权限。
+- 新增默认权限码：改 `domains/rbac/src/defaults.ts`，部署时执行 `pnpm db:rbac-sync`（生产 `migrate` 服务会自动执行）。
+- `ensureRbacDefaults` 是非破坏性同步：只补缺失权限，不删除自定义添加的权限；默认角色权限视为“最低集合”。
+
 ### 5. 队列
 
 - 队列名 / job 名 / payload 类型定义在领域内 `jobs.ts`（纯契约，零依赖）

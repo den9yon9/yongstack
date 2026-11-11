@@ -60,6 +60,28 @@ function AuditLogsPage() {
     void loadLogs()
   }, [loadLogs])
 
+  async function exportCsv() {
+    const params = new URLSearchParams({
+      format: 'csv',
+      ...(search ? { q: search } : {}),
+    })
+    const res = await fetch(`/admin/audit/export?${params.toString()}`, {
+      credentials: 'include',
+      headers: { accept: 'text/csv' },
+    })
+    if (!res.ok) {
+      setError('导出失败')
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `audit-${Date.now()}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   function submitSearch(e: React.FormEvent) {
     e.preventDefault()
     setPage(1)
@@ -76,17 +98,22 @@ function AuditLogsPage() {
             title="审计日志"
             description="关键管理操作留痕：动作、对象、操作人与请求上下文。"
             actions={
-              <form onSubmit={submitSearch} className="flex items-center gap-2">
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="搜索动作 / 目标 / 关键词"
-                  className="w-56"
-                />
-                <Button type="submit" size="sm">
-                  搜索
+              <div className="flex flex-wrap items-center gap-2">
+                <form onSubmit={submitSearch} className="flex items-center gap-2">
+                  <Input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="搜索动作 / 目标 / 关键词"
+                    className="w-56"
+                  />
+                  <Button type="submit" size="sm">
+                    搜索
+                  </Button>
+                </form>
+                <Button type="button" size="sm" variant="outline" onClick={() => void exportCsv()}>
+                  导出 CSV
                 </Button>
-              </form>
+              </div>
             }
           />
         </CardHeader>

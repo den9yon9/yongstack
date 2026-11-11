@@ -1,5 +1,10 @@
-import { withAudit } from '@yongstack/audit'
-import { getOutboxStats, listOutboxEvents, replayOutboxEvent } from '@yongstack/outbox'
+import { recordAudit, withAudit } from '@yongstack/audit'
+import {
+  getOutboxStats,
+  listOutboxEvents,
+  replayFailedOutboxEvents,
+  replayOutboxEvent,
+} from '@yongstack/outbox'
 import * as OutboxModel from '@yongstack/outbox/model'
 import { hasPermission } from '@yongstack/session'
 import { assertNever, ErrorResponse, requestMeta } from '@yongstack/shared'
@@ -59,6 +64,43 @@ export function createOutboxRoutes(plugins: AdminPlugins) {
           summary: '事件状态统计',
           description:
             '按 pending/processing/delivered/failed 聚合计数。\n\n- 需要 outbox:read 权限',
+        },
+      },
+    )
+    .post(
+      '/outbox/replay-failed',
+      async ({ query, session, db, request, i18n }) => {
+        if (!hasPermission(session, 'outbox:write')) {
+          return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
+        }
+        const limit = query.limit ?? 100
+        const replayed = await replayFailedOutboxEvents(db, limit)
+        await recordAudit(
+          {
+            actorId: session.userId,
+            action: 'admin.outbox.bulk_replay',
+            targetType: 'outbox_event',
+            diff: { replayed, limit },
+            ...requestMeta(request, { trustProxy: plugins.trustProxy }),
+          },
+          db,
+        )
+        return { replayed }
+      },
+      {
+        isAdmin: true,
+        query: t.Object({ limit: t.Optional(t.Number({ minimum: 1, maximum: 1000 })) }),
+        response: {
+          200: t.Object({ replayed: t.Number() }),
+          401: ErrorResponse,
+          403: ErrorResponse,
+          429: ErrorResponse,
+        },
+        rateLimit: { limit: apiRateLimitPerMinute, window: '60s' },
+        detail: {
+          tags: ['Admin/Outbox'],
+          summary: '批量重放失败事件',
+          description: '把最多 N 条 failed 事件复位为 pending。\n\n- 需要 outbox:write 权限',
         },
       },
     )

@@ -1,0 +1,24 @@
+# Alertmanager 基础配置。
+# 默认 receiver 不发送通知(仅保留告警状态); 生产请按需启用 email/webhook。
+# 修改本文件后重启 alertmanager 容器/进程生效。
+route:
+  receiver: default
+  group_by: ['alertname', 'job']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: default
+  # 邮件示例:
+  # - name: default
+  #   email_configs:
+  #     - to: ops@example.com
+  #       from: alertmanager@example.com
+  #       smarthost: smtp.example.com:587
+  #       auth_username: alertmanager@example.com
+  #       auth_password: ${ALERTMANAGER_SMTP_PASSWORD}
+  # Webhook 示例:
+  # - name: default
+  #   webhook_configs:
+  #     - url: https://hooks.example.com/yongstack

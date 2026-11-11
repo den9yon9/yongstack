@@ -68,6 +68,7 @@ export async function dispatchOutboxEvent(
           template: 'welcome',
           locale: payload.locale,
           vars: { name: payload.name ?? '', appUrl: options.appUrl },
+          ...(event.requestId === null ? {} : { requestId: event.requestId }),
         },
         { jobId: `welcome-${payload.userId}` },
       )
@@ -94,6 +95,7 @@ export async function dispatchOutboxEvent(
             name: payload.name ?? '',
             url: `${options.appUrl}/verify-email?token=${encodeURIComponent(payload.token)}`,
           },
+          ...(event.requestId === null ? {} : { requestId: event.requestId }),
         },
         { jobId: `verify-email-${payload.userId}-${payload.token}` },
       )
@@ -117,6 +119,7 @@ export async function dispatchOutboxEvent(
           vars: {
             url: `${options.appUrl}/reset-password?token=${encodeURIComponent(payload.token)}`,
           },
+          ...(event.requestId === null ? {} : { requestId: event.requestId }),
         },
         { jobId: `reset-password-${payload.token}` },
       )

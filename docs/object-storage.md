@@ -86,3 +86,26 @@ POST /files/:id/confirm    → HEAD 校验对象，files.status = 'ready'，记�
 - 上传时设置 `Cache-Control: public, max-age=31536000, immutable`。
 - 媒体资源是公开资源；未来私有文件用 `Storage.presignGet()` 生成短期签名 URL。
 - 上传接口只允许登录用户，文件按 owner 隔离。
+
+## 管理端媒体资源
+
+管理端「媒体资源」页是唯一的文件入口：
+
+- 上传：`POST /admin/files/presign` 拿预签名 URL → 浏览器 PUT → `POST /admin/files/:id/confirm`
+- 查看：列表展示缩略图、类型、大小、用途；图片弹窗预览，PDF 新窗口打开
+- 下载 / 复制公开 URL / 软删除
+- 单文件上限沿用 `upload.maxBytes`（默认 5MB）
+- 允许类型由 `upload.allowedTypes` 控制（默认 JPEG / PNG / WebP / PDF）
+- 权限：`files:read` / `files:write` / `files:delete`
+
+数据库 `files` 表是业务资产事实源；对象存储 bucket 只负责物理文件，不再提供独立的「存储资源」页面。
+
+## 浏览器直传与 CORS
+
+预签名 PUT 由浏览器**直接**发到对象存储域名，不是经过 API，因此 bucket 必须允许前端站点跨域：
+
+- 本地：`pnpm storage:init` 会按 `STORAGE_CORS_ORIGINS`（默认 `http://localhost:5173,http://localhost:5174`）设置 bucket CORS；本地 SeaweedFS compose 也带了 `-s3.allowedOrigins=*` 兜底
+- 生产 R2 / COS：在控制台配置 CORS，至少允许 `GET` / `PUT` / `HEAD`，`AllowedHeaders: *`，来源填两个前端域名
+- 若管理端上传一直停在「上传中」或浏览器报 `Failed to fetch`，优先检查 bucket CORS 与 `STORAGE_ENDPOINT` 是否可从浏览器访问
+
+> `STORAGE_CORS_ORIGINS` 只在 `storage:init` 时使用，不是运行时变量。修改后重新执行 `pnpm storage:init`（SeaweedFS）或在云控制台保存。

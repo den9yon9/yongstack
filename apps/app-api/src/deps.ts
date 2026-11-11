@@ -22,6 +22,9 @@ export interface AppOptions {
   trustProxy: boolean
   isProduction: boolean
   logger: Logger
+  sentryDsn?: string
+  sentryEnvironment?: string
+  sentryRelease?: string
   authRateLimitPerMinute: number
   apiRateLimitPerMinute: number
   defaultLocale: Locale
@@ -42,6 +45,9 @@ export function createAppDeps(env: AppEnv): AppOptions {
     trustProxy: env.TRUST_PROXY,
     isProduction: env.NODE_ENV === 'production',
     logger,
+    ...(env.SENTRY_DSN === undefined ? {} : { sentryDsn: env.SENTRY_DSN }),
+    ...(env.SENTRY_ENVIRONMENT === undefined ? {} : { sentryEnvironment: env.SENTRY_ENVIRONMENT }),
+    ...(env.SENTRY_RELEASE === undefined ? {} : { sentryRelease: env.SENTRY_RELEASE }),
     authRateLimitPerMinute: Number(env.AUTH_RATE_LIMIT_PER_MINUTE),
     apiRateLimitPerMinute: Number(env.API_RATE_LIMIT_PER_MINUTE),
     defaultLocale: env.DEFAULT_LOCALE,

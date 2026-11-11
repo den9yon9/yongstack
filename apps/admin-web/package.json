@@ -11,6 +11,7 @@
     "@elysiajs/eden": "^1.4.9",
     "@tanstack/react-router": "^1.0.0",
     "@yongstack/eden-client": "workspace:^",
+    "@yongstack/i18n-web": "workspace:*",
     "@yongstack/ui": "workspace:*",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",

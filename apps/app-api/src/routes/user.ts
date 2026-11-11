@@ -163,7 +163,7 @@ export function createUserRoutes(plugins: AppPlugins) {
     )
     .get(
       '/me',
-      async ({ session, db, i18n }) => {
+      async ({ session, db, cookie, sessionStore, i18n }) => {
         const result = await getUserById(session.userId, db)
         if (result.isErr()) {
           switch (result.error) {
@@ -177,6 +177,13 @@ export function createUserRoutes(plugins: AppPlugins) {
           return status(403, { error: 'ACCOUNT_DISABLED', message: i18n('Account is disabled') })
         }
         const access = await getUserAccess(session.userId, db)
+        const sessionId = sessionCookieFrom(cookie, sessionCookieName)?.value
+        if (typeof sessionId === 'string' && sessionId.length > 0) {
+          const changed =
+            session.roles.join('\0') !== access.roles.join('\0') ||
+            session.permissions.join('\0') !== access.permissions.join('\0')
+          if (changed) await sessionStore.updateAccess(sessionId, access)
+        }
         return { ...result.value, ...access }
       },
       {

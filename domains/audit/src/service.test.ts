@@ -1,9 +1,9 @@
-import { closeDb, type Db } from '@yongstack/database'
+import { closeDb, type Db, schema } from '@yongstack/database'
 import { prepareTestDb, resetDb } from '@yongstack/database/testing'
 import { createUser } from '@yongstack/testkit'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 
-import { listAuditLogs, recordAudit } from './service'
+import { listAuditLogs, pruneAuditLogs, recordAudit } from './service'
 
 let db: Db
 
@@ -86,5 +86,36 @@ describe('audit', () => {
     expect(first.total).toBe(3)
     const second = await listAuditLogs({ page: 2, pageSize: 2 }, db)
     expect(second.items).toHaveLength(1)
+  })
+})
+
+describe('pruneAuditLogs', () => {
+  const cutoff = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+  const oldDate = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+  const recentDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+
+  test('deletes logs older than cutoff only', async () => {
+    const actor = await seedUser()
+    await db.insert(schema.auditLogs).values([
+      {
+        actorId: actor.id,
+        action: 'old.action',
+        targetType: 'user',
+        createdAt: oldDate,
+      },
+      {
+        actorId: actor.id,
+        action: 'recent.action',
+        targetType: 'user',
+        createdAt: recentDate,
+      },
+    ])
+
+    const deleted = await pruneAuditLogs(db, cutoff)
+    expect(deleted).toBe(1)
+
+    const rows = await db.select().from(schema.auditLogs)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].action).toBe('recent.action')
   })
 })

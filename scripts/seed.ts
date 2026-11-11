@@ -27,24 +27,31 @@ const env = parseEnv(
 )
 
 async function main(): Promise<void> {
-  if (
-    env.NODE_ENV === 'production' &&
-    (env.ADMIN_PASSWORD === DEFAULT_ADMIN_PASSWORD || env.ADMIN_PASSWORD.length < 12)
-  ) {
-    throw new Error('ADMIN_PASSWORD must be explicitly set (min 12 chars) in production')
-  }
-
+  const rbacOnly = process.argv.includes('--rbac-only')
   const logger = createLogger(env.LOG_LEVEL)
-  if (env.ADMIN_PASSWORD === DEFAULT_ADMIN_PASSWORD) {
-    logger.warn(
-      { adminEmail: env.ADMIN_EMAIL },
-      'using default ADMIN_PASSWORD; set a strong password for any non-local environment',
-    )
-  }
 
   const db = createDb(env.DATABASE_URL)
   try {
     await ensureRbacDefaults(db)
+    // 已移除功能的权限码: 清理旧数据库里的残留权限与角色关联(FK cascade)
+    await db.$client`DELETE FROM permissions WHERE code IN ('storage:read', 'storage:write', 'storage:delete')`
+    if (rbacOnly) {
+      logger.info('rbac defaults synced')
+      return
+    }
+
+    if (
+      env.NODE_ENV === 'production' &&
+      (env.ADMIN_PASSWORD === DEFAULT_ADMIN_PASSWORD || env.ADMIN_PASSWORD.length < 12)
+    ) {
+      throw new Error('ADMIN_PASSWORD must be explicitly set (min 12 chars) in production')
+    }
+    if (env.ADMIN_PASSWORD === DEFAULT_ADMIN_PASSWORD) {
+      logger.warn(
+        { adminEmail: env.ADMIN_EMAIL },
+        'using default ADMIN_PASSWORD; set a strong password for any non-local environment',
+      )
+    }
 
     const passwordHash = await hashPassword(env.ADMIN_PASSWORD)
     const [admin] = await db

@@ -16,7 +16,9 @@ export {
   type OutboxAdminError,
   type OutboxEvent,
   type OutboxStats,
+  pruneOutboxEvents,
   recordOutboxEvent,
+  replayFailedOutboxEvents,
   replayOutboxEvent,
   resetStaleProcessing,
 } from './service'

@@ -7,7 +7,7 @@ import type { AttachFileInputSchema, CreateFileInputSchema, FileListQuerySchema 
 
 export type FileError = 'FILE_NOT_FOUND'
 
-type File = typeof schema.files.$inferSelect
+export type File = typeof schema.files.$inferSelect
 
 // 授权下沉: 调用方(controller/usecase)只负责把 session 映射成 actor,
 // 域函数查询条件即带 owner/admin 判定, 避免新调用方忘检越权。

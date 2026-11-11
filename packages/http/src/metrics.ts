@@ -31,6 +31,7 @@ export function createMetrics(): Registry {
 export interface HttpMetricsBundle {
   httpRequests: Counter<string>
   httpRequestDuration: Histogram<string>
+  httpErrors: Counter<string>
 }
 
 // 与 HttpMetricsBundle 同形状(名称语义区分: 录制侧/装配侧)
@@ -52,7 +53,13 @@ export function registerHttpMetrics(metrics: Registry): HttpMetricsBundle {
     buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
     registers: [metrics],
   })
-  return { httpRequests, httpRequestDuration }
+  const httpErrors = new Counter({
+    name: 'http_errors_total',
+    help: 'HTTP requests that raised an unhandled error',
+    labelNames: ['method', 'path'] as const,
+    registers: [metrics],
+  })
+  return { httpRequests, httpRequestDuration, httpErrors }
 }
 
 // 业务计数: 支付回调验签等关键路径按 app 实例注册, 与 HTTP 指标共享 Registry
@@ -71,7 +78,7 @@ export async function renderMetrics(metrics: Registry): Promise<string> {
 }
 
 // 归一化路径: URL 形态的动态段(uuid)替换为 :id, 防标签基数爆炸
-function metricPath(pathname: string): string {
+export function metricPath(pathname: string): string {
   return pathname.replace(/\/[0-9a-f-]{36}(?=\/|$)/g, '/:id')
 }
 

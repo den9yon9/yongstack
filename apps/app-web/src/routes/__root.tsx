@@ -1,4 +1,5 @@
 import { createRootRoute, Link, Outlet, useNavigate, useRouter } from '@tanstack/react-router'
+import { LanguageSwitcher, useI18n } from '@yongstack/i18n-web'
 import { LogOutIcon } from 'lucide-react'
 
 import { Button, buttonVariants } from '@yongstack/ui/components/button'
@@ -21,6 +22,7 @@ export const Route = createRootRoute({
 })
 
 function RootLayout() {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const router = useRouter()
   const { user } = Route.useRouteContext()
@@ -45,13 +47,14 @@ function RootLayout() {
             <span className="text-lg font-semibold tracking-tight">Yongstack</span>
           </Link>
           <nav className="flex items-center gap-1 text-sm">
+            <LanguageSwitcher />
             <a
               className="hidden rounded-md px-2 py-1 text-muted-foreground hover:text-foreground sm:block"
               href="/docs"
               target="_blank"
               rel="noreferrer"
             >
-              API 文档
+              {t('common.docs')}
             </a>
             {user ? (
               <>
@@ -60,16 +63,16 @@ function RootLayout() {
                 </Link>
                 <Button variant="outline" size="sm" onClick={() => void handleLogout()}>
                   <LogOutIcon data-icon="inline-start" />
-                  退出
+                  {t('common.logout')}
                 </Button>
               </>
             ) : (
               <>
                 <Link to="/login" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-                  登录
+                  {t('common.login')}
                 </Link>
                 <Link to="/register" className={buttonVariants({ size: 'sm' })}>
-                  注册
+                  {t('common.register')}
                 </Link>
               </>
             )}
@@ -80,7 +83,7 @@ function RootLayout() {
         <Outlet />
       </main>
       <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        Yongstack · 个人全栈技术栈模板
+        {t('app.footer')}
       </footer>
     </div>
   )

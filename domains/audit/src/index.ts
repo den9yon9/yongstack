@@ -3,4 +3,11 @@ export {
   AuditLogListResponseSchema,
   AuditLogResponseSchema,
 } from './model'
-export { listAuditLogs, recordAudit, type RecordAuditInput, withAudit } from './service'
+export {
+  exportAuditLogs,
+  listAuditLogs,
+  pruneAuditLogs,
+  recordAudit,
+  type RecordAuditInput,
+  withAudit,
+} from './service'

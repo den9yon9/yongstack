@@ -1,6 +1,6 @@
 import { dbPlugin, type HttpMetricsBundle, localePlugin, redisPlugin } from '@yongstack/http'
 import { type Locale } from '@yongstack/i18n'
-import { ADMIN_ROLE_CODE } from '@yongstack/rbac'
+import { ADMIN_ACCESS_PERMISSION } from '@yongstack/rbac'
 import { apiRateLimit, authRateLimit, createSessionPlugin } from '@yongstack/session'
 import { type Logger } from '@yongstack/shared'
 import { type SmsProvider } from '@yongstack/sms'
@@ -62,7 +62,7 @@ export function createPlugins(
       isProduction,
       logger,
       defaultLocale: options.defaultLocale,
-      adminRoleCode: ADMIN_ROLE_CODE,
+      adminAccessPermission: ADMIN_ACCESS_PERMISSION,
     }),
     authRateLimit: authRateLimit({
       redis,

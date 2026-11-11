@@ -45,6 +45,10 @@ export function createS3Client(env: StorageEnv): S3Client {
     region: env.STORAGE_REGION,
     ...(env.STORAGE_ENDPOINT === undefined ? {} : { endpoint: env.STORAGE_ENDPOINT }),
     forcePathStyle: env.STORAGE_FORCE_PATH_STYLE,
+    // AWS SDK v3 默认给 PutObject 加 CRC32; 预签名 URL 会带空 body 的 checksum,
+    // 浏览器直传真实文件时 SeaweedFS/R2 会以 checksum mismatch 返回 400。
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
     ...(credentials === undefined ? {} : { credentials }),
   })
 }

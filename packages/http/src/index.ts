@@ -7,6 +7,7 @@ export {
   Gauge,
   type Histogram,
   type HttpMetricsBundle,
+  metricPath,
   registerBusinessMetric,
   registerHttpMetrics,
   type Registry,
@@ -15,4 +16,4 @@ export {
 export { redisPlugin } from './redisPlugin'
 export { requestLogger } from './requestLogger'
 export { securityHeaders } from './securityHeaders'
-export { healthCheck, startServer } from './serverFactory'
+export { healthCheck, livenessCheck, startServer } from './serverFactory'

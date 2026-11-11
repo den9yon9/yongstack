@@ -55,11 +55,17 @@ export function startServer<App extends AnyElysia>(app: App, options: StartServe
   })
 }
 
-export interface HealthCheckDeps {
+// liveness: 进程是否还活着; 不依赖下游, 避免 DB/Redis 抖动导致容器被反复重启。
+export function livenessCheck(): Response {
+  return Response.json({ status: 'ok' })
+}
+
+interface HealthCheckDeps {
   db: { execute: (sql: string) => Promise<unknown> }
   redis: { ping: () => Promise<unknown> }
 }
 
+// readiness: 是否可接收流量; 依赖 DB + Redis。
 export async function healthCheck({ db, redis }: HealthCheckDeps): Promise<Response> {
   let dbOk = false
   let redisOk = false

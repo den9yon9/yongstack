@@ -5,12 +5,16 @@ import {
   createMetrics,
   healthCheck,
   httpMetricsPlugin,
+  livenessCheck,
+  metricPath,
   registerHttpMetrics,
   renderMetrics,
   requestLogger,
   securityHeaders,
   startServer,
 } from '@yongstack/http'
+import { createErrorReporter } from '@yongstack/observability'
+import { getRequestId } from '@yongstack/shared'
 import { Elysia } from 'elysia'
 
 import { type AdminAppOptions, createAdminDeps } from './deps'
@@ -21,6 +25,7 @@ import { createAuthRoutes } from './routes/auth'
 import { createFileRoutes } from './routes/file'
 import { createOutboxRoutes } from './routes/outbox'
 import { createQueueRoutes } from './routes/queue'
+import { createRoleRoutes } from './routes/role'
 import { createSettingsRoutes } from './routes/settings'
 import { createUserRoutes } from './routes/user'
 
@@ -31,6 +36,12 @@ const InfoResponse = Type.Object({
 })
 
 export function buildApp(options: AdminAppOptions) {
+  const errorReporter = createErrorReporter({
+    dsn: options.sentryDsn,
+    environment: options.sentryEnvironment,
+    release: options.sentryRelease,
+    logger: options.logger,
+  })
   const metrics = createMetrics()
   const httpMetrics = registerHttpMetrics(metrics)
   const plugins = createPlugins(options)
@@ -40,6 +51,17 @@ export function buildApp(options: AdminAppOptions) {
   })
     .use(httpMetricsPlugin(httpMetrics))
     .use(requestLogger(options.logger))
+    .onError({ as: 'global' }, ({ error, request }) => {
+      const path = new URL(request.url).pathname
+      httpMetrics.httpErrors.inc({ method: request.method, path: metricPath(path) })
+      errorReporter.captureException(error, {
+        requestId: getRequestId(),
+        path,
+      })
+    })
+    .onStop(async () => {
+      await errorReporter.flush()
+    })
     .use(securityHeaders(options.isProduction))
     .use(plugins.redisPlugin)
     .use(plugins.dbPlugin)
@@ -69,6 +91,7 @@ export function buildApp(options: AdminAppOptions) {
     .use(createAuditRoutes(plugins))
     .use(createOutboxRoutes(plugins))
     .use(createQueueRoutes(plugins))
+    .use(createRoleRoutes(plugins))
     .get(
       '/info',
       () => ({
@@ -81,6 +104,8 @@ export function buildApp(options: AdminAppOptions) {
         detail: { tags: ['System'], summary: 'Service metadata' },
       },
     )
+    .get('/health/live', () => livenessCheck())
+    .get('/health/ready', ({ db, redis }) => healthCheck({ db, redis }))
     .get('/health', ({ db, redis }) => healthCheck({ db, redis }))
     .get(
       '/metrics',

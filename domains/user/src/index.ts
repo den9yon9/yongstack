@@ -17,6 +17,7 @@ export {
   type PhoneCodeRequestError,
   type PhoneUserError,
   type PhoneVerifyCodeError,
+  pruneExpiredUserTokens,
   registerUser,
   type RegisterUserError,
   requestPhoneLoginCode,
@@ -28,5 +29,6 @@ export {
   updateUserStatus,
   type User,
   type UserError,
+  type UserTokenRetentionCounts,
   verifyPhoneLoginCode,
 } from './service'

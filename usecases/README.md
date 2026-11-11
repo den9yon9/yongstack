@@ -1,6 +1,6 @@
 # usecases
 
-跨域编排目录。当前工程底座阶段为空，业务用例落地时按以下约定新增：
+跨域编排目录。当前包含 `auth`、`account`、`admin-users`、`admin-roles`、`notifications`；新增用例按以下约定：
 
 ```
 usecases/<name>/

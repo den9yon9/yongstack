@@ -78,6 +78,7 @@ function OutboxPage() {
   const [queues, setQueues] = useState<AdminQueue[]>([])
   const [target, setTarget] = useState<AdminOutboxEvent | null>(null)
   const [replaying, setReplaying] = useState(false)
+  const [bulkReplaying, setBulkReplaying] = useState(false)
 
   const loadEvents = useCallback(async () => {
     setLoading(true)
@@ -123,6 +124,21 @@ function OutboxPage() {
     setType(typeInput.trim())
   }
 
+  async function replayAllFailed() {
+    setBulkReplaying(true)
+    setMessage(null)
+    const res = await api.admin.outbox['replay-failed'].post(undefined, {
+      query: { limit: 100 },
+    })
+    setBulkReplaying(false)
+    if (res.error !== null) {
+      setMessage(res.error.value.message ?? '批量重放失败')
+      return
+    }
+    setMessage(`已重放 ${res.data.replayed} 条失败事件`)
+    await Promise.all([loadEvents(), loadStats()])
+  }
+
   async function replay() {
     if (!target) return
     setReplaying(true)
@@ -139,13 +155,20 @@ function OutboxPage() {
   }
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const statItems: { label: string; value: number }[] = stats
+  const statItems: { label: string; value: number | string }[] = stats
     ? [
         { label: '待投递', value: stats.pending },
         { label: '处理中', value: stats.processing },
         { label: '已投递', value: stats.delivered },
         { label: '失败', value: stats.failed },
         { label: '总计', value: stats.total },
+        {
+          label: '最久待投递',
+          value:
+            stats.oldestPendingAgeSeconds === null
+              ? '—'
+              : `${Math.floor(stats.oldestPendingAgeSeconds / 60)} 分钟`,
+        },
       ]
     : []
 
@@ -217,7 +240,7 @@ function OutboxPage() {
               <AlertDescription>{message}</AlertDescription>
             </Alert>
           ) : null}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {STATUS_OPTIONS.map((option) => (
               <Button
                 key={option}
@@ -231,12 +254,21 @@ function OutboxPage() {
                 {option === 'all' ? '全部' : option}
               </Button>
             ))}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkReplaying || (stats?.failed ?? 0) === 0}
+              onClick={() => void replayAllFailed()}
+            >
+              {bulkReplaying ? '重放中…' : '重放全部失败'}
+            </Button>
           </div>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>时间</TableHead>
                 <TableHead>类型</TableHead>
+                <TableHead>请求 ID</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead>尝试</TableHead>
                 <TableHead>错误</TableHead>
@@ -246,7 +278,7 @@ function OutboxPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                     <span className="inline-flex items-center gap-2">
                       <Spinner />
                       加载中…
@@ -255,7 +287,7 @@ function OutboxPage() {
                 </TableRow>
               ) : items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6}>
+                  <TableCell colSpan={7}>
                     <EmptyState title="暂无事件" description="领域事件产生后会出现在这里。" />
                   </TableCell>
                 </TableRow>

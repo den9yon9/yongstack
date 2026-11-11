@@ -3,6 +3,8 @@ dist/
 .turbo/
 .env
 .env.local
+.env.production
+.env.*.local
 *.log
 keys/
 .lefthook/

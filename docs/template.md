@@ -100,4 +100,5 @@ Tailwind 已在 `apps/admin-web/src/styles.css` 通过 `@source` 扫描 UI 包�
 - [ ] 写域测试与接口测试
 - [ ] `pnpm check && pnpm typecheck && pnpm build && pnpm test && pnpm e2e`
 - [ ] 涉及管理端操作时记录审计日志
+- [ ] 新增管理端权限码时更新 `DEFAULT_PERMISSIONS`，确认部署时执行 `db:rbac-sync`
 - [ ] 涉及重复提交的写接口考虑 `withIdempotency`

@@ -70,6 +70,11 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Validate production compose
+        run: |
+          cp .env.production.example .env.production
+          docker compose --env-file .env.production -f docker/docker-compose.prod.yml config >/dev/null
+
       # 覆盖率只报告不设门槛: 看见盲区即可, 数字指标容易异化为刷分
       - name: Run tests with coverage
         run: pnpm exec turbo test --concurrency=1 -- --coverage
@@ -145,6 +150,18 @@ jobs:
             amazon/aws-cli --endpoint-url http://localhost:8333 s3api put-bucket-policy \
             --bucket yongstack \
             --policy '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":"*","Action":["s3:GetObject"],"Resource":["arn:aws:s3:::yongstack/*"]}]}'
+
+      - name: Configure local bucket CORS
+        run: |
+          cat > /tmp/yongstack-cors.json <<'EOF'
+          {"CORSRules":[{"AllowedOrigins":["http://localhost:5173","http://localhost:5174"],"AllowedMethods":["GET","PUT","POST","DELETE","HEAD"],"AllowedHeaders":["*"],"ExposeHeaders":["ETag"],"MaxAgeSeconds":3600}]}
+          EOF
+          docker run --rm --network host \
+            -v /tmp/yongstack-cors.json:/tmp/cors.json:ro \
+            -e AWS_ACCESS_KEY_ID=admin \
+            -e AWS_SECRET_ACCESS_KEY=secret \
+            amazon/aws-cli --endpoint-url http://localhost:8333 s3api put-bucket-cors \
+            --bucket yongstack --cors-configuration file:///tmp/cors.json
 
       - name: Install Playwright browser
         run: pnpm --filter @yongstack/e2e exec playwright install --with-deps chromium

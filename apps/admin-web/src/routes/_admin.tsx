@@ -6,12 +6,14 @@ import {
   useLocation,
   useNavigate,
 } from '@tanstack/react-router'
+import { LanguageSwitcher, useI18n } from '@yongstack/i18n-web'
 import {
   ActivityIcon,
   FileIcon,
   LayoutDashboardIcon,
   LogOutIcon,
   ScrollTextIcon,
+  ListChecksIcon,
   SettingsIcon,
   ShieldIcon,
   UsersIcon,
@@ -51,7 +53,7 @@ async function fetchAdminUser(): Promise<AdminUser | null> {
 export const Route = createFileRoute('/_admin')({
   beforeLoad: async (): Promise<AdminContext> => {
     const adminUser = await fetchAdminUser()
-    if (!adminUser || !adminUser.roles.includes('admin')) {
+    if (!adminUser || !adminUser.permissions.includes('admin:access')) {
       throw redirect({ to: '/login' })
     }
     return { adminUser }
@@ -60,18 +62,20 @@ export const Route = createFileRoute('/_admin')({
 })
 
 const navItems = [
-  { label: '控制台', to: '/', icon: LayoutDashboardIcon, exact: true },
-  { label: '用户', to: '/users', icon: UsersIcon, exact: false },
-  { label: '角色', to: '/roles', icon: ShieldIcon, exact: false },
-  { label: '文件', to: '/files', icon: FileIcon, exact: false },
-  { label: '事件队列', to: '/outbox', icon: ActivityIcon, exact: false },
-  { label: '审计', to: '/audit-logs', icon: ScrollTextIcon, exact: false },
-  { label: '设置', to: '/settings', icon: SettingsIcon, exact: false },
+  { labelKey: 'nav.dashboard', to: '/', icon: LayoutDashboardIcon, exact: true },
+  { labelKey: 'nav.users', to: '/users', icon: UsersIcon, exact: false },
+  { labelKey: 'nav.roles', to: '/roles', icon: ShieldIcon, exact: false },
+  { labelKey: 'nav.files', to: '/files', icon: FileIcon, exact: false },
+  { labelKey: 'nav.outbox', to: '/outbox', icon: ActivityIcon, exact: false },
+  { labelKey: 'nav.queues', to: '/queues', icon: ListChecksIcon, exact: false },
+  { labelKey: 'nav.audit', to: '/audit-logs', icon: ScrollTextIcon, exact: false },
+  { labelKey: 'nav.settings', to: '/settings', icon: SettingsIcon, exact: false },
 ] as const
 
 const pendingModules: string[] = []
 
 function AdminLayout() {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const { adminUser } = Route.useRouteContext()
   const pathname = useLocation({ select: (location) => location.pathname })
@@ -99,8 +103,8 @@ function AdminLayout() {
                     Y
                   </span>
                   <div className="flex flex-col gap-0.5 leading-none">
-                    <span className="font-semibold">Yongstack Admin</span>
-                    <span className="text-xs text-muted-foreground">管理后台</span>
+                    <span className="font-semibold">{t('app.adminTitle')}</span>
+                    <span className="text-xs text-muted-foreground">{t('app.adminSubtitle')}</span>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -115,11 +119,11 @@ function AdminLayout() {
                     <SidebarMenuItem key={item.to}>
                       <SidebarMenuButton
                         isActive={isActive(item)}
-                        tooltip={item.label}
+                        tooltip={t(item.labelKey)}
                         render={<Link to={item.to} />}
                       >
                         <item.icon />
-                        <span>{item.label}</span>
+                        <span>{t(item.labelKey)}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -155,17 +159,18 @@ function AdminLayout() {
               <SidebarTrigger />
               <Separator orientation="vertical" className="h-6" />
               <div className="min-w-0">
-                <h1 className="truncate text-sm font-semibold">Yongstack 管理后台</h1>
-                <p className="truncate text-xs text-muted-foreground">通用模板 · 业务模块待接入</p>
+                <h1 className="truncate text-sm font-semibold">{t('app.adminTitle')}</h1>
+                <p className="truncate text-xs text-muted-foreground">{t('app.adminSubtitle')}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 text-sm">
               <span className="hidden text-muted-foreground sm:inline">
                 {adminUser.name ?? adminUser.email}
               </span>
+              <LanguageSwitcher />
               <Button variant="outline" size="sm" onClick={() => void handleLogout()}>
                 <LogOutIcon data-icon="inline-start" />
-                退出
+                {t('common.logout')}
               </Button>
             </div>
           </header>

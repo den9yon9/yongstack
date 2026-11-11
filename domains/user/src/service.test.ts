@@ -16,6 +16,7 @@ import {
   getUserById,
   listUsers,
   loginUser,
+  pruneExpiredUserTokens,
   registerUser,
   requestPhoneLoginCode,
   unbindPhone,
@@ -333,5 +334,39 @@ describe('phone binding', () => {
     if (!user) throw new Error('expected phone user')
     const result = await unbindPhone(user.id, db)
     expect(result.isErr() && result.error).toBe('CANNOT_UNBIND_ONLY_LOGIN')
+  })
+})
+
+describe('pruneExpiredUserTokens', () => {
+  const cutoff = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+  const oldDate = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+  const recentDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+  test('deletes expired tokens and codes, keeps unexpired rows', async () => {
+    const user = await register()
+
+    await db.insert(schema.emailVerificationTokens).values([
+      { userId: user.id, tokenHash: 'old-email', expiresAt: oldDate },
+      { userId: user.id, tokenHash: 'new-email', expiresAt: recentDate },
+    ])
+    await db.insert(schema.passwordResetTokens).values([
+      { userId: user.id, tokenHash: 'old-reset', expiresAt: oldDate },
+      { userId: user.id, tokenHash: 'new-reset', expiresAt: recentDate },
+    ])
+    await db.insert(schema.phoneLoginCodes).values([
+      { phone: '+8613800000001', codeHash: 'old-code', expiresAt: oldDate },
+      { phone: '+8613800000002', codeHash: 'new-code', expiresAt: recentDate },
+    ])
+
+    const result = await pruneExpiredUserTokens(db, cutoff)
+    expect(result).toEqual({
+      emailVerificationTokens: 1,
+      passwordResetTokens: 1,
+      phoneLoginCodes: 1,
+    })
+
+    expect(await db.select().from(schema.emailVerificationTokens)).toHaveLength(1)
+    expect(await db.select().from(schema.passwordResetTokens)).toHaveLength(1)
+    expect(await db.select().from(schema.phoneLoginCodes)).toHaveLength(1)
   })
 })
