@@ -27,7 +27,7 @@ export const Route = createFileRoute('/_admin/')({
 type AdminModule = {
   title: string
   detail: string
-  to?: '/users' | '/roles' | '/files' | '/outbox' | '/queues' | '/audit-logs' | '/settings'
+  to: '/users' | '/roles' | '/files' | '/outbox' | '/queues' | '/audit-logs' | '/settings'
 }
 
 const modules: AdminModule[] = [
@@ -73,7 +73,7 @@ function DashboardPage() {
           <CardTitle>
             <h2 className="text-lg font-semibold">欢迎，{adminUser.name ?? adminUser.email}</h2>
           </CardTitle>
-          <CardDescription>Yongstack 通用模板，平台能力将在后续里程碑接入。</CardDescription>
+          <CardDescription>Yongstack 通用模板，管理端模块与 API 状态一览。</CardDescription>
           <CardAction>
             <Badge
               variant={
@@ -105,19 +105,12 @@ function DashboardPage() {
                 <h3 className="text-base font-semibold">{item.title}</h3>
               </CardTitle>
               <CardDescription>{item.detail}</CardDescription>
-              <CardAction>
-                <Badge variant={item.to ? 'secondary' : 'outline'}>
-                  {item.to ? '可用' : '待开发'}
-                </Badge>
-              </CardAction>
             </CardHeader>
-            {item.to ? (
-              <CardContent>
-                <Link to={item.to} className="text-sm text-primary hover:underline">
-                  进入
-                </Link>
-              </CardContent>
-            ) : null}
+            <CardContent>
+              <Link to={item.to} className="text-sm text-primary hover:underline">
+                进入
+              </Link>
+            </CardContent>
           </Card>
         ))}
       </section>

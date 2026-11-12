@@ -1,6 +1,6 @@
 # usecases
 
-跨域编排目录。当前包含 `auth`、`account`、`admin-users`、`admin-roles`、`notifications`；新增用例按以下约定：
+跨域编排目录。当前包含 `auth`、`account`、`admin-users`、`admin-roles`、`media`、`notifications`；新增用例按以下约定：
 
 ```
 usecases/<name>/

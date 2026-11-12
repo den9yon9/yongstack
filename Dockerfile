@@ -1,6 +1,6 @@
 ARG APP=app-api
 
-FROM oven/bun:1.2-alpine AS pruner
+FROM oven/bun:1.3-alpine AS pruner
 WORKDIR /app
 # 全量上下文, 内部由 turbo 按真实依赖图推导子图(依赖清单 + pruned lockfile)。
 # APPS 默认并集覆盖 compose 的全部 API 服务; CI 按 APP 传单个应用, 镜像更小。
@@ -10,7 +10,7 @@ RUN bun add -g turbo@2.10.5
 COPY . .
 RUN turbo prune ${APPS} --docker
 
-FROM oven/bun:1.2-alpine AS base
+FROM oven/bun:1.3-alpine AS base
 ARG APP
 ENV APP=$APP
 WORKDIR /app
@@ -22,7 +22,7 @@ COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 
-# pnpm 钉在与 packageManager 一致的版本: pnpm 11+ 依赖 node:sqlite, Bun 1.2 无此模块
+# pnpm 钉在与 packageManager 一致的版本, 避免镜像内版本漂移
 RUN bun add -g pnpm@10.7.0 && pnpm install --frozen-lockfile --prod --ignore-scripts
 
 # 2. 复制子图实际源码

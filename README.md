@@ -40,7 +40,7 @@
 apps/       composition root + presentation   最外层: 装配/HTTP 映射/cookie 签发, 不含业务编排
 usecases/   编排层         跨域用例; 外部副作用(队列等)经本层定义的端口接口注入
 domains/    实体域         纯业务逻辑(业务落地后新增)
-packages/   基础设施       database · http · queue · redis · session · storage · mailer · shared · i18n · eden-client · tsconfig
+packages/   基础设施       database · http · queue · redis · session · storage · mailer · sms · observability · shared · i18n · i18n-web · eden-client · ui · testkit · tsconfig
 ```
 
 - 每个域固定三文件：`model.ts`（TypeBox DTO）/ `service.ts`（纯业务，neverthrow Result）/ `index.ts`（公共出口）

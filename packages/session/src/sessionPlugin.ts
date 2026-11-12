@@ -52,8 +52,8 @@ export function hasPermission(session: Session | null, permission: string): bool
   return session?.permissions.includes(permission) ?? false
 }
 
-// 管理员角色码由业务层定义并显式传入(apps 从 domains/rbac 取值),
-// 本包不持有任何角色字面量,保持领域无关。
+// 系统管理员角色判定: 角色码由业务层定义并显式传入(apps 从 domains/rbac 取值),
+// 本包不持有任何角色字面量。后台准入请用 admin:access 权限(hasPermission), 不要复用本函数。
 export function isAdminSession(session: Session | null, adminRoleCode: string): boolean {
   return session?.roles.includes(adminRoleCode) ?? false
 }

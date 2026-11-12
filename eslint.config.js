@@ -24,7 +24,6 @@ export default [
       'repomix-output.xml',
       'skills-lock.json',
       'pnpm-lock.yaml',
-      'scripts/k6/**',
     ],
   },
   js.configs.recommended,
@@ -43,7 +42,7 @@ export default [
         { type: 'shared', pattern: 'packages/ui' },
         { type: 'shared', pattern: 'packages/i18n-web' },
         { type: 'persistence', pattern: 'packages/(database|testkit)' },
-        // ponytail: 领域层只允许依赖 persistence/shared(纯逻辑), 一切基础设施接线归 presentation;
+        // 设计约束: 领域层只允许依赖 persistence/shared(纯逻辑), 一切基础设施接线归 presentation;
         // queue/http/session/redis/mailer 均属 infrastructure, 域内禁用
         {
           type: 'infrastructure',

@@ -6,7 +6,6 @@
 node_modules/
 dist/
 .lefthook/
-PLAN.md
 skills-lock.json
 .agents/
 docker/

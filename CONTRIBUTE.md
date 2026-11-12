@@ -21,7 +21,7 @@ apps/       composition root + presentation   最外层, 可依赖一切(装配/
 usecases/*  编排层        可依赖 domains/persistence/shared; 外部副作用只经本层定义的端口接口
 domains/*   entity 域     可依赖 persistence/shared(纯业务逻辑)
 packages/   shared / persistence( database/testkit ) / infrastructure
-            (session|queue|redis|http|storage|mailer|sms 属 infrastructure, 只有 apps 可引用)
+            (session|queue|redis|http|storage|mailer|sms|observability 属 infrastructure, 只有 apps 可引用)
 ```
 
 - **apps 是最外层（组装根），usecase 不是**：依赖由 apps 单向流入内核；cookie 签发、限流、

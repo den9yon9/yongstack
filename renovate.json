@@ -18,7 +18,7 @@
       "groupName": "minor dependency updates"
     },
     {
-      "description": "elysia 生态 major 升级需人工批准: 账本压着一批等 2.0 的债(tech-debt #1/#13/#18/#20), 升级前先核对",
+      "description": "elysia 生态 major 升级需人工批准: 账本压着一批等 2.0 的债, 升级前先核对 docs/tech-debt.md",
       "matchPackageNames": ["elysia", "/^@elysiajs//"],
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true

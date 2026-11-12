@@ -1,7 +1,7 @@
 # TECH-DEBT.md — 技术债索引
 
-> 索引全仓 `ponytail:` 标注的已知技术债。每条约一行 + 偿还触发条件；
-> 新债沿用 `ponytail:` 注释标记并在此登记。排序: 偿还触发越近越靠前。
+> 索引已知技术债。每条约一行 + 偿还触发条件；代码内债项用 `ponytail:` 注释标注并在此登记。
+> 排序: 偿还触发越近越靠前。
 
 ## 债项
 
@@ -36,7 +36,7 @@
 
 - ~~认证/账号生命周期/会话管理未完成~~（RBAC + 邮箱验证 + 找回/改密 + 活跃会话 + 管理端用户管理，2026-11-07）
 
-- ~~身份表无用户域与登录 API~~（`domains/user` + app/admin 认证路由 + per-app session cookie，2026-11-07，tech-debt #10）
+- ~~身份表无用户域与登录 API~~（`domains/user` + app/admin 认证路由 + per-app session cookie，2026-11-07）
 
 - ~~worker 空转 keepalive~~（注册邮件/outbox 消费者后移除 `setInterval`，2026-11-07）
 

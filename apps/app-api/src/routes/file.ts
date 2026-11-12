@@ -19,6 +19,8 @@ import { imageSize } from 'image-size'
 
 import { type AppPlugins } from '../plugins'
 
+// 文件资源的 admin 旁路只认系统管理员角色(不是 admin:access 权限):
+// 避免仅有后台准入权限的角色获得全量文件可见性。
 const MIME_EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',

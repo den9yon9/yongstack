@@ -72,22 +72,16 @@ const log = await createAuditLog(db, { actorId: admin.id })
 
 ## 5. 通用后台组件
 
-`@yongstack/ui` 提供：
-
-- `PageHeader`
-- `EmptyState`
-- `DataTable`
-- `FormField`
-- `ConfirmDialog`
-- `FileUpload`
+`@yongstack/ui` 提供 `PageHeader`、`EmptyState` 两个布局组件，以及 `components/*` 下的 shadcn/ui 基础组件（`button`、`card`、`dialog`、`table` 等）。
 
 在 `apps/admin-web` 中直接导入：
 
 ```tsx
-import { PageHeader, DataTable } from '@yongstack/ui'
+import { EmptyState, PageHeader } from '@yongstack/ui'
+import { Button } from '@yongstack/ui/components/button'
 ```
 
-Tailwind 已在 `apps/admin-web/src/styles.css` 通过 `@source` 扫描 UI 包。
+Tailwind 已在 `packages/ui/src/styles/globals.css` 通过 `@source` 扫描 apps 与 UI 包源码。
 
 ## 6. 扩展检查清单
 

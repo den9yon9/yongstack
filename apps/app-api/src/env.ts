@@ -46,7 +46,7 @@ const appEnvSchema = Type.Object({
   APP_PORT: Type.String({ pattern: '^\\d+$' }),
   // 无请求语言线索时的回退语言(错误响应 message / 限流文案)
   DEFAULT_LOCALE: Type.Union([Type.Literal('en'), Type.Literal('zh-CN')], { default: 'en' }),
-  // 认证接口限流(次/分钟): 注册/登录共用。后续接入 domains/user 时生效
+  // 认证接口限流(次/分钟): 注册/登录共用
   AUTH_RATE_LIMIT_PER_MINUTE: Type.String({ pattern: '^\\d+$', default: '20' }),
   // 通用业务接口限流(次/分钟): 文件上传等写接口使用, 按用户/IP 计数
   API_RATE_LIMIT_PER_MINUTE: Type.String({ pattern: '^\\d+$', default: '120' }),
