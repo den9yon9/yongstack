@@ -28,6 +28,7 @@
     "prod:up": "docker compose --env-file .env.production -f docker/docker-compose.prod.yml up -d",
     "storage:init": "bun scripts/storage-init.ts",
     "test": "turbo test --concurrency=1",
+    "test:rules": "bun test eslint-rules",
     "typecheck": "turbo typecheck && tsc -p scripts/tsconfig.json"
   },
   "dependencies": {

@@ -292,6 +292,8 @@ expect(res.data.totalAmount).toBe('15.00')
 ## 质量与工具
 
 - pre-commit 自动执行 Prettier + ESLint；commit-msg 校验 Conventional Commits
+- 自定义 ESLint 规则在 `eslint-rules/`，新增/修改必须配 RuleTester 测试
+  （`eslint-rules/*.test.js`）；本地与 CI 用 `pnpm test:rules` 跑
 - `ponytail:` 开头的注释 = 已知技术债（含背景与解决方向），新债沿用该标记并登记 docs/tech-debt.md
 - 编辑器：Zed 配置在 `.zed/settings.json`（Prettier 保存格式化；ESLint 扩展获得诊断）
 

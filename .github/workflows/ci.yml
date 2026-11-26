@@ -55,6 +55,9 @@ jobs:
       - name: Check format & lint
         run: pnpm check
 
+      - name: Test custom ESLint rules
+        run: pnpm test:rules
+
       - name: Check i18n catalog
         run: pnpm i18n:check
 

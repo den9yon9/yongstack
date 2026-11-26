@@ -9,6 +9,7 @@ import crossDomainRead from './eslint-rules/cross-domain-read.js'
 import errorCodeRule from './eslint-rules/error-code.js'
 import i18nRules from './eslint-rules/i18n.js'
 import invariantThrow from './eslint-rules/invariant-throw.js'
+import responseSchemaRule from './eslint-rules/response-schema.js'
 import tableOwnership from './eslint-rules/table-ownership.js'
 import transactionRule from './eslint-rules/transaction.js'
 import typeBoundaries from './eslint-rules/type-boundaries.js'
@@ -239,6 +240,14 @@ export default [
     ignores: ['**/*.test.ts', '**/*.spec.ts', '**/dist/**'],
     rules: {
       'i18n/no-core-import': 'error',
+    },
+  },
+  {
+    // 响应/入参 DTO 一律白名单: 新增列默认不可见 (见 AUD-01)
+    plugins: { 'response-schema': responseSchemaRule },
+    files: ['domains/*/src/model.ts'],
+    rules: {
+      'response-schema/allowlist': 'error',
     },
   },
   eslintConfigPrettier,
