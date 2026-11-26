@@ -33,6 +33,7 @@
 - ~~outbox/令牌/审计/幂等键无保留清理~~（maintenance 队列每日 sweep，2026-11-11）
 - ~~队列运维只有计数~~（失败 job 详情/重试/删除 + scheduler 管理，2026-11-11）
 - ~~无备份/生产部署编排~~（`db-backup`/`db-restore` + 单机 prod compose + 文档，2026-11-11）
+- ~~响应 DTO 黑名单（整行表 schema + 手写 Omit）~~（4 域改 `Type.Pick` 白名单；self/admin 拆分；`model.test.ts` 锁字段，2026-11-26）
 
 - ~~认证/账号生命周期/会话管理未完成~~（RBAC + 邮箱验证 + 找回/改密 + 活跃会话 + 管理端用户管理，2026-11-07）
 

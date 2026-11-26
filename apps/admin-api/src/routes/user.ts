@@ -79,7 +79,7 @@ export function createUserRoutes(plugins: AdminPlugins) {
         isAdmin: true,
         params: Type.Object({ id: Type.String({ format: 'uuid' }) }),
         response: {
-          200: UserModel.AuthUserResponseSchema,
+          200: UserModel.AdminAuthUserResponseSchema,
           401: ErrorResponse,
           403: ErrorResponse,
           404: ErrorResponse,
@@ -137,7 +137,7 @@ export function createUserRoutes(plugins: AdminPlugins) {
         params: Type.Object({ id: Type.String({ format: 'uuid' }) }),
         body: UserModel.UpdateUserAccessInputSchema,
         response: {
-          200: UserModel.AuthUserResponseSchema,
+          200: UserModel.AdminAuthUserResponseSchema,
           400: ErrorResponse,
           401: ErrorResponse,
           403: ErrorResponse,

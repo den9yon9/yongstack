@@ -298,6 +298,9 @@ function OutboxPage() {
                       {new Date(event.createdAt).toLocaleString()}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{event.type}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {event.requestId ?? '—'}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={statusVariant(event.status)}>{event.status}</Badge>
                     </TableCell>

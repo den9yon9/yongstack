@@ -19,7 +19,6 @@ export interface AdminUser extends UserAccess {
   lastLoginAt: Date | null
   isActive: boolean
   createdAt: Date
-  updatedAt: Date
 }
 
 export async function listUsersWithRoles(

@@ -55,11 +55,11 @@ pnpm dev         # 自动迁移 + 全部服务 watch
 
 固定三文件结构，职责严格分离：
 
-| 文件       | 职责                       | 约束                                                                                                   |
-| ---------- | -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| model.ts   | TypeBox schema，从 DB 派生 | 字段约束集中在 packages/database/src/model.ts                                                          |
-| service.ts | 纯业务函数                 | 不 import Elysia/session/http；依赖以参数注入（client: DbClient）；失败 `err('CODE')`，成功 `ok(data)` |
-| index.ts   | 对外出口，只导出函数与类型 | 不暴露内部实现                                                                                         |
+| 文件       | 职责                             | 约束                                                                                                                  |
+| ---------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| model.ts   | TypeBox schema，从 DB 派生白名单 | 字段约束集中在 packages/database/src/model.ts；响应/入参一律 `Type.Pick`/`Type.Object`，由 `model.test.ts` 锁字段集合 |
+| service.ts | 纯业务函数                       | 不 import Elysia/session/http；依赖以参数注入（client: DbClient）；失败 `err('CODE')`，成功 `ok(data)`                |
+| index.ts   | 对外出口，只导出函数与类型       | 不暴露内部实现                                                                                                        |
 
 **表访问**（ESLint 强制）：只许读写本域的表（写：`table-ownership`；读：`cross-domain-read`）。
 跨域取数经域函数/usecase 编排（行为性校验与展示拼装都在 usecases），apps 层禁止引用任何表。
@@ -181,8 +181,16 @@ export function createOrderRoutes(plugins: AppPlugins) {
   对应响应 schema 使用 `RateLimitErrorResponse`。
 - 错误码格式为 SCREAMING_SNAKE（`^[A-Z][A-Z0-9_]*$`），ESLint 强制
   （`error-code/screaming-snake`，作用于 domains/usecases）
-- 响应 schema 必须显式声明（`response: {...}`）；无响应体状态(204)可省略,
-  Elysia normalize 自动剥离未声明字段，敏感字段只需在 schema 中 omit，service 层不手工剔除
+- 响应 schema 必须显式声明（`response: {...}`）且默认白名单：
+  `Type.Pick(table.select.x, [...])` 显式列出可暴露字段。禁止整行派生
+  （`= table.select.x`）与 `Type.Omit(...)` 黑名单。Elysia 按 response schema 序列化，
+  schema 就是线上契约：没列出的字段不会出现在 JSON 里；新增表字段默认不可见，
+  要暴露必须改 schema 并同步 `model.test.ts`。
+- 入参同理：显式 `Type.Object({...})`，不从 `table.insert.*` 派生/排除；共享 transform
+  （`emailSchema`/`phoneSchema`）必须复用，手写 `Type.String({ format: 'email' })`
+  会丢掉 `toLowerCase`/`trim` 的 Decode 变换。
+- 同一张表按“信任边界 + 消费场景”拆 schema（self vs admin、list vs detail），不要让一个
+  schema 同时服务两类调用方。任意形状的 jsonb（`diff`/`payload`/`metadata`）默认不进列表契约。
 - 会话签发经 `startSession`（@yongstack/session, 基础设施）；登录/注册的 DB 编排
   （校验/验证策略/角色权限/最近登录/审计）在 `usecases/auth`, 控制器只做映射
 - 认证用 `isAuth` / `isAdmin` macro（packages/session 提供）

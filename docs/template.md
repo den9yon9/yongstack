@@ -47,7 +47,7 @@ pnpm --filter @yongstack/database db:migrate
 
 ## 3. 领域实现约定
 
-- `model.ts`：TypeBox schema，从 `table.select/insert/update` 派生。
+- `model.ts`：TypeBox schema，从 `table.select/insert/update` 派生**白名单**（`Type.Pick` + 显式 `Type.Object`）。
 - `service.ts`：纯业务函数，依赖 `DbClient` 注入，失败返回 `err('CODE')`。
 - `index.ts`：只导出函数与类型。
 - 域之间禁止互调；跨域流程放 `usecases/*`。

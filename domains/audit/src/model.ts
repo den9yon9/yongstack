@@ -2,7 +2,18 @@ import { Type } from '@sinclair/typebox'
 import { table } from '@yongstack/database'
 import { PaginatedResponse, PaginationQuery, SortQuery } from '@yongstack/shared'
 
-export const AuditLogResponseSchema = table.select.auditLog
+// 白名单: 列表只给事件溯源字段; diff(任意 jsonb)与 userAgent 留给详情视图,
+// 避免把"未知形状"放进列表契约。
+export const AuditLogResponseSchema = Type.Pick(table.select.auditLog, [
+  'id',
+  'actorId',
+  'action',
+  'targetType',
+  'targetId',
+  'ip',
+  'requestId',
+  'createdAt',
+])
 
 export const AuditLogListQuerySchema = Type.Composite([
   PaginationQuery,

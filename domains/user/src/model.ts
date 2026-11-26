@@ -2,40 +2,65 @@ import { Type } from '@sinclair/typebox'
 import { emailSchema, phoneSchema, table } from '@yongstack/database'
 import { PaginatedResponse, PaginationQuery } from '@yongstack/shared'
 
-export const UserResponseSchema = table.select.user
+// 响应契约按"信任边界 + 消费场景"拆开, 一律白名单:
+// - 自助视角(app-api): 只暴露"我自己的资料"需要的字段
+// - 管理视角(admin-api): 额外需要账号状态与安全字段
+// 新增表字段默认不会出现在任何响应里, 需要暴露必须在这里显式添加。
+const SelfUserBase = Type.Pick(table.select.user, [
+  'id',
+  'name',
+  'email',
+  'phone',
+  'avatar',
+  'locale',
+  'emailVerifiedAt',
+  'phoneVerifiedAt',
+  'createdAt',
+])
+
+export const UserResponseSchema = SelfUserBase
 
 export const AuthUserResponseSchema = Type.Intersect([
-  UserResponseSchema,
+  SelfUserBase,
   Type.Object({
     roles: Type.Array(Type.String()),
     permissions: Type.Array(Type.String()),
   }),
 ])
 
-export const UserWithRolesResponseSchema = Type.Intersect([
-  UserResponseSchema,
+export const AdminUserResponseSchema = Type.Pick(table.select.user, [
+  'id',
+  'name',
+  'email',
+  'phone',
+  'avatar',
+  'locale',
+  'emailVerifiedAt',
+  'phoneVerifiedAt',
+  'lastLoginAt',
+  'isActive',
+  'createdAt',
+])
+
+export const AdminAuthUserResponseSchema = Type.Intersect([
+  AdminUserResponseSchema,
+  Type.Object({
+    roles: Type.Array(Type.String()),
+    permissions: Type.Array(Type.String()),
+  }),
+])
+
+export const AdminUserWithRolesResponseSchema = Type.Intersect([
+  AdminUserResponseSchema,
   Type.Object({ roles: Type.Array(Type.String()) }),
 ])
 
-export const RegisterInputSchema = Type.Intersect([
-  Type.Omit(table.insert.user, [
-    'id',
-    'passwordHash',
-    'isActive',
-    'avatar',
-    'locale',
-    'phone',
-    'phoneVerifiedAt',
-    'emailVerifiedAt',
-    'lastLoginAt',
-    'createdAt',
-    'updatedAt',
-  ]),
-  Type.Object({
-    name: Type.String({ minLength: 1, maxLength: 255 }),
-    password: Type.String({ minLength: 8, maxLength: 128 }),
-  }),
-])
+export const RegisterInputSchema = Type.Object({
+  name: Type.String({ minLength: 1, maxLength: 255 }),
+  // 必须复用 emailSchema, 否则会丢掉 toLowerCase/trim 的 Decode 变换
+  email: emailSchema,
+  password: Type.String({ minLength: 8, maxLength: 128 }),
+})
 
 export const LoginInputSchema = Type.Object({
   email: emailSchema,
@@ -85,7 +110,7 @@ export const UserListQuerySchema = Type.Composite([
   }),
 ])
 
-export const UserListResponseSchema = PaginatedResponse(UserWithRolesResponseSchema)
+export const UserListResponseSchema = PaginatedResponse(AdminUserWithRolesResponseSchema)
 
 export const VerifyEmailInputSchema = Type.Object({
   token: Type.String({ minLength: 32, maxLength: 128 }),

@@ -2,7 +2,22 @@ import { Type } from '@sinclair/typebox'
 import { table } from '@yongstack/database'
 import { PaginatedResponse, PaginationQuery } from '@yongstack/shared'
 
-export const FileResponseSchema = Type.Omit(table.select.file, ['deletedAt', 'status'])
+// 白名单: status/deletedAt 是服务端内部状态, 不进入响应契约
+export const FileResponseSchema = Type.Pick(table.select.file, [
+  'id',
+  'ownerId',
+  'key',
+  'url',
+  'mime',
+  'size',
+  'width',
+  'height',
+  'purpose',
+  'checksum',
+  'metadata',
+  'createdAt',
+  'updatedAt',
+])
 
 export const CreateFileInputSchema = Type.Object({
   ownerId: Type.Optional(Type.String({ format: 'uuid' })),

@@ -68,7 +68,7 @@ export function createAuthRoutes(plugins: AdminPlugins) {
         body: UserModel.LoginInputSchema,
         rateLimit: { limit: authRateLimitPerMinute, window: '60s' },
         response: {
-          200: UserModel.AuthUserResponseSchema,
+          200: UserModel.AdminAuthUserResponseSchema,
           401: ErrorResponse,
           403: ErrorResponse,
         },
@@ -196,7 +196,7 @@ export function createAuthRoutes(plugins: AdminPlugins) {
         body: UserModel.PhoneLoginVerifySchema,
         rateLimit: { limit: 10, window: '60s' },
         response: {
-          200: UserModel.AuthUserResponseSchema,
+          200: UserModel.AdminAuthUserResponseSchema,
           400: ErrorResponse,
           401: ErrorResponse,
           403: ErrorResponse,
@@ -265,7 +265,7 @@ export function createAuthRoutes(plugins: AdminPlugins) {
       {
         isAuth: true,
         response: {
-          200: UserModel.AuthUserResponseSchema,
+          200: UserModel.AdminAuthUserResponseSchema,
           401: ErrorResponse,
           403: ErrorResponse,
           404: ErrorResponse,
