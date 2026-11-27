@@ -4,7 +4,7 @@ import { flushTestRedis } from '@yongstack/redis/testing'
 import { getTestEnv } from '@yongstack/shared/testing'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 
-import { createSessionStore, hasPermission, isAdminSession } from './sessionPlugin'
+import { createSessionStore, hasPermission } from './sessionPlugin'
 
 const env = getTestEnv()
 
@@ -107,28 +107,24 @@ describe('session helpers', () => {
     }
     expect(hasPermission(session, 'users:read')).toBe(true)
     expect(hasPermission(session, 'users:write')).toBe(false)
-    expect(isAdminSession(session, 'admin')).toBe(true)
-    expect(isAdminSession({ ...session, roles: ['member'] }, 'admin')).toBe(false)
-    // 角色码由调用方注入, 未匹配时不放行
-    expect(isAdminSession(session, 'superuser')).toBe(false)
   })
 })
 
 describe('updateAccess', () => {
   test('refreshes roles/permissions without changing the session id', async () => {
     const store = createSessionStore(redis)
-    const sessionId = await store.create(input('u-1', ['member'], ['files:read']))
+    const sessionId = await store.create(input('u-1', ['member'], ['files:read:any']))
 
     await store.updateAccess(sessionId, {
       roles: ['ops'],
-      permissions: ['admin:access', 'files:read'],
+      permissions: ['admin:access', 'files:read:any'],
     })
 
     const session = await store.read(sessionId)
     expect(session).toMatchObject({
       userId: 'u-1',
       roles: ['ops'],
-      permissions: ['admin:access', 'files:read'],
+      permissions: ['admin:access', 'files:read:any'],
     })
     expect(await redis.smembers('session:user:u-1')).toEqual([sessionId])
   })

@@ -194,6 +194,11 @@ export function createOrderRoutes(plugins: AppPlugins) {
 - 会话签发经 `startSession`（@yongstack/session, 基础设施）；登录/注册的 DB 编排
   （校验/验证策略/角色权限/最近登录/审计）在 `usecases/auth`, 控制器只做映射
 - 认证用 `isAuth` / `isAdmin` macro（packages/session 提供）
+- 授权只查**权限码**（`hasPermission`），不查角色码；角色只是权限的集合。
+  - 权限码带 `:any` = 跨用户作用域（如 `files:read:any`）；不带 = 自有资源，
+    由 owner **隐式**授权，不需要权限码。
+  - `admin:access` 只代表"能进后台"，**不是**数据面授权；不要再写按角色码的旁路。
+  - `packages/session` 只导出 `hasPermission`，不提供角色判定函数。
 - 前置守卫（不消费 ok 值的 isErr 检查）可保留 `if (x.isErr()) return status(...)` 形式
 
 ### 4. 装配与 DI

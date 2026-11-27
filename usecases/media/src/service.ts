@@ -26,7 +26,7 @@ type AuditMeta = Pick<RecordAuditInput, 'ip' | 'userAgent' | 'requestId'>
 export interface MediaContext {
   storage: MediaStorage
   db: DbClient
-  actor: { userId: string; isAdmin: boolean }
+  actor: { userId: string; canAccessAny: boolean }
   meta: AuditMeta
   auditAction: { presign: string; confirm: string }
 }

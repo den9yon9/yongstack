@@ -14,9 +14,9 @@ export const DEFAULT_PERMISSIONS = [
   { code: 'outbox:write', description: 'Replay outbox events' },
   { code: 'queues:read', description: 'Read queue jobs and schedulers' },
   { code: 'queues:write', description: 'Retry, remove and schedule queue jobs' },
-  { code: 'files:read', description: 'Read files' },
-  { code: 'files:write', description: 'Upload files' },
-  { code: 'files:delete', description: 'Delete files' },
+  { code: 'files:read:any', description: 'Read files across all users' },
+  { code: 'files:write:any', description: 'Manage uploads across all users' },
+  { code: 'files:delete:any', description: 'Delete files across all users' },
 ] as const
 
 export type PermissionCode = (typeof DEFAULT_PERMISSIONS)[number]['code']
@@ -26,7 +26,9 @@ export const DEFAULT_ROLES = [
     code: 'member',
     name: 'Member',
     description: 'Default member role',
-    permissions: ['files:read'] satisfies PermissionCode[],
+    // 自有资源的读写删由"归属(owner)"隐式授权, 不需要权限码;
+    // 权限码只表达"跨用户"能力(见 files:*:any), 避免 member 拿到越权语义。
+    permissions: [] satisfies PermissionCode[],
   },
   {
     code: 'admin',
@@ -38,6 +40,3 @@ export const DEFAULT_ROLES = [
 
 export type RoleCode = (typeof DEFAULT_ROLES)[number]['code']
 export const DEFAULT_ROLE_CODE: RoleCode = 'member'
-// 系统管理员角色码: 仅用于 app-api 文件资源的超管旁路。
-// 管理端准入已改为 admin:access 权限, 不再依赖角色码。
-export const ADMIN_ROLE_CODE: RoleCode = 'admin'

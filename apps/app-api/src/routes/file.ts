@@ -9,8 +9,7 @@ import {
   softDeleteFileForActor,
 } from '@yongstack/file'
 import * as FileModel from '@yongstack/file/model'
-import { ADMIN_ROLE_CODE } from '@yongstack/rbac'
-import { isAdminSession } from '@yongstack/session'
+import { hasPermission } from '@yongstack/session'
 import { getSetting } from '@yongstack/settings'
 import { ErrorResponse, ok, requestMeta } from '@yongstack/shared'
 import { Elysia, status, t } from 'elysia'
@@ -19,8 +18,8 @@ import { imageSize } from 'image-size'
 
 import { type AppPlugins } from '../plugins'
 
-// 文件资源的 admin 旁路只认系统管理员角色(不是 admin:access 权限):
-// 避免仅有后台准入权限的角色获得全量文件可见性。
+// 文件资源的跨用户旁路只认 files:*:any 权限(不是角色码):
+// 避免"进得了后台"或"角色名叫 admin"被当成跨用户数据访问授权。
 const MIME_EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -234,7 +233,7 @@ export function createFileRoutes(plugins: AppPlugins) {
       async ({ params, body, session, db, request, i18n }) => {
         const actor = {
           userId: session.userId,
-          isAdmin: isAdminSession(session, ADMIN_ROLE_CODE),
+          canAccessAny: hasPermission(session, 'files:write:any'),
         }
         const pending = await getPendingFileForActor(params.id, actor, db)
         if (pending.isErr()) {
@@ -318,7 +317,10 @@ export function createFileRoutes(plugins: AppPlugins) {
       async ({ params, session, db, i18n }) => {
         const result = await getFileForActor(
           params.id,
-          { userId: session.userId, isAdmin: isAdminSession(session, ADMIN_ROLE_CODE) },
+          {
+            userId: session.userId,
+            canAccessAny: hasPermission(session, 'files:read:any'),
+          },
           db,
         )
         if (result.isErr()) {
@@ -337,7 +339,7 @@ export function createFileRoutes(plugins: AppPlugins) {
         detail: {
           tags: ['Files'],
           summary: '文件元数据',
-          description: '按 ID 获取文件元数据，仅 owner 或 admin 可见。',
+          description: '按 ID 获取文件元数据，仅 owner 或拥有 files:read:any 权限者可见。',
         },
       },
     )
@@ -357,7 +359,10 @@ export function createFileRoutes(plugins: AppPlugins) {
           (tx) =>
             softDeleteFileForActor(
               params.id,
-              { userId: session.userId, isAdmin: isAdminSession(session, ADMIN_ROLE_CODE) },
+              {
+                userId: session.userId,
+                canAccessAny: hasPermission(session, 'files:delete:any'),
+              },
               tx,
             ),
         )
@@ -382,7 +387,8 @@ export function createFileRoutes(plugins: AppPlugins) {
         detail: {
           tags: ['Files'],
           summary: '删除文件',
-          description: '软删除文件元数据并尝试删除对象存储。仅 owner 或 admin 可操作。',
+          description:
+            '软删除文件元数据并尝试删除对象存储。仅 owner 或拥有 files:delete:any 权限者可操作。',
         },
       },
     )

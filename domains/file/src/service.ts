@@ -10,10 +10,11 @@ export type FileError = 'FILE_NOT_FOUND'
 export type File = typeof schema.files.$inferSelect
 
 // 授权下沉: 调用方(controller/usecase)只负责把 session 映射成 actor,
-// 域函数查询条件即带 owner/admin 判定, 避免新调用方忘检越权。
+// 域函数查询条件即带 owner/跨用户 判定, 避免新调用方忘检越权。
 export interface FileActor {
   userId: string
-  isAdmin: boolean
+  // 跨用户能力, 由 files:*:any 权限映射而来; 不是"是不是管理员"的角色判定
+  canAccessAny: boolean
 }
 
 // 只有 ready 且未软删的文件对调用方可见; pending 上传对普通读取不可见。
@@ -21,9 +22,9 @@ function activeWhere() {
   return and(isNull(schema.files.deletedAt), eq(schema.files.status, 'ready'))
 }
 
-// owner 一律可见; admin 视为超级读者/管理者。
+// owner 一律可见; canAccessAny 视为超级读者/管理者。
 function actorWhere(actor: FileActor) {
-  if (actor.isAdmin) return activeWhere()
+  if (actor.canAccessAny) return activeWhere()
   return and(eq(schema.files.ownerId, actor.userId), activeWhere())
 }
 
@@ -72,7 +73,7 @@ export async function getPendingFileForActor(
       and(
         eq(schema.files.id, id),
         eq(schema.files.status, 'pending'),
-        actor.isAdmin ? undefined : eq(schema.files.ownerId, actor.userId),
+        actor.canAccessAny ? undefined : eq(schema.files.ownerId, actor.userId),
       ),
     )
   if (!file) return err('FILE_NOT_FOUND')

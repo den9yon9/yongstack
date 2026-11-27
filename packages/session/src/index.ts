@@ -10,7 +10,6 @@ export {
   createSessionStore,
   DEFAULT_SESSION_COOKIE_NAME,
   hasPermission,
-  isAdminSession,
   type Session,
   SESSION_TTL_SECONDS,
   type SessionInput,

@@ -34,7 +34,7 @@ async function main(): Promise<void> {
   try {
     await ensureRbacDefaults(db)
     // 已移除功能的权限码: 清理旧数据库里的残留权限与角色关联(FK cascade)
-    await db.$client`DELETE FROM permissions WHERE code IN ('storage:read', 'storage:write', 'storage:delete')`
+    await db.$client`DELETE FROM permissions WHERE code IN ('storage:read', 'storage:write', 'storage:delete', 'files:read', 'files:write', 'files:delete')`
     if (rbacOnly) {
       logger.info('rbac defaults synced')
       return

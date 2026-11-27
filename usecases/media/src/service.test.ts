@@ -53,12 +53,12 @@ function createFakeStorage(): MediaStorage & {
   }
 }
 
-async function context(actor?: { userId: string; isAdmin: boolean }): Promise<MediaContext> {
+async function context(actor?: { userId: string; canAccessAny: boolean }): Promise<MediaContext> {
   const { user } = await createUser(db, { name: 'Admin', email: 'admin@example.com' })
   return {
     storage: createFakeStorage(),
     db,
-    actor: actor ?? { userId: user.id, isAdmin: false },
+    actor: actor ?? { userId: user.id, canAccessAny: false },
     meta: {},
     auditAction: { presign: 'test.file.presign', confirm: 'test.file.confirm' },
   }

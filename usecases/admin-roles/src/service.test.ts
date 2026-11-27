@@ -51,9 +51,9 @@ describe('admin roles', () => {
     const { user } = await createUser(db, { name: 'Member', email: 'member@example.com' })
     await assignRoles(user.id, ['support'], db)
 
-    const changed = await setRolePermissionsWithAudit('support', ['files:read'], actor.id, db)
+    const changed = await setRolePermissionsWithAudit('support', ['files:read:any'], actor.id, db)
     if (changed.isErr()) throw changed.error
-    expect(changed.value.role.permissions).toEqual(['files:read'])
+    expect(changed.value.role.permissions).toEqual(['files:read:any'])
     expect(changed.value.affectedUserIds).toEqual([user.id])
 
     const audits = await listAuditLogs({ page: 1, pageSize: 20 }, db)

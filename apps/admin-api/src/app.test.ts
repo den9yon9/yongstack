@@ -173,10 +173,10 @@ describe('admin roles', () => {
 
     const perms = await api.admin
       .roles({ code: 'support' })
-      .permissions.put({ permissions: ['files:read'] }, { fetch: { headers: { cookie } } })
+      .permissions.put({ permissions: ['files:read:any'] }, { fetch: { headers: { cookie } } })
     expect(perms.status).toBe(200)
     if (perms.error !== null) throw perms.error
-    expect(perms.data.permissions).toEqual(['files:read'])
+    expect(perms.data.permissions).toEqual(['files:read:any'])
 
     const deleted = await api.admin.roles({ code: 'support' }).delete(undefined, {
       fetch: { headers: { cookie } },
@@ -346,7 +346,7 @@ describe('admin user management', () => {
     expect(detail.status).toBe(200)
     if (detail.error !== null) throw detail.error
     expect(detail.data.roles).toEqual(['member'])
-    expect(detail.data.permissions).toEqual(['files:read'])
+    expect(detail.data.permissions).toEqual([])
   })
 
   test('updates roles and status, and rejects self modification', async () => {
@@ -455,6 +455,46 @@ describe('admin files', () => {
       .delete(undefined, { fetch: { headers: { cookie } } })
     expect(deleted.status).toBe(204)
     expect(storage.objects.has(presigned.data.key)).toBe(false)
+  })
+
+  test('file routes require cross-user :any permissions', async () => {
+    const adminCookie = await loginAdmin()
+    const created = await api.admin.roles.post(
+      { code: 'files-ops', name: 'Files Ops', permissions: ['admin:access'] },
+      { fetch: { headers: { cookie: adminCookie } } },
+    )
+    expect(created.status).toBe(201)
+
+    const user = await seedUser('files-ops@example.com', 'member')
+    const assigned = await assignRoles(user.id, ['files-ops'], db)
+    if (assigned.isErr()) throw assigned.error
+
+    const login = await api.auth.login.post({
+      email: 'files-ops@example.com',
+      password: 'password123',
+    })
+    expect(login.status).toBe(200)
+    const cookie = sessionCookie(login)
+
+    // 只有后台准入、没有 files:read:any → 文件接口 403
+    const denied = await api.admin.files.get({
+      query: { page: 1, pageSize: 10 },
+      fetch: { headers: { cookie } },
+    })
+    expect(denied.status).toBe(403)
+
+    const granted = await setRolePermissions('files-ops', ['admin:access', 'files:read:any'], db)
+    if (granted.isErr()) throw granted.error
+    const relogin = await api.auth.login.post({
+      email: 'files-ops@example.com',
+      password: 'password123',
+    })
+    expect(relogin.status).toBe(200)
+    const allowed = await api.admin.files.get({
+      query: { page: 1, pageSize: 10 },
+      fetch: { headers: { cookie: sessionCookie(relogin) } },
+    })
+    expect(allowed.status).toBe(200)
   })
 
   test('requires admin authentication', async () => {

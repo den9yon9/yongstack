@@ -1,14 +1,14 @@
 import { treaty } from '@elysiajs/eden'
 import { closeDb, type Db, schema } from '@yongstack/database'
 import { prepareTestDb, resetDb } from '@yongstack/database/testing'
-import { ensureRbacDefaults } from '@yongstack/rbac'
+import { assignRoles, createRole, ensureRbacDefaults, setRolePermissions } from '@yongstack/rbac'
 import { createRedisClient, type Redis } from '@yongstack/redis'
 import { flushTestRedis } from '@yongstack/redis/testing'
 import { createLogger } from '@yongstack/shared'
 import { getTestEnv } from '@yongstack/shared/testing'
 import { createMemorySmsProvider, type MemorySmsProvider } from '@yongstack/sms/testing'
 import { createInMemoryStorage, type InMemoryStorage } from '@yongstack/storage/testing'
-import { createUser } from '@yongstack/testkit'
+import { createUser, DEFAULT_PASSWORD } from '@yongstack/testkit'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { desc, eq } from 'drizzle-orm'
 
@@ -525,6 +525,65 @@ describe('files', () => {
       }),
     )
     expect(deleteDenied.status).toBe(404)
+  })
+
+  test('cross-user file access is driven by :any permissions, not role codes', async () => {
+    const owner = await api.auth.register.post({
+      name: 'Owner',
+      email: 'perm-owner@example.com',
+      password: 'password123',
+    })
+    if (owner.error !== null) throw owner.error
+    const uploaded = await uploadFile(sessionCookie(owner))
+    expect(uploaded.status).toBe(201)
+    const file = (await uploaded.json()) as { id: string }
+
+    // 只有后台准入权限的自定义角色: 能进后台, 但看不了别人的文件
+    await createRole({ code: 'support', name: 'Support', permissions: ['admin:access'] }, db)
+    const support = await createUser(db, { email: 'support@example.com' })
+    await assignRoles(support.user.id, ['support'], db)
+
+    async function loginAs(email: string): Promise<string> {
+      const res = await api.auth.login.post({ email, password: DEFAULT_PASSWORD })
+      if (res.error !== null) throw res.error
+      return sessionCookie(res)
+    }
+
+    const supportCookie = await loginAs('support@example.com')
+    const deniedRead = await app.handle(
+      new Request(`http://localhost/files/${file.id}`, { headers: { cookie: supportCookie } }),
+    )
+    expect(deniedRead.status).toBe(404)
+    const deniedDelete = await app.handle(
+      new Request(`http://localhost/files/${file.id}`, {
+        method: 'DELETE',
+        headers: { cookie: supportCookie },
+      }),
+    )
+    expect(deniedDelete.status).toBe(404)
+
+    // 显式授予跨用户读权限后, 新会话才能读到
+    await setRolePermissions('support', ['admin:access', 'files:read:any'], db)
+    const readCookie = await loginAs('support@example.com')
+    const allowedRead = await app.handle(
+      new Request(`http://localhost/files/${file.id}`, { headers: { cookie: readCookie } }),
+    )
+    expect(allowedRead.status).toBe(200)
+
+    // 内置 admin 角色由默认权限集获得全部 files:*:any
+    await createUser(db, { email: 'perm-admin@example.com', role: 'admin' })
+    const adminCookie = await loginAs('perm-admin@example.com')
+    const adminRead = await app.handle(
+      new Request(`http://localhost/files/${file.id}`, { headers: { cookie: adminCookie } }),
+    )
+    expect(adminRead.status).toBe(200)
+    const adminDelete = await app.handle(
+      new Request(`http://localhost/files/${file.id}`, {
+        method: 'DELETE',
+        headers: { cookie: adminCookie },
+      }),
+    )
+    expect(adminDelete.status).toBe(204)
   })
 
   test('presigns, confirms and exposes a direct upload', async () => {

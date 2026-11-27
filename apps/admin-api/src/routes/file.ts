@@ -52,7 +52,7 @@ export function createFileRoutes(plugins: AdminPlugins) {
     return {
       storage,
       db,
-      actor: { userId: session.userId, isAdmin: true },
+      actor: { userId: session.userId, canAccessAny: true },
       meta: requestMeta(request, { trustProxy: plugins.trustProxy }),
       auditAction: { presign: 'admin.file.presign', confirm: 'admin.file.confirm' },
     }
@@ -66,7 +66,7 @@ export function createFileRoutes(plugins: AdminPlugins) {
     .get(
       '/files',
       async ({ query, session, db, i18n }) => {
-        if (!hasPermission(session, 'files:read')) {
+        if (!hasPermission(session, 'files:read:any')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
         return listFiles(query, db)
@@ -82,14 +82,15 @@ export function createFileRoutes(plugins: AdminPlugins) {
         detail: {
           tags: ['Admin/Files'],
           summary: '文件列表',
-          description: '分页文件列表，支持关键词/owner/purpose 筛选。\n\n- 需要 files:read 权限',
+          description:
+            '分页文件列表，支持关键词/owner/purpose 筛选。\n\n- 需要 files:read:any 权限',
         },
       },
     )
     .post(
       '/files/presign',
       async ({ body, session, db, request, i18n }) => {
-        if (!hasPermission(session, 'files:write')) {
+        if (!hasPermission(session, 'files:write:any')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
         const result = await presignMediaUpload(body, mediaContext(db, session, request))
@@ -113,14 +114,14 @@ export function createFileRoutes(plugins: AdminPlugins) {
           tags: ['Admin/Files'],
           summary: '申请文件上传地址',
           description:
-            '校验类型/大小后签发直传 URL，并创建 pending 文件记录。\n\n- 需要 files:write 权限',
+            '校验类型/大小后签发直传 URL，并创建 pending 文件记录。\n\n- 需要 files:write:any 权限',
         },
       },
     )
     .post(
       '/files/:id/confirm',
       async ({ params, body, session, db, request, i18n }) => {
-        if (!hasPermission(session, 'files:write')) {
+        if (!hasPermission(session, 'files:write:any')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
         const result = await confirmMediaUpload(params.id, body, mediaContext(db, session, request))
@@ -146,14 +147,14 @@ export function createFileRoutes(plugins: AdminPlugins) {
           tags: ['Admin/Files'],
           summary: '确认文件上传',
           description:
-            '校验对象存在、大小与类型后把 pending 记录置为 ready。\n\n- 需要 files:write 权限',
+            '校验对象存在、大小与类型后把 pending 记录置为 ready。\n\n- 需要 files:write:any 权限',
         },
       },
     )
     .delete(
       '/files/:id',
       async ({ params, session, db, request, i18n }) => {
-        if (!hasPermission(session, 'files:delete')) {
+        if (!hasPermission(session, 'files:delete:any')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
         const deleted = await withAudit(
@@ -166,7 +167,8 @@ export function createFileRoutes(plugins: AdminPlugins) {
             diff: { key: result.key },
             ...requestMeta(request, { trustProxy: plugins.trustProxy }),
           }),
-          (tx) => softDeleteFileForActor(params.id, { userId: session.userId, isAdmin: true }, tx),
+          (tx) =>
+            softDeleteFileForActor(params.id, { userId: session.userId, canAccessAny: true }, tx),
         )
         if (deleted.isErr()) {
           return status(404, { error: deleted.error, message: i18n('File not found') })
@@ -194,7 +196,7 @@ export function createFileRoutes(plugins: AdminPlugins) {
         detail: {
           tags: ['Admin/Files'],
           summary: '删除文件',
-          description: '软删除文件并尝试删除对象存储。\n\n- 需要 files:delete 权限',
+          description: '软删除文件并尝试删除对象存储。\n\n- 需要 files:delete:any 权限',
         },
       },
     )

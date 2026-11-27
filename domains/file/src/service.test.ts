@@ -128,7 +128,11 @@ describe('files', () => {
     expect((await getFileById(file.id, db)).isErr()).toBe(true)
     expect((await listFiles({ page: 1, pageSize: 10 }, db)).total).toBe(0)
 
-    const pending = await getPendingFileForActor(file.id, { userId: owner.id, isAdmin: false }, db)
+    const pending = await getPendingFileForActor(
+      file.id,
+      { userId: owner.id, canAccessAny: false },
+      db,
+    )
     expect(pending.isOk()).toBe(true)
 
     const ready = await markFileReady(file.id, { size: 2048, mime: 'image/png' }, db)

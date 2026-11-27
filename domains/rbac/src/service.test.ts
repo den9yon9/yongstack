@@ -45,7 +45,7 @@ describe('rbac', () => {
     const roles = await listRoles(db)
     expect(roles.map((role) => role.code)).toEqual(['admin', 'member'])
     expect(roles.find((role) => role.code === 'admin')?.permissions).toContain('users:read')
-    expect(roles.find((role) => role.code === 'member')?.permissions).toEqual(['files:read'])
+    expect(roles.find((role) => role.code === 'member')?.permissions).toEqual([])
 
     const permissions = await listPermissions(db)
     expect(permissions.map((permission) => permission.code)).toContain('users:write')
@@ -57,7 +57,7 @@ describe('rbac', () => {
 
     const access = await getUserAccess(user.id, db)
     expect(access.roles).toEqual(['member'])
-    expect(access.permissions).toEqual(['files:read'])
+    expect(access.permissions).toEqual([])
     expect(await hasRoleCode(user.id, 'member', db)).toBe(true)
   })
 
@@ -102,9 +102,9 @@ describe('custom roles', () => {
     if (updated.isErr()) throw updated.error
     expect(updated.value.name).toBe('Support Team')
 
-    const perms = await setRolePermissions('support', ['users:read', 'files:read'], db)
+    const perms = await setRolePermissions('support', ['users:read', 'files:read:any'], db)
     if (perms.isErr()) throw perms.error
-    expect(perms.value.permissions).toEqual(['files:read', 'users:read'])
+    expect(perms.value.permissions).toEqual(['files:read:any', 'users:read'])
 
     const user = await seedUser()
     const assigned = await assignRoles(user.id, ['support'], db)
@@ -179,8 +179,8 @@ describe('ensureRbacDefaults sync', () => {
 
     const roles = await listRoles(db)
     expect(roles.find((role) => role.code === 'admin')?.permissions).toContain('admin:access')
-    expect(roles.find((role) => role.code === 'member')?.permissions).toEqual(
-      expect.arrayContaining(['files:read', 'users:read']),
-    )
+    const memberPermissions = roles.find((role) => role.code === 'member')?.permissions ?? []
+    expect(memberPermissions).toContain('users:read')
+    expect(memberPermissions).not.toContain('files:read:any')
   })
 })

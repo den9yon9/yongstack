@@ -96,7 +96,7 @@ POST /files/:id/confirm    → HEAD 校验对象，files.status = 'ready'，记�
 - 下载 / 复制公开 URL / 软删除
 - 单文件上限沿用 `upload.maxBytes`（默认 5MB）
 - 允许类型由 `upload.allowedTypes` 控制（默认 JPEG / PNG / WebP / PDF）
-- 权限：`files:read` / `files:write` / `files:delete`
+- 权限：`files:read:any` / `files:write:any` / `files:delete:any`（跨用户作用域；自有文件按 owner 隐式授权，不需要权限码）
 
 数据库 `files` 表是业务资产事实源；对象存储 bucket 只负责物理文件，不再提供独立的「存储资源」页面。
 
