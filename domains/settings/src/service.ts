@@ -1,7 +1,7 @@
 import { Value } from '@sinclair/typebox/value'
 import { type DbClient, schema, withTransaction } from '@yongstack/database'
 import { err, InvariantViolation, ok, type Result } from '@yongstack/shared'
-import { eq, sql } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 
 import {
   definitionFor,
@@ -27,17 +27,41 @@ export interface SettingItem {
   updatedAt: Date | null
 }
 
+// 批量读取: 一次 WHERE key IN (...) 拿回多个设置, 避免上传路径两次往返。
+export async function getSettings<K extends readonly SettingKey[]>(
+  keys: K,
+  client: DbClient,
+): Promise<{ [P in K[number]]: SettingValue<P> }> {
+  const values = {} as Record<SettingKey, unknown>
+  if (keys.length === 0) return values as { [P in K[number]]: SettingValue<P> }
+
+  const rows = await client
+    .select()
+    .from(schema.settings)
+    .where(inArray(schema.settings.key, [...keys]))
+  const rowByKey = new Map(rows.map((row) => [row.key, row]))
+
+  for (const key of keys) {
+    const row = rowByKey.get(key)
+    const definition = SETTING_DEFINITIONS[key]
+    if (!row) {
+      values[key] = definition.defaultValue
+      continue
+    }
+    if (!Value.Check(definition.schema, row.value)) {
+      throw new InvariantViolation(`invalid stored setting: ${key}`)
+    }
+    values[key] = row.value
+  }
+  return values as { [P in K[number]]: SettingValue<P> }
+}
+
 export async function getSetting<K extends SettingKey>(
   key: K,
   client: DbClient,
 ): Promise<SettingValue<K>> {
-  const [row] = await client.select().from(schema.settings).where(eq(schema.settings.key, key))
-  const definition = SETTING_DEFINITIONS[key]
-  if (!row) return definition.defaultValue as SettingValue<K>
-  if (!Value.Check(definition.schema, row.value)) {
-    throw new InvariantViolation(`invalid stored setting: ${key}`)
-  }
-  return row.value as SettingValue<K>
+  const values = await getSettings([key], client)
+  return values[key]
 }
 
 export async function listSettings(client: DbClient): Promise<SettingItem[]> {

@@ -9,7 +9,7 @@ import {
   markFileReady,
   softDeleteFileForActor,
 } from '@yongstack/file'
-import { getSetting } from '@yongstack/settings'
+import { getSettings } from '@yongstack/settings'
 import { err, InvariantViolation, type Logger, ok, type Result } from '@yongstack/shared'
 import { fileTypeFromBuffer } from 'file-type'
 import { imageSize } from 'image-size'
@@ -70,10 +70,11 @@ function normalizeContentType(value: string): string {
 }
 
 async function resolveUploadSettings(db: DbClient) {
-  const [maxBytes, allowedTypes] = await Promise.all([
-    getSetting('upload.maxBytes', db),
-    getSetting('upload.allowedTypes', db),
-  ])
+  // 一次 WHERE key IN (...) 取回两个设置, 上传路径只有一次往返
+  const { 'upload.maxBytes': maxBytes, 'upload.allowedTypes': allowedTypes } = await getSettings(
+    ['upload.maxBytes', 'upload.allowedTypes'],
+    db,
+  )
   return { maxBytes, allowedTypes }
 }
 

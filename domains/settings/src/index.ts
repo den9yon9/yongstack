@@ -9,6 +9,7 @@ export {
 export {
   getAppName,
   getSetting,
+  getSettings,
   isEmailVerificationRequired,
   isFeatureEnabled,
   listSettings,

@@ -1,11 +1,13 @@
 import { closeDb, type Db, schema } from '@yongstack/database'
 import { prepareTestDb, resetDb } from '@yongstack/database/testing'
+import { InvariantViolation } from '@yongstack/shared'
 import { createUser } from '@yongstack/testkit'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 
 import {
   getAppName,
   getSetting,
+  getSettings,
   isEmailVerificationRequired,
   isFeatureEnabled,
   listSettings,
@@ -81,5 +83,26 @@ describe('settings', () => {
   test('throws on invalid stored values', async () => {
     await db.insert(schema.settings).values({ key: 'app.name', value: 123 })
     expect(listSettings(db)).rejects.toThrow(/invalid stored setting/)
+  })
+})
+
+describe('getSettings batch', () => {
+  test('returns stored values and defaults in one call', async () => {
+    const updatedBy = await seedUser()
+    await updateSettings({ 'upload.maxBytes': 123 }, db, updatedBy)
+
+    const values = await getSettings(['upload.maxBytes', 'upload.allowedTypes', 'app.name'], db)
+    expect(values['upload.maxBytes']).toBe(123)
+    expect(values['upload.allowedTypes']).toContain('image/png')
+    expect(values['app.name']).toBe('Yongstack')
+  })
+
+  test('rejects an invalid stored value like getSetting does', async () => {
+    await db
+      .insert(schema.settings)
+      .values({ key: 'upload.maxBytes', value: -1, description: 'broken' })
+      .onConflictDoUpdate({ target: schema.settings.key, set: { value: -1 } })
+
+    await expect(getSettings(['upload.maxBytes'], db)).rejects.toThrow(InvariantViolation)
   })
 })
