@@ -14,3 +14,8 @@ commit-msg:
   commands:
     commitlint:
       run: pnpm commitlint --edit {1}
+
+pre-push:
+  commands:
+    rules:
+      run: pnpm test:rules

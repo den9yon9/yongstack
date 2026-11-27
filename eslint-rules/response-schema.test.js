@@ -1,15 +1,7 @@
-import { describe, it } from 'bun:test'
-import { RuleTester } from 'eslint'
-
 import plugin from './response-schema.js'
+import { createTester } from './test-utils.js'
 
-RuleTester.describe = describe
-RuleTester.it = it
-RuleTester.itOnly = it.only
-
-const tester = new RuleTester({
-  languageOptions: { ecmaVersion: 'latest', sourceType: 'module' },
-})
+const tester = createTester()
 
 const IMPORTS = [
   "import { Type } from '@sinclair/typebox'",

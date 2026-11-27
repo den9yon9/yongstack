@@ -7,7 +7,7 @@
     "bootstrap:check": "bun scripts/dev-bootstrap.ts --check-only",
     "bootstrap:reset": "bun scripts/dev-bootstrap.ts --reset",
     "build": "turbo build",
-    "check": "eslint . && prettier --check .",
+    "check": "eslint . && prettier --check . && bun test eslint-rules",
     "check:config": "bun scripts/check-config.ts",
     "clean": "rm -rf apps/*/dist packages/*/dist domains/*/dist usecases/*/dist apps/*/.turbo packages/*/.turbo domains/*/.turbo usecases/*/.turbo",
     "db:backup": "bun scripts/db-backup.ts",

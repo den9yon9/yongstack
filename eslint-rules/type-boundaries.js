@@ -23,10 +23,26 @@ const rule = {
     },
   },
   create(context) {
+    function hasInlineTypeSpecifier(node) {
+      if (node.type === 'ImportDeclaration') {
+        return node.specifiers.some(
+          (specifier) => specifier.type === 'ImportSpecifier' && specifier.importKind === 'type',
+        )
+      }
+      if (node.type === 'ExportNamedDeclaration') {
+        return node.specifiers.some(
+          (specifier) => specifier.type === 'ExportSpecifier' && specifier.exportKind === 'type',
+        )
+      }
+      return false
+    }
+
     function check(node) {
       // ImportDeclaration: `import type { X } from '...'` (importKind === 'type')
       // ExportAllDeclaration/ExportNamedDeclaration: `export type { X } from '...'`
-      if (node.importKind !== 'type' && node.exportKind !== 'type') return
+      // 也要抓内联写法: `import { type X }` / `export { type X }`
+      const isTypeOnly = node.importKind === 'type' || node.exportKind === 'type'
+      if (!isTypeOnly && !hasInlineTypeSpecifier(node)) return
       if (typeof node.source?.value !== 'string') return
       if (!INFRA_RE.test(node.source.value)) return
 
