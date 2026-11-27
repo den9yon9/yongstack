@@ -5,7 +5,7 @@ import { createEnv } from './env'
 describe('worker env', () => {
   test('defaults mail and outbox config', () => {
     const env = createEnv({
-      REDIS_URL: 'redis://localhost:6379',
+      REDIS_QUEUE_URL: 'redis://localhost:6379',
       DATABASE_URL: 'postgres://localhost:5432/yongstack',
       LOG_LEVEL: 'silent',
     })
@@ -18,7 +18,7 @@ describe('worker env', () => {
 
   test('parses smtp config', () => {
     const env = createEnv({
-      REDIS_URL: 'redis://localhost:6379',
+      REDIS_QUEUE_URL: 'redis://localhost:6379',
       DATABASE_URL: 'postgres://localhost:5432/yongstack',
       LOG_LEVEL: 'silent',
       MAIL_TRANSPORT: 'smtp',

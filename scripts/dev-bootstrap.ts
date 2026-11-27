@@ -340,10 +340,12 @@ function validateStorageEnv(env: EnvValues, external: boolean): void {
 
 async function checkExistingInfrastructure(env: EnvValues, opts: Options): Promise<void> {
   const db = hostPort(requiredEnv(env, 'DATABASE_URL'), 5432, 'DATABASE_URL')
-  const redis = hostPort(requiredEnv(env, 'REDIS_URL'), 6379, 'REDIS_URL')
+  const sessionRedis = hostPort(requiredEnv(env, 'REDIS_SESSION_URL'), 6379, 'REDIS_SESSION_URL')
+  const queueRedis = hostPort(requiredEnv(env, 'REDIS_QUEUE_URL'), 6380, 'REDIS_QUEUE_URL')
   for (const [label, target] of [
     ['Postgres', db],
-    ['Redis', redis],
+    ['Redis(session)', sessionRedis],
+    ['Redis(queue)', queueRedis],
   ] as const) {
     if (!(await isPortOpen(target.host, target.port, 3000))) {
       fail(
@@ -372,7 +374,9 @@ async function startDockerInfrastructure(env: EnvValues, opts: Options): Promise
     await run('reset local Docker volumes', ['docker', 'compose', '-f', COMPOSE_PATH, 'down', '-v'])
   }
 
-  const services = opts.externalStorage ? ['postgres', 'redis'] : ['postgres', 'redis', 'seaweedfs']
+  const services = opts.externalStorage
+    ? ['postgres', 'redis-session', 'redis-queue']
+    : ['postgres', 'redis-session', 'redis-queue', 'seaweedfs']
   try {
     await run('start local infrastructure', [
       'docker',
@@ -386,17 +390,20 @@ async function startDockerInfrastructure(env: EnvValues, opts: Options): Promise
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     throw new Error(
-      `${message}\nIf ports 5432/6379/8333 are already in use, stop the existing services or rerun with --no-docker.`,
+      `${message}\nIf ports 5432/6379/6380/8333 are already in use, stop the existing services or rerun with --no-docker.`,
       { cause: error },
     )
   }
 
   const db = hostPort(requiredEnv(env, 'DATABASE_URL'), 5432, 'DATABASE_URL')
-  const redis = hostPort(requiredEnv(env, 'REDIS_URL'), 6379, 'REDIS_URL')
+  const sessionRedis = hostPort(requiredEnv(env, 'REDIS_SESSION_URL'), 6379, 'REDIS_SESSION_URL')
+  const queueRedis = hostPort(requiredEnv(env, 'REDIS_QUEUE_URL'), 6380, 'REDIS_QUEUE_URL')
   await waitForPort('Postgres', db.host, db.port)
-  await waitForPort('Redis', redis.host, redis.port)
+  await waitForPort('Redis(session)', sessionRedis.host, sessionRedis.port)
+  await waitForPort('Redis(queue)', queueRedis.host, queueRedis.port)
   info(`[ok] Postgres ${db.host}:${db.port}`)
-  info(`[ok] Redis ${redis.host}:${redis.port}`)
+  info(`[ok] Redis(session) ${sessionRedis.host}:${sessionRedis.port}`)
+  info(`[ok] Redis(queue) ${queueRedis.host}:${queueRedis.port}`)
 
   if (!opts.externalStorage) {
     const storage = hostPort(requiredEnv(env, 'STORAGE_ENDPOINT'), 8333, 'STORAGE_ENDPOINT')
@@ -479,11 +486,21 @@ async function checkOnly(env: EnvValues, opts: Options): Promise<void> {
       )
       if (dockerOk && composeOk) {
         const db = hostPort(requiredEnv(env, 'DATABASE_URL'), 5432, 'DATABASE_URL')
-        const redis = hostPort(requiredEnv(env, 'REDIS_URL'), 6379, 'REDIS_URL')
+        const sessionRedis = hostPort(
+          requiredEnv(env, 'REDIS_SESSION_URL'),
+          6379,
+          'REDIS_SESSION_URL',
+        )
+        const queueRedis = hostPort(requiredEnv(env, 'REDIS_QUEUE_URL'), 6380, 'REDIS_QUEUE_URL')
         await check('Postgres reachable', await isPortOpen(db.host, db.port), 'run pnpm bootstrap')
         await check(
-          'Redis reachable',
-          await isPortOpen(redis.host, redis.port),
+          'Redis(session) reachable',
+          await isPortOpen(sessionRedis.host, sessionRedis.port),
+          'run pnpm bootstrap',
+        )
+        await check(
+          'Redis(queue) reachable',
+          await isPortOpen(queueRedis.host, queueRedis.port),
           'run pnpm bootstrap',
         )
         if (!opts.externalStorage) {

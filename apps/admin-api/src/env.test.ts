@@ -4,7 +4,8 @@ import { createEnv } from './env'
 
 const BASE_ENV = {
   DATABASE_URL: 'postgres://user:pass@localhost:5432/yongstack',
-  REDIS_URL: 'redis://localhost:6379',
+  REDIS_SESSION_URL: 'redis://localhost:6379',
+  REDIS_QUEUE_URL: 'redis://localhost:6380',
   SESSION_SECRET: 'x'.repeat(32),
   ADMIN_PORT: '3001',
   STORAGE_BUCKET: 'yongstack',

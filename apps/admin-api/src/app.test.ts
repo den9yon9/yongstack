@@ -2,7 +2,7 @@ import { treaty } from '@elysiajs/eden'
 import { closeDb, type Db, schema } from '@yongstack/database'
 import { prepareTestDb, resetDb } from '@yongstack/database/testing'
 import { assignRoles, ensureRbacDefaults, setRolePermissions } from '@yongstack/rbac'
-import { createRedisClient, type Redis } from '@yongstack/redis'
+import { createSessionRedisClient, type Redis } from '@yongstack/redis'
 import { flushTestRedis } from '@yongstack/redis/testing'
 import { createLogger } from '@yongstack/shared'
 import { getTestEnv } from '@yongstack/shared/testing'
@@ -27,11 +27,11 @@ let sms: MemorySmsProvider
 beforeAll(async () => {
   db = await prepareTestDb()
   await ensureRbacDefaults(db)
-  redis = createRedisClient(env.TESTING_REDIS_URL)
+  redis = createSessionRedisClient(env.TESTING_REDIS_URL)
   await redis.connect()
   storage = createInMemoryStorage()
   sms = createMemorySmsProvider()
-  app = buildApp(createTestDeps({ db, redis }))
+  app = buildApp(createTestDeps({ db, sessionRedis: redis, queueRedis: redis }))
   api = treaty<typeof app>(app)
 })
 
@@ -47,7 +47,7 @@ beforeEach(async () => {
   sms.messages.length = 0
 })
 
-function createTestDeps(deps: { db: Db; redis: Redis }): AdminAppOptions {
+function createTestDeps(deps: { db: Db; sessionRedis: Redis; queueRedis: Redis }): AdminAppOptions {
   return {
     ...deps,
     storage,

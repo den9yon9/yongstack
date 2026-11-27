@@ -26,3 +26,11 @@ scrape_configs:
   - job_name: worker
     static_configs:
       - targets: ['host.docker.internal:3100']
+
+  - job_name: redis-session
+    static_configs:
+      - targets: ['redis-exporter-session:9121']
+
+  - job_name: redis-queue
+    static_configs:
+      - targets: ['redis-exporter-queue:9121']

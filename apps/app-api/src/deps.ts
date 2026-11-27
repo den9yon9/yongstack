@@ -1,6 +1,6 @@
 import { createDb, type Db } from '@yongstack/database'
 import { type Locale } from '@yongstack/i18n'
-import { createRedisClient, type Redis } from '@yongstack/redis'
+import { createSessionRedisClient, type Redis } from '@yongstack/redis'
 import { createLogger, type Logger } from '@yongstack/shared'
 import { createSmsProvider, type SmsProvider } from '@yongstack/sms'
 import { createStorage, type Storage } from '@yongstack/storage'
@@ -11,7 +11,7 @@ export const APP_SESSION_COOKIE = 'yongstack_session'
 
 export interface AppOptions {
   db: Db
-  redis: Redis
+  sessionRedis: Redis
   storage: Storage
   sms: SmsProvider
   sessionCookieName: string
@@ -34,7 +34,7 @@ export function createAppDeps(env: AppEnv): AppOptions {
   const logger = createLogger(env.LOG_LEVEL)
   return {
     db: createDb(env.DATABASE_URL),
-    redis: createRedisClient(env.REDIS_URL),
+    sessionRedis: createSessionRedisClient(env.REDIS_SESSION_URL),
     storage: createStorage(env),
     sms: createSmsProvider({ provider: env.SMS_PROVIDER, signName: env.SMS_SIGN_NAME }, logger),
     sessionCookieName: APP_SESSION_COOKIE,

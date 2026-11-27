@@ -26,7 +26,7 @@ macOS / Linux 直接使用；Windows 建议 WSL2。
 1. 检查 Bun / Node / pnpm；默认 Docker 模式还会检查 Docker。
 2. 没有 `.env` 就从 `.env.example` 创建，并生成 `SESSION_SECRET`。
 3. 执行 `pnpm install`。
-4. 启动 `postgres`、`redis`、`seaweedfs`（或使用已有服务）。
+4. 启动 `postgres`、`redis-session`、`redis-queue`、`seaweedfs`（或使用已有服务）。
 5. 执行 `pnpm storage:init` 创建媒体 bucket。
 6. 执行 `db:migrate`。
 7. 执行 `db:seed`，按 `ADMIN_EMAIL` / `ADMIN_PASSWORD` 创建或更新管理员。
@@ -55,7 +55,7 @@ macOS / Linux 直接使用；Windows 建议 WSL2。
 ## 常用参数
 
 ```bash
-pnpm bootstrap                     # Docker 起 PG/Redis/SeaweedFS
+pnpm bootstrap                     # Docker 起 PG/Redis(session+queue)/SeaweedFS
 pnpm bootstrap --no-docker         # 使用 .env 里已经配置好的服务
 pnpm bootstrap --external-storage  # 用 R2/COS，跳过 SeaweedFS 和 storage:init
 pnpm bootstrap --reset             # 删除本地 Docker 数据卷后重来（二次确认）
@@ -73,7 +73,7 @@ bun scripts/dev-bootstrap.ts --help
 两种选择：
 
 1. 安装 Docker Desktop / OrbStack / Colima，然后重新执行 `pnpm bootstrap`。
-2. 自己准备 Postgres、Redis、S3 兼容存储，配置 `.env` 后执行：
+2. 自己准备 Postgres、两个 Redis(session/queue)、S3 兼容存储，配置 `.env` 后执行：
 
 ```bash
 pnpm bootstrap --no-docker

@@ -60,13 +60,19 @@ export function livenessCheck(): Response {
   return Response.json({ status: 'ok' })
 }
 
-interface HealthCheckDeps {
-  db: { execute: (sql: string) => Promise<unknown> }
-  redis: { ping: () => Promise<unknown> }
+interface PingableRedis {
+  ping: () => Promise<unknown>
 }
 
-// readiness: 是否可接收流量; 依赖 DB + Redis。
+interface HealthCheckDeps {
+  db: { execute: (sql: string) => Promise<unknown> }
+  // 单实例或[session, queue]; readiness 要求全部可用
+  redis: PingableRedis | PingableRedis[]
+}
+
+// readiness: 是否可接收流量; 依赖 DB + 所有传入的 Redis 实例。
 export async function healthCheck({ db, redis }: HealthCheckDeps): Promise<Response> {
+  const clients = Array.isArray(redis) ? redis : [redis]
   let dbOk = false
   let redisOk = false
   try {
@@ -74,8 +80,8 @@ export async function healthCheck({ db, redis }: HealthCheckDeps): Promise<Respo
     dbOk = true
   } catch {}
   try {
-    await redis.ping()
-    redisOk = true
+    const results = await Promise.allSettled(clients.map((client) => client.ping()))
+    redisOk = results.every((result) => result.status === 'fulfilled')
   } catch {}
   const healthy = dbOk && redisOk
   return Response.json(

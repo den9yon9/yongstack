@@ -2,6 +2,7 @@ import { dbPlugin, localePlugin, redisPlugin } from '@yongstack/http'
 import { EMAIL_QUEUE_NAME, type SendEmailJobData } from '@yongstack/notifications'
 import { createQueue, MAINTENANCE_QUEUE_NAME, type Queue } from '@yongstack/queue'
 import { ADMIN_ACCESS_PERMISSION } from '@yongstack/rbac'
+import type { Redis } from '@yongstack/redis'
 import { apiRateLimit, authRateLimit, createSessionPlugin } from '@yongstack/session'
 import { type Logger } from '@yongstack/shared'
 import { type SmsProvider } from '@yongstack/sms'
@@ -15,7 +16,10 @@ export interface AdminPlugins {
   sessionPlugin: ReturnType<typeof createSessionPlugin>
   authRateLimit: ReturnType<typeof authRateLimit>
   apiRateLimit: ReturnType<typeof apiRateLimit>
-  // 队列运维: 共享 redis 连接只读 job counts(无阻塞命令, 进程退出随 redis 关闭)
+  // session / 限流连接(与队列实例隔离)
+  sessionRedis: Redis
+  // 队列运维: 专用 queue 连接只读 job counts(无阻塞命令)
+  queueRedis: Redis
   emailQueue: Queue<SendEmailJobData>
   queues: Record<string, Queue>
   sessionCookieName: string
@@ -34,7 +38,8 @@ export interface AdminPlugins {
 export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): AdminPlugins {
   const {
     db,
-    redis,
+    sessionRedis,
+    queueRedis,
     storage,
     sms,
     sessionCookieName,
@@ -47,10 +52,10 @@ export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): Adm
   } = options
   return {
     dbPlugin: dbPlugin(db),
-    redisPlugin: redisPlugin(redis, { logger }),
+    redisPlugin: redisPlugin(sessionRedis, { logger }),
     localePlugin: localePlugin({ defaultLocale: options.defaultLocale }),
     sessionPlugin: createSessionPlugin({
-      redis,
+      redis: sessionRedis,
       sessionSecret,
       cookieName: sessionCookieName,
       isProduction,
@@ -59,22 +64,26 @@ export function createPlugins(options: Omit<AdminAppOptions, 'corsOrigin'>): Adm
       adminAccessPermission: ADMIN_ACCESS_PERMISSION,
     }),
     authRateLimit: authRateLimit({
-      redis,
+      redis: sessionRedis,
       prefix: 'rl:admin',
       trustProxy,
       defaultLocale: options.defaultLocale,
     }),
     apiRateLimit: apiRateLimit({
-      redis,
+      redis: sessionRedis,
       prefix: 'rl:admin:api',
       trustProxy,
       defaultLocale: options.defaultLocale,
     }),
-    emailQueue: createQueue<SendEmailJobData>(EMAIL_QUEUE_NAME, { connection: redis }),
+    emailQueue: createQueue<SendEmailJobData>(EMAIL_QUEUE_NAME, { connection: queueRedis }),
     queues: {
-      [EMAIL_QUEUE_NAME]: createQueue<SendEmailJobData>(EMAIL_QUEUE_NAME, { connection: redis }),
-      [MAINTENANCE_QUEUE_NAME]: createQueue(MAINTENANCE_QUEUE_NAME, { connection: redis }),
+      [EMAIL_QUEUE_NAME]: createQueue<SendEmailJobData>(EMAIL_QUEUE_NAME, {
+        connection: queueRedis,
+      }),
+      [MAINTENANCE_QUEUE_NAME]: createQueue(MAINTENANCE_QUEUE_NAME, { connection: queueRedis }),
     },
+    sessionRedis,
+    queueRedis,
     sessionCookieName,
     storage,
     sms,

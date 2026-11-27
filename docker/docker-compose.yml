@@ -20,10 +20,22 @@ services:
       retries: 5
     restart: unless-stopped
 
-  redis:
+  # 本地开发同样拆两个实例, 与生产拓扑保持一致(session+限流 / BullMQ)
+  redis-session:
     image: redis:7-alpine
     ports:
       - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  redis-queue:
+    image: redis:7-alpine
+    ports:
+      - '6380:6379'
     volumes:
       - redisdata:/data
     healthcheck:
@@ -87,7 +99,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      redis-session:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
@@ -113,7 +125,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      redis-session:
+        condition: service_healthy
+      redis-queue:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
@@ -137,7 +151,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      redis-queue:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully

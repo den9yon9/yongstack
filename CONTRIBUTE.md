@@ -315,5 +315,5 @@ elysia 2.0 已进入 beta（2026-08 时点 beta.4），eden 配套 2.x 未发版
 
 - GitHub Actions：ESLint + Prettier + i18n → typecheck → build → commitlint → 真实 Postgres 迁移重放 → e2e（含 SeaweedFS）→ Docker 镜像构建验证
 - 镜像：根目录 Dockerfile，`--build-arg APP=<app 名>` 选择服务；docker compose 含 migrate 前置服务
-- compose 容器内网互访用 `postgres:5432` / `redis:6379`；若本地用非 compose 方式跑 PG，
+- compose 容器内网互访用 `postgres:5432` / `redis-session:6379` / `redis-queue:6379`；若本地用非 compose 方式跑 PG，
   端口以 `.env` 的 `DATABASE_URL` 为准——两套环境不能共用同一份 `.env` 端口配置

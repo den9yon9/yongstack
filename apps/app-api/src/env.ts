@@ -23,7 +23,8 @@ const trustProxy = Type.Transform(Type.String({ default: 'false' }))
 
 const appEnvSchema = Type.Object({
   DATABASE_URL: Type.String({ format: 'uri' }),
-  REDIS_URL: Type.String({ format: 'uri' }),
+  // session + 限流共用一个实例(只放带 TTL 的 key)
+  REDIS_SESSION_URL: Type.String({ format: 'uri' }),
   SESSION_SECRET: Type.String({ minLength: 32 }),
   NODE_ENV: Type.Union(
     [Type.Literal('development'), Type.Literal('production'), Type.Literal('test')],

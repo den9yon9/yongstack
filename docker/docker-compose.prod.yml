@@ -29,11 +29,40 @@ services:
         max-size: '10m'
         max-file: '3'
 
-  redis:
+  # session + 限流: 只放带 TTL 的 key, 内存满时淘汰最久未用的会话(可接受)。
+  redis-session:
     image: redis:7-alpine
-    command: ['redis-server', '--appendonly', 'yes']
+    command:
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - volatile-lru
     volumes:
-      - redisdata:/data
+      - redis_session_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    logging: *logging
+
+  # BullMQ: 绝不能淘汰 job/锁; 内存满时写失败(producer 报错 → outbox 重试), 而不是静默丢任务。
+  redis-queue:
+    image: redis:7-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
+    volumes:
+      - redis_queue_data:/data
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
@@ -66,7 +95,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      redis-session:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
@@ -89,7 +118,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      redis-session:
+        condition: service_healthy
+      redis-queue:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
@@ -114,7 +145,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      redis-queue:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
@@ -207,6 +238,26 @@ services:
     restart: unless-stopped
     logging: *logging
 
+  redis-exporter-session:
+    profiles: ['observability']
+    image: oliver006/redis_exporter:v1.62.0
+    environment:
+      REDIS_ADDR: redis://redis-session:6379
+    depends_on:
+      - redis-session
+    restart: unless-stopped
+    logging: *logging
+
+  redis-exporter-queue:
+    profiles: ['observability']
+    image: oliver006/redis_exporter:v1.62.0
+    environment:
+      REDIS_ADDR: redis://redis-queue:6379
+    depends_on:
+      - redis-queue
+    restart: unless-stopped
+    logging: *logging
+
   prometheus:
     profiles: ['observability']
     image: prom/prometheus:v2.53.0
@@ -251,7 +302,8 @@ services:
 
 volumes:
   pgdata:
-  redisdata:
+  redis_session_data:
+  redis_queue_data:
   caddy_data:
   caddy_config:
   backups:

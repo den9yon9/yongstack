@@ -61,6 +61,8 @@ export function buildApp(options: AdminAppOptions) {
     })
     .onStop(async () => {
       await errorReporter.flush()
+      // session 连接由 redisPlugin 关闭; queue 连接由组装根收尾(测试中两者可能复用同一实例)
+      if (plugins.queueRedis !== plugins.sessionRedis) await plugins.queueRedis.quit()
     })
     .use(securityHeaders(options.isProduction))
     .use(plugins.redisPlugin)
@@ -105,8 +107,10 @@ export function buildApp(options: AdminAppOptions) {
       },
     )
     .get('/health/live', () => livenessCheck())
-    .get('/health/ready', ({ db, redis }) => healthCheck({ db, redis }))
-    .get('/health', ({ db, redis }) => healthCheck({ db, redis }))
+    .get('/health/ready', ({ db, redis }) =>
+      healthCheck({ db, redis: [redis, plugins.queueRedis] }),
+    )
+    .get('/health', ({ db, redis }) => healthCheck({ db, redis: [redis, plugins.queueRedis] }))
     .get(
       '/metrics',
       async () =>

@@ -17,7 +17,7 @@ const workerEnvSchema = Type.Object({
     ],
     { default: 'info' },
   ),
-  REDIS_URL: Type.String({ format: 'uri' }),
+  REDIS_QUEUE_URL: Type.String({ format: 'uri' }),
   DATABASE_URL: Type.String({ format: 'uri' }),
   // 可选健康端口: 设置后起一个极简 HTTP /health(容器健康检查与 e2e 就绪探测用)
   HEALTH_PORT: Type.Optional(Type.String({ pattern: '^\\d+$' })),

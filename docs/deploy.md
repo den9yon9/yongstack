@@ -18,7 +18,11 @@ chmod 600 .env.production
 
 关键点：
 
-- `DATABASE_URL` / `REDIS_URL` 的主机名必须是 compose 服务名 `postgres` / `redis`
+- `DATABASE_URL` 的主机名必须是 compose 服务名 `postgres`
+- `REDIS_SESSION_URL` / `REDIS_QUEUE_URL` 分别指向 `redis-session` / `redis-queue`：
+  session+限流与 BullMQ 必须分实例，避免一套全局 `maxmemory-policy` 同时服务两种持久性要求
+- Redis 内存上限在 `docker/docker-compose.prod.yml` 里按部署规格调整（默认 session 256MB /
+  queue 512MB；queue 必须 `noeviction`）；调大前先看 `RedisMemoryHigh` 告警与主机余量
 - `CORS_ORIGIN` 填两个前端域名，用逗号分隔
 - `STORAGE_UPLOAD_ORIGIN` 填 `STORAGE_ENDPOINT` 的 **origin**（R2 形如
   `https://<account-id>.r2.cloudflarestorage.com`）：前端 CSP 的 `connect-src`

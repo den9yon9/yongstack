@@ -10,6 +10,6 @@ export function registerMaintenanceWorker(env: WorkerEnv, db: Db, logger: Logger
   return createWorker<unknown>(
     MAINTENANCE_QUEUE_NAME,
     createDispatcher(createMaintenanceHandlers(env, db), logger),
-    { redisUrl: env.REDIS_URL, logger, concurrency: 1 },
+    { redisUrl: env.REDIS_QUEUE_URL, logger, concurrency: 1 },
   )
 }

@@ -21,10 +21,19 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 5
-      redis:
+      redis-session:
         image: redis:7-alpine
         ports:
           - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+      redis-queue:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s
@@ -104,10 +113,11 @@ jobs:
         run: |
           cat > .env <<'EOF'
           DATABASE_URL=postgres://yongstack:yongstack@localhost:5432/yongstack
-          REDIS_URL=redis://localhost:6379
+          REDIS_SESSION_URL=redis://localhost:6379
+          REDIS_QUEUE_URL=redis://localhost:6380
           SESSION_SECRET=test-session-secret-0123456789abcdef
           LOG_LEVEL=silent
-          CORS_ORIGIN=*
+          CORS_ORIGIN=http://localhost:5173,http://localhost:5174
           TRUST_PROXY=false
           APP_PORT=3000
           ADMIN_PORT=3001
@@ -182,10 +192,11 @@ jobs:
           docker build --build-arg APP=app-api -t yongstack-smoke .
           docker run -d --name yongstack-smoke --network=host \
             -e DATABASE_URL=postgres://yongstack:yongstack@localhost:5432/yongstack_test \
-            -e REDIS_URL=redis://localhost:6379/1 \
+            -e REDIS_SESSION_URL=redis://localhost:6379/1 \
+            -e REDIS_QUEUE_URL=redis://localhost:6380/1 \
             -e SESSION_SECRET=test-session-secret-0123456789abcdef \
             -e NODE_ENV=test \
-            -e CORS_ORIGIN='*' \
+            -e CORS_ORIGIN=http://localhost:5173 \
             -e TRUST_PROXY=false \
             -e APP_PORT=3000 \
             -e LOG_LEVEL=silent \

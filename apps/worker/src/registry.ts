@@ -44,9 +44,11 @@ export async function registerWorkers(env: WorkerEnv, logger: Logger): Promise<W
     logger,
   )
 
-  const emailQueue = createQueue<SendEmailJobData>(EMAIL_QUEUE_NAME, { redisUrl: env.REDIS_URL })
-  const emailWorker = registerEmailWorker(env.REDIS_URL, mailer, logger)
-  const maintenanceQueue = createQueue(MAINTENANCE_QUEUE_NAME, { redisUrl: env.REDIS_URL })
+  const emailQueue = createQueue<SendEmailJobData>(EMAIL_QUEUE_NAME, {
+    redisUrl: env.REDIS_QUEUE_URL,
+  })
+  const emailWorker = registerEmailWorker(env.REDIS_QUEUE_URL, mailer, logger)
+  const maintenanceQueue = createQueue(MAINTENANCE_QUEUE_NAME, { redisUrl: env.REDIS_QUEUE_URL })
 
   // 共享同一个连接池: outbox 与 file cleanup 复用, 由本组装根统一关闭
   const sharedDb: Db = createDb(env.DATABASE_URL)

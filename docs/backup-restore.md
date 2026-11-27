@@ -5,7 +5,7 @@
 - **每日全量备份**：生产 compose 的 `backup` 服务用 `pg_dump --format=custom` 导出到 `backups` 卷
 - **保留期**：`BACKUP_RETENTION_DAYS`（默认 14 天）
 - **验证**：每次备份后立即 `pg_restore --list`，损坏文件会被删除
-- **Redis**：开启 AOF；Redis 只保存在线会话/限流/队列状态，outbox 事件在 PostgreSQL 中，Redis 丢失不会丢业务事件
+- **Redis**：session / queue 两个实例均开启 AOF；只保存在线会话/限流/队列状态，outbox 事件在 PostgreSQL 中，Redis 丢失不会丢业务事件（队列未投递的邮件可由 outbox 重放）
 
 ## 手动备份
 

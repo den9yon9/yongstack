@@ -1,5 +1,5 @@
 import { type Redis } from '@yongstack/redis'
-import { createRedisClient } from '@yongstack/redis'
+import { createSessionRedisClient } from '@yongstack/redis'
 import { flushTestRedis } from '@yongstack/redis/testing'
 import { getTestEnv } from '@yongstack/shared/testing'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
@@ -11,7 +11,7 @@ const env = getTestEnv()
 let redis: Redis
 
 beforeAll(async () => {
-  redis = createRedisClient(env.TESTING_REDIS_URL)
+  redis = createSessionRedisClient(env.TESTING_REDIS_URL)
   await redis.connect()
 })
 

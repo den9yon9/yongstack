@@ -40,7 +40,7 @@ export function createPlugins(
 ): AppPlugins {
   const {
     db,
-    redis,
+    sessionRedis,
     storage,
     sms,
     sessionCookieName,
@@ -53,10 +53,10 @@ export function createPlugins(
   } = options
   return {
     dbPlugin: dbPlugin(db),
-    redisPlugin: redisPlugin(redis, { logger }),
+    redisPlugin: redisPlugin(sessionRedis, { logger }),
     localePlugin: localePlugin({ defaultLocale: options.defaultLocale }),
     sessionPlugin: createSessionPlugin({
-      redis,
+      redis: sessionRedis,
       sessionSecret,
       cookieName: sessionCookieName,
       isProduction,
@@ -65,13 +65,13 @@ export function createPlugins(
       adminAccessPermission: ADMIN_ACCESS_PERMISSION,
     }),
     authRateLimit: authRateLimit({
-      redis,
+      redis: sessionRedis,
       prefix: 'rl:auth',
       trustProxy,
       defaultLocale: options.defaultLocale,
     }),
     apiRateLimit: apiRateLimit({
-      redis,
+      redis: sessionRedis,
       prefix: 'rl:api',
       trustProxy,
       defaultLocale: options.defaultLocale,
