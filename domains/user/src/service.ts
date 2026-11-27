@@ -15,6 +15,17 @@ import type {
   UserListQuerySchema,
   VerifyEmailInputSchema,
 } from './model'
+import {
+  canUnbindPhone,
+  decidePhoneCodeResend,
+  decideTokenUse,
+  EMAIL_VERIFICATION_TTL_MS,
+  exceedsHourlyCodeLimit,
+  exceedsMaxCodeAttempts,
+  isPhoneCodeExpired,
+  PASSWORD_RESET_TTL_MS,
+  PHONE_CODE_TTL_MS,
+} from './rules'
 
 export type RegisterUserError = 'EMAIL_ALREADY_REGISTERED'
 export type LoginUserError = 'LOGIN_FAILED' | 'ACCOUNT_DISABLED'
@@ -44,13 +55,6 @@ export type PhoneUserError = 'USER_NOT_FOUND' | 'PHONE_ALREADY_IN_USE' | 'CANNOT
 
 type User = typeof schema.users.$inferSelect
 export type { User }
-
-const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000
-const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000
-const PHONE_CODE_TTL_MS = 5 * 60 * 1000
-const PHONE_CODE_RESEND_COOLDOWN_MS = 60 * 1000
-const PHONE_CODE_HOURLY_LIMIT = 5
-const PHONE_CODE_MAX_ATTEMPTS = 5
 
 // Postgres unique_violation: 预检查 + 并发插入兜底
 function isUniqueViolation(error: unknown): boolean {
@@ -233,8 +237,9 @@ export async function consumeEmailVerificationToken(
       .from(schema.emailVerificationTokens)
       .where(eq(schema.emailVerificationTokens.tokenHash, hashToken(input.token)))
       .for('update')
-    if (!row || row.usedAt) return err('TOKEN_INVALID')
-    if (row.expiresAt.getTime() < Date.now()) return err('TOKEN_EXPIRED')
+    if (!row) return err('TOKEN_INVALID')
+    const decision = decideTokenUse(row, new Date())
+    if (decision !== 'OK') return err(decision)
 
     await tx
       .update(schema.users)
@@ -279,8 +284,9 @@ export async function consumePasswordResetToken(
       .from(schema.passwordResetTokens)
       .where(eq(schema.passwordResetTokens.tokenHash, hashToken(input.token)))
       .for('update')
-    if (!row || row.usedAt) return err('TOKEN_INVALID')
-    if (row.expiresAt.getTime() < Date.now()) return err('TOKEN_EXPIRED')
+    if (!row) return err('TOKEN_INVALID')
+    const decision = decideTokenUse(row, new Date())
+    if (decision !== 'OK') return err(decision)
 
     const passwordHash = await hashPassword(input.password)
     await tx.update(schema.users).set({ passwordHash }).where(eq(schema.users.id, row.userId))
@@ -340,16 +346,8 @@ export async function requestPhoneLoginCode(
       .where(eq(schema.phoneLoginCodes.phone, phone))
       .orderBy(desc(schema.phoneLoginCodes.createdAt))
       .limit(1)
-    if (latest) {
-      const elapsed = now.getTime() - latest.createdAt.getTime()
-      if (elapsed < PHONE_CODE_RESEND_COOLDOWN_MS) {
-        const retryAfterSeconds = Math.max(
-          1,
-          Math.ceil((PHONE_CODE_RESEND_COOLDOWN_MS - elapsed) / 1000),
-        )
-        return err(new CodeRequestedTooSoonError(retryAfterSeconds))
-      }
-    }
+    const resend = decidePhoneCodeResend(latest?.createdAt ?? null, now)
+    if (!resend.allowed) return err(new CodeRequestedTooSoonError(resend.retryAfterSeconds))
 
     const [{ total }] = await tx
       .select({ total: count() })
@@ -360,7 +358,7 @@ export async function requestPhoneLoginCode(
           gt(schema.phoneLoginCodes.createdAt, new Date(now.getTime() - 60 * 60 * 1000)),
         ),
       )
-    if (Number(total) >= PHONE_CODE_HOURLY_LIMIT) return err('CODE_RATE_LIMITED')
+    if (exceedsHourlyCodeLimit(Number(total))) return err('CODE_RATE_LIMITED')
 
     const code = opts.fixedCode ?? newPhoneCode()
     const codeHash = hashPhoneCode(phone, code, secret)
@@ -412,7 +410,7 @@ export async function verifyPhoneLoginCode(
     .orderBy(desc(schema.phoneLoginCodes.createdAt))
     .limit(1)
   if (!row) return err('CODE_INVALID')
-  if (row.expiresAt.getTime() <= Date.now()) {
+  if (isPhoneCodeExpired(row.expiresAt, new Date())) {
     await consumePhoneLoginCode(row.id, client)
     return err('CODE_EXPIRED')
   }
@@ -423,7 +421,7 @@ export async function verifyPhoneLoginCode(
     timingSafeEqual(Buffer.from(row.codeHash), Buffer.from(actual))
   if (!valid) {
     const attempts = await incrementPhoneCodeAttempts(row.id, client)
-    if (attempts >= PHONE_CODE_MAX_ATTEMPTS) {
+    if (exceedsMaxCodeAttempts(attempts)) {
       await consumePhoneLoginCode(row.id, client)
       return err('CODE_ATTEMPTS_EXCEEDED')
     }
@@ -507,7 +505,7 @@ export async function unbindPhone(
   const [user] = await client.select().from(schema.users).where(eq(schema.users.id, userId))
   if (!user) return err('USER_NOT_FOUND')
   // 防止把唯一登录方式解绑导致账号无法再登录
-  if (user.email === null && user.passwordHash === null) return err('CANNOT_UNBIND_ONLY_LOGIN')
+  if (!canUnbindPhone(user)) return err('CANNOT_UNBIND_ONLY_LOGIN')
 
   await client
     .update(schema.users)
