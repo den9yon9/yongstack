@@ -19,7 +19,7 @@ pnpm + Turborepo Monorepo、Bun 运行时
 ```
 apps/       composition root + presentation   最外层, 可依赖一切(装配/HTTP 映射/cookie 与 session 签发, 不含业务编排)
 usecases/*  编排层        可依赖 domains/persistence/shared; 外部副作用只经本层定义的端口接口
-domains/*   entity 域     可依赖 persistence/shared(纯业务逻辑)
+domains/*   业务模块      按表归属划分, 事务脚本风格; 可依赖 persistence/shared, 纯决策放 rules.ts
 packages/   shared / persistence( database/testkit ) / infrastructure
             (session|queue|redis|http|storage|mailer|sms|observability 属 infrastructure, 只有 apps 可引用)
 ```
@@ -281,10 +281,15 @@ pnpm i18n:check     # 漏译/陈旧则退出 1 (pre-commit + CI 门禁)
 
 ## 测试
 
-两类集成测试（都需要本地 postgres + redis）：
+测试分四层，边界与运行方式见 [docs/testing.md](docs/testing.md)：
 
-- **domain/usecase 测试**：直连 `TESTING_DATABASE_URL` 测试库（prepareTestDb / resetDb / flushTestRedis）
-- **app 路由级测试**（`apps/*/src/app.test.ts`）：`buildApp(createTestDeps(...))` 注入 test 依赖，Eden treaty 调接口
+- **纯规则**（`domains/*/src/rules.test.ts`、`packages/*/src/*.test.ts`）：零 DB/Redis，
+  不设 `TESTING_*` 也能跑；时间/计数边界用固定 `now` 注入
+- **domain/usecase 集成**：直连 `TESTING_DATABASE_URL` 测试库（prepareTestDb / resetDb / flushTestRedis）
+- **app 路由级**（`apps/*/src/app.test.ts`）：`buildApp(createTestDeps(...))` 注入 test 依赖，Eden treaty 调接口
+- **e2e**（`apps/e2e`）：Postgres + Redis + 对象存储 + 浏览器，只覆盖关键流程
+
+不要用 mock DB 替换集成测试：SQL/事务/约束语义必须真库验证；要提速优先把决策抽到纯规则层。
 
 Eden treaty 返回判别联合，断言用收窄而非可选链：
 
@@ -300,6 +305,7 @@ expect(res.data.totalAmount).toBe('15.00')
 - 自定义 ESLint 规则在 `eslint-rules/`，新增/修改必须配 RuleTester 测试
   （`eslint-rules/*.test.js`）；本地与 CI 用 `pnpm test:rules` 跑
 - `ponytail:` 开头的注释 = 已知技术债（含背景与解决方向），新债沿用该标记并登记 docs/tech-debt.md
+- lint 是护栏不是保证：已知绕过路径与人工检查点见 [docs/architecture-constraints.md](docs/architecture-constraints.md)
 - 编辑器：Zed 配置在 `.zed/settings.json`（Prettier 保存格式化；ESLint 扩展获得诊断）
 
 ## 上游依赖待验证（elysia 2.0 发布后）
