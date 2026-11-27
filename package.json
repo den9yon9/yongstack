@@ -8,6 +8,7 @@
     "bootstrap:reset": "bun scripts/dev-bootstrap.ts --reset",
     "build": "turbo build",
     "check": "eslint . && prettier --check .",
+    "check:config": "bun scripts/check-config.ts",
     "clean": "rm -rf apps/*/dist packages/*/dist domains/*/dist usecases/*/dist apps/*/.turbo packages/*/.turbo domains/*/.turbo usecases/*/.turbo",
     "db:backup": "bun scripts/db-backup.ts",
     "db:rbac-sync": "bun --env-file=.env scripts/seed.ts --rbac-only",

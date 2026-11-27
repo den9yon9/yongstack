@@ -3,7 +3,7 @@ import { parseEnv } from '@yongstack/shared'
 import { smsEnvSchema } from '@yongstack/sms'
 import { storageEnvSchema } from '@yongstack/storage'
 
-const corsOrigin = Type.Transform(Type.String({ default: '*' }))
+const corsOrigin = Type.Transform(Type.String({ default: 'http://localhost:5174' }))
   .Decode((raw: string) => {
     const s = raw.trim()
     if (s === '*') return true
@@ -66,9 +66,10 @@ export type AdminEnv = StaticDecode<typeof adminEnvSchema>
 
 export function createEnv(source: Record<string, string | undefined> = process.env): AdminEnv {
   const env = parseEnv(adminEnvSchema, source)
-  if (env.NODE_ENV === 'production' && env.CORS_ORIGIN === true) {
+  // credentials: true 是无条件的, "*" 在语义上永远非法 (dev 反射任意 Origin 同样危险)
+  if (env.CORS_ORIGIN === true) {
     throw new Error(
-      '[ENV] CORS_ORIGIN cannot be "*" in production; set an explicit origin or comma-separated allowlist',
+      '[ENV] CORS_ORIGIN cannot be "*" while credentials are enabled; set an explicit origin or comma-separated allowlist',
     )
   }
   if (env.NODE_ENV === 'production' && env.SMS_DEV_CODE !== undefined) {

@@ -135,6 +135,8 @@ services:
         APP: app-web
     environment:
       API_UPSTREAM: http://app-api:3000
+      # 浏览器直传 PUT 的目标 origin, 供 nginx CSP connect-src 使用 (缺失即启动失败)
+      STORAGE_UPLOAD_ORIGIN: ${STORAGE_UPLOAD_ORIGIN:?set STORAGE_UPLOAD_ORIGIN (origin of STORAGE_ENDPOINT)}
     depends_on:
       app-api:
         condition: service_healthy
@@ -154,6 +156,8 @@ services:
         APP: admin-web
     environment:
       API_UPSTREAM: http://admin-api:3001
+      # 浏览器直传 PUT 的目标 origin, 供 nginx CSP connect-src 使用 (缺失即启动失败)
+      STORAGE_UPLOAD_ORIGIN: ${STORAGE_UPLOAD_ORIGIN:?set STORAGE_UPLOAD_ORIGIN (origin of STORAGE_ENDPOINT)}
     depends_on:
       admin-api:
         condition: service_healthy

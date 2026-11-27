@@ -61,6 +61,9 @@ jobs:
       - name: Check i18n catalog
         run: pnpm i18n:check
 
+      - name: Check deploy config invariants
+        run: pnpm check:config
+
       - name: Check unused dependencies & exports
         run: pnpm knip
 

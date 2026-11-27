@@ -107,5 +107,8 @@ POST /files/:id/confirm    → HEAD 校验对象，files.status = 'ready'，记�
 - 本地：`pnpm storage:init` 会按 `STORAGE_CORS_ORIGINS`（默认 `http://localhost:5173,http://localhost:5174`）设置 bucket CORS；本地 SeaweedFS compose 也带了 `-s3.allowedOrigins=*` 兜底
 - 生产 R2 / COS：在控制台配置 CORS，至少允许 `GET` / `PUT` / `HEAD`，`AllowedHeaders: *`，来源填两个前端域名
 - 若管理端上传一直停在「上传中」或浏览器报 `Failed to fetch`，优先检查 bucket CORS 与 `STORAGE_ENDPOINT` 是否可从浏览器访问
+- 生产环境还要检查前端 CSP：`nginx-web.template` 的 `connect-src` 必须包含
+  `STORAGE_UPLOAD_ORIGIN`（= `STORAGE_ENDPOINT` 的 origin）。被 CSP 拦截时控制台报
+  `Refused to connect ... violates ... "connect-src"`，请求不会到达对象存储
 
 > `STORAGE_CORS_ORIGINS` 只在 `storage:init` 时使用，不是运行时变量。修改后重新执行 `pnpm storage:init`（SeaweedFS）或在云控制台保存。
