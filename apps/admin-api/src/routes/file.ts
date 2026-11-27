@@ -1,11 +1,11 @@
-import { withAudit } from '@yongstack/audit'
-import { listFiles, softDeleteFileForActor } from '@yongstack/file'
+import { listFiles } from '@yongstack/file'
 import * as FileModel from '@yongstack/file/model'
 import {
   confirmMediaUpload,
   type MediaContext,
   type MediaError,
   presignMediaUpload,
+  softDeleteMedia,
 } from '@yongstack/media'
 import {
   ConfirmMediaUploadInputSchema,
@@ -36,6 +36,8 @@ function mapMediaError(error: MediaError, i18n: (text: string) => string) {
       return status(404, { error, message: i18n('File not found') })
     case 'STORAGE_UNAVAILABLE':
       return status(503, { error, message: i18n('Storage unavailable') })
+    case 'INTERNAL_ERROR':
+      return status(503, { error, message: i18n('Internal server error') })
     default:
       return assertNever(error)
   }
@@ -52,9 +54,15 @@ export function createFileRoutes(plugins: AdminPlugins) {
     return {
       storage,
       db,
+      logger,
       actor: { userId: session.userId, canAccessAny: true },
       meta: requestMeta(request, { trustProxy: plugins.trustProxy }),
-      auditAction: { presign: 'admin.file.presign', confirm: 'admin.file.confirm' },
+      auditAction: {
+        upload: 'admin.file.upload',
+        presign: 'admin.file.presign',
+        confirm: 'admin.file.confirm',
+        delete: 'admin.file.delete',
+      },
     }
   }
 
@@ -157,29 +165,9 @@ export function createFileRoutes(plugins: AdminPlugins) {
         if (!hasPermission(session, 'files:delete:any')) {
           return status(403, { error: 'FORBIDDEN', message: i18n('Forbidden') })
         }
-        const deleted = await withAudit(
-          db,
-          (result: { key: string }) => ({
-            actorId: session.userId,
-            action: 'admin.file.delete',
-            targetType: 'file',
-            targetId: params.id,
-            diff: { key: result.key },
-            ...requestMeta(request, { trustProxy: plugins.trustProxy }),
-          }),
-          (tx) =>
-            softDeleteFileForActor(params.id, { userId: session.userId, canAccessAny: true }, tx),
-        )
+        const deleted = await softDeleteMedia(params.id, mediaContext(db, session, request))
         if (deleted.isErr()) {
           return status(404, { error: deleted.error, message: i18n('File not found') })
-        }
-        // 对象删除尽力而为; 失败时数据库记录已软删, 由清理任务兜底
-        const removed = await storage.delete(deleted.value.key)
-        if (removed.isErr()) {
-          logger.error(
-            { err: removed.error, key: deleted.value.key },
-            'storage delete failed after soft delete',
-          )
         }
         return status(204)
       },

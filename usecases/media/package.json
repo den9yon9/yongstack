@@ -19,7 +19,10 @@
     "@yongstack/database": "workspace:*",
     "@yongstack/file": "workspace:*",
     "@yongstack/settings": "workspace:*",
-    "@yongstack/shared": "workspace:*"
+    "@yongstack/shared": "workspace:*",
+    "file-type": "^22.3.0",
+    "image-size": "^2.1.0",
+    "mime": "^4.1.2"
   },
   "devDependencies": {
     "@yongstack/testkit": "workspace:*"

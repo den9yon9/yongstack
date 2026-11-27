@@ -1,44 +1,61 @@
-import { createHash } from 'node:crypto'
-
-import { withAudit } from '@yongstack/audit'
-import {
-  createFile,
-  getFileForActor,
-  getPendingFileForActor,
-  markFileReady,
-  softDeleteFileForActor,
-} from '@yongstack/file'
+import type { Db } from '@yongstack/database'
+import { getFileForActor } from '@yongstack/file'
 import * as FileModel from '@yongstack/file/model'
-import { hasPermission } from '@yongstack/session'
-import { getSetting } from '@yongstack/settings'
-import { ErrorResponse, ok, requestMeta } from '@yongstack/shared'
+import {
+  confirmMediaUpload,
+  type MediaContext,
+  type MediaError,
+  presignMediaUpload,
+  softDeleteMedia,
+  uploadMedia,
+} from '@yongstack/media'
+import { hasPermission, type Session } from '@yongstack/session'
+import { assertNever, ErrorResponse, requestMeta } from '@yongstack/shared'
 import { Elysia, status, t } from 'elysia'
-import { fileTypeFromBuffer } from 'file-type'
-import { imageSize } from 'image-size'
 
 import { type AppPlugins } from '../plugins'
 
-// 文件资源的跨用户旁路只认 files:*:any 权限(不是角色码):
-// 避免"进得了后台"或"角色名叫 admin"被当成跨用户数据访问授权。
-const MIME_EXTENSIONS: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
-  'image/gif': 'gif',
-  'application/pdf': 'pdf',
-}
-
-// 预签名路径拿不到文件内容, 扩展名优先按 MIME 映射, 未知类型回退到文件名后缀。
-function extensionFor(filename: string, mime: string): string {
-  const known = MIME_EXTENSIONS[mime]
-  if (known) return known
-  const fromName = filename.split('.').pop()?.toLowerCase() ?? ''
-  return /^[a-z0-9]{1,10}$/.test(fromName) ? fromName : 'bin'
+function mapMediaError(error: MediaError, i18n: (text: string) => string) {
+  switch (error) {
+    case 'FILE_TOO_LARGE':
+      return status(413, { error, message: i18n('File too large') })
+    case 'FILE_TYPE_NOT_ALLOWED':
+      return status(400, { error, message: i18n('Unsupported file type') })
+    case 'FILE_NOT_FOUND':
+      return status(404, { error, message: i18n('File not found') })
+    case 'STORAGE_UNAVAILABLE':
+      return status(503, { error, message: i18n('Storage unavailable') })
+    case 'INTERNAL_ERROR':
+      return status(503, { error, message: i18n('Internal server error') })
+    default:
+      return assertNever(error)
+  }
 }
 
 export function createFileRoutes(plugins: AppPlugins) {
   const { dbPlugin, sessionPlugin, storage, logger } = plugins
   const { apiRateLimitPerMinute } = plugins
+
+  function mediaContext(
+    db: Db,
+    session: Session,
+    request: Request,
+    canAccessAny: boolean,
+  ): MediaContext {
+    return {
+      storage,
+      db,
+      logger,
+      actor: { userId: session.userId, canAccessAny },
+      meta: requestMeta(request, { trustProxy: plugins.trustProxy }),
+      auditAction: {
+        upload: 'app.file.upload',
+        presign: 'app.file.presign',
+        confirm: 'app.file.confirm',
+        delete: 'app.file.delete',
+      },
+    }
+  }
 
   return new Elysia({ name: 'file-app', prefix: '/files' })
     .use(plugins.localePlugin)
@@ -48,91 +65,16 @@ export function createFileRoutes(plugins: AppPlugins) {
     .post(
       '/',
       async ({ body, session, db, request, i18n }) => {
-        const maxBytes = await getSetting('upload.maxBytes', db)
-        if (body.file.size > maxBytes) {
-          return status(413, { error: 'FILE_TOO_LARGE', message: i18n('File too large') })
-        }
-
-        const buffer = Buffer.from(await body.file.arrayBuffer())
-        const detected = await fileTypeFromBuffer(buffer)
-        if (!detected) {
-          return status(400, {
-            error: 'FILE_TYPE_NOT_ALLOWED',
-            message: i18n('Unsupported file type'),
-          })
-        }
-        const mime = detected.mime
-        const allowedTypes = await getSetting('upload.allowedTypes', db)
-        if (!allowedTypes.includes(mime)) {
-          return status(400, {
-            error: 'FILE_TYPE_NOT_ALLOWED',
-            message: i18n('Unsupported file type'),
-          })
-        }
-
-        let width: number | null = null
-        let height: number | null = null
-        if (mime.startsWith('image/')) {
-          try {
-            const dimensions = imageSize(buffer)
-            width = dimensions.width ?? null
-            height = dimensions.height ?? null
-          } catch {
-            // 无法解析尺寸时仍保存原图, 尺寸留空
-          }
-        }
-
-        const key = storage.createKey(detected.ext)
-        const uploaded = await storage.put(key, buffer, mime)
-        if (uploaded.isErr()) {
-          return status(503, {
-            error: 'STORAGE_UNAVAILABLE',
-            message: i18n('Storage unavailable'),
-          })
-        }
-
-        // 元数据写入(含审计)失败时清理已上传对象, 避免孤儿文件
-        try {
-          const file = await withAudit(
-            db,
-            {
-              actorId: session.userId,
-              action: 'app.file.upload',
-              targetType: 'file',
-              diff: { key, mime, size: buffer.length, purpose: body.purpose ?? 'general' },
-              ...requestMeta(request, { trustProxy: plugins.trustProxy }),
-            },
-            (tx) =>
-              createFile(
-                {
-                  ownerId: session.userId,
-                  key,
-                  url: storage.publicUrl(key),
-                  mime,
-                  size: buffer.length,
-                  ...(width === null ? {} : { width }),
-                  ...(height === null ? {} : { height }),
-                  purpose: body.purpose ?? 'general',
-                  checksum: createHash('sha256').update(buffer).digest('hex'),
-                  metadata: { originalName: body.file.name },
-                },
-                tx,
-              ).then((file) => ok(file)),
-          )
-          if (file.isErr()) throw file.error
-          return status(201, file.value)
-        } catch (error) {
-          // 元数据写入失败, 清理已上传对象避免孤儿文件(尽力而为)
-          const cleaned = await storage.delete(key)
-          if (cleaned.isErr()) {
-            logger.error({ err: cleaned.error, key }, 'orphan file cleanup failed')
-          }
-          logger.error({ err: error, key }, 'file metadata insert failed')
-          return status(503, {
-            error: 'INTERNAL_ERROR',
-            message: i18n('Internal server error'),
-          })
-        }
+        const result = await uploadMedia(
+          {
+            data: new Uint8Array(await body.file.arrayBuffer()),
+            originalName: body.file.name,
+            ...(body.purpose === undefined ? {} : { purpose: body.purpose }),
+          },
+          mediaContext(db, session, request, false),
+        )
+        if (result.isErr()) return mapMediaError(result.error, i18n)
+        return status(201, result.value)
       },
       {
         isAuth: true,
@@ -159,54 +101,10 @@ export function createFileRoutes(plugins: AppPlugins) {
     )
     .post(
       '/presign',
-      async ({ body, session, db, i18n }) => {
-        const maxBytes = await getSetting('upload.maxBytes', db)
-        if (body.size > maxBytes) {
-          return status(413, { error: 'FILE_TOO_LARGE', message: i18n('File too large') })
-        }
-        const allowedTypes = await getSetting('upload.allowedTypes', db)
-        if (!allowedTypes.includes(body.mime)) {
-          return status(400, {
-            error: 'FILE_TYPE_NOT_ALLOWED',
-            message: i18n('Unsupported file type'),
-          })
-        }
-
-        const key = storage.createKey(extensionFor(body.filename, body.mime))
-        const expiresInSeconds = 600
-        const uploadUrl = await storage.presignPut(key, body.mime, expiresInSeconds)
-        if (uploadUrl.isErr()) {
-          return status(503, {
-            error: 'STORAGE_UNAVAILABLE',
-            message: i18n('Storage unavailable'),
-          })
-        }
-
-        const file = await createFile(
-          {
-            ownerId: session.userId,
-            key,
-            url: storage.publicUrl(key),
-            mime: body.mime,
-            size: body.size,
-            purpose: body.purpose ?? 'general',
-            status: 'pending',
-            metadata: { originalName: body.filename },
-          },
-          db,
-        )
-
-        return status(201, {
-          fileId: file.id,
-          key,
-          publicUrl: file.url,
-          uploadUrl: uploadUrl.value,
-          headers: {
-            'Content-Type': body.mime,
-            'Cache-Control': 'public, max-age=31536000, immutable',
-          },
-          expiresInSeconds,
-        })
+      async ({ body, session, db, request, i18n }) => {
+        const result = await presignMediaUpload(body, mediaContext(db, session, request, false))
+        if (result.isErr()) return mapMediaError(result.error, i18n)
+        return status(201, result.value)
       },
       {
         isAuth: true,
@@ -231,62 +129,16 @@ export function createFileRoutes(plugins: AppPlugins) {
     .post(
       '/:id/confirm',
       async ({ params, body, session, db, request, i18n }) => {
-        const actor = {
-          userId: session.userId,
-          canAccessAny: hasPermission(session, 'files:write:any'),
-        }
-        const pending = await getPendingFileForActor(params.id, actor, db)
-        if (pending.isErr()) {
-          return status(404, { error: pending.error, message: i18n('Upload not found') })
-        }
-        const file = pending.value
-
-        const maxBytes = await getSetting('upload.maxBytes', db)
-        const allowedTypes = await getSetting('upload.allowedTypes', db)
-        const head = await storage.head(file.key)
-        if (head.isErr()) {
-          return status(404, { error: 'UPLOAD_NOT_FOUND', message: i18n('Upload not found') })
-        }
-        const info = head.value
-        const mime = info.contentType ?? file.mime
-
-        if (info.size > maxBytes) {
-          await storage.delete(file.key)
-          return status(413, { error: 'FILE_TOO_LARGE', message: i18n('File too large') })
-        }
-        if (!allowedTypes.includes(mime)) {
-          await storage.delete(file.key)
-          return status(400, {
-            error: 'FILE_TYPE_NOT_ALLOWED',
-            message: i18n('Unsupported file type'),
-          })
-        }
-
-        const patch: {
-          size: number
-          mime: string
-          checksum?: string
-          width?: number
-          height?: number
-        } = { size: info.size, mime }
-        if (body.checksum !== undefined) patch.checksum = body.checksum
-        if (body.width !== undefined) patch.width = body.width
-        if (body.height !== undefined) patch.height = body.height
-
-        const result = await withAudit(
-          db,
-          {
-            actorId: session.userId,
-            action: 'app.file.confirm',
-            targetType: 'file',
-            targetId: params.id,
-            diff: { key: file.key, size: info.size, mime },
-            ...requestMeta(request, { trustProxy: plugins.trustProxy }),
-          },
-          (tx) => markFileReady(params.id, patch, tx),
+        const result = await confirmMediaUpload(
+          params.id,
+          body,
+          mediaContext(db, session, request, hasPermission(session, 'files:write:any')),
         )
         if (result.isErr()) {
-          return status(404, { error: result.error, message: i18n('Upload not found') })
+          if (result.error === 'FILE_NOT_FOUND') {
+            return status(404, { error: result.error, message: i18n('Upload not found') })
+          }
+          return mapMediaError(result.error, i18n)
         }
         return result.value
       },
@@ -346,37 +198,11 @@ export function createFileRoutes(plugins: AppPlugins) {
     .delete(
       '/:id',
       async ({ params, session, db, request, i18n }) => {
-        const deleted = await withAudit(
-          db,
-          (softDeleted: { key: string }) => ({
-            actorId: session.userId,
-            action: 'app.file.delete',
-            targetType: 'file',
-            targetId: params.id,
-            diff: { key: softDeleted.key },
-            ...requestMeta(request, { trustProxy: plugins.trustProxy }),
-          }),
-          (tx) =>
-            softDeleteFileForActor(
-              params.id,
-              {
-                userId: session.userId,
-                canAccessAny: hasPermission(session, 'files:delete:any'),
-              },
-              tx,
-            ),
+        const result = await softDeleteMedia(
+          params.id,
+          mediaContext(db, session, request, hasPermission(session, 'files:delete:any')),
         )
-        if (deleted.isErr()) {
-          return status(404, { error: deleted.error, message: i18n('File not found') })
-        }
-        // 对象删除尽力而为; 失败时数据库记录已软删, 由清理任务兜底
-        const removed = await storage.delete(deleted.value.key)
-        if (removed.isErr()) {
-          logger.error(
-            { err: removed.error, key: deleted.value.key },
-            'storage delete failed after soft delete',
-          )
-        }
+        if (result.isErr()) return mapMediaError(result.error, i18n)
         return status(204)
       },
       {

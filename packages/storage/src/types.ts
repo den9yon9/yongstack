@@ -1,6 +1,6 @@
 import type { Result } from '@yongstack/shared'
 
-export type StorageError = 'STORAGE_UNAVAILABLE'
+export type StorageError = 'STORAGE_UNAVAILABLE' | 'STORAGE_NOT_FOUND'
 
 export interface StoredObjectInfo {
   size: number

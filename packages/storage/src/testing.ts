@@ -41,7 +41,7 @@ export function createInMemoryStorage(
     },
     async head(key) {
       const stored = objects.get(key)
-      if (!stored) return err('STORAGE_UNAVAILABLE')
+      if (!stored) return err('STORAGE_NOT_FOUND')
       return ok({ size: stored.body.byteLength, contentType: stored.contentType })
     },
     async delete(key) {

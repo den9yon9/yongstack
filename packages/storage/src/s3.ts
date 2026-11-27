@@ -122,8 +122,10 @@ export function createS3Storage(env: StorageEnv): Storage {
           size: result.ContentLength ?? 0,
           contentType: result.ContentType ?? null,
         })
-      } catch {
-        return err('STORAGE_UNAVAILABLE')
+      } catch (error) {
+        const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata
+          ?.httpStatusCode
+        return err(status === 404 ? 'STORAGE_NOT_FOUND' : 'STORAGE_UNAVAILABLE')
       }
     },
     async delete(key) {

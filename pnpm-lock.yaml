@@ -230,9 +230,6 @@ importers:
       '@yongstack/account':
         specifier: workspace:*
         version: link:../../usecases/account
-      '@yongstack/audit':
-        specifier: workspace:*
-        version: link:../../domains/audit
       '@yongstack/auth':
         specifier: workspace:*
         version: link:../../usecases/auth
@@ -251,6 +248,9 @@ importers:
       '@yongstack/idempotency':
         specifier: workspace:*
         version: link:../../domains/idempotency
+      '@yongstack/media':
+        specifier: workspace:*
+        version: link:../../usecases/media
       '@yongstack/observability':
         specifier: workspace:*
         version: link:../../packages/observability
@@ -263,9 +263,6 @@ importers:
       '@yongstack/session':
         specifier: workspace:*
         version: link:../../packages/session
-      '@yongstack/settings':
-        specifier: workspace:*
-        version: link:../../domains/settings
       '@yongstack/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -281,12 +278,6 @@ importers:
       elysia:
         specifier: ^1.2.0
         version: 1.4.29(@sinclair/typebox@0.34.52)(@types/bun@1.3.14)(exact-mirror@1.2.2)(file-type@22.3.0)(openapi-types@12.1.3)(typescript@5.9.3)
-      file-type:
-        specifier: ^22.3.0
-        version: 22.3.0
-      image-size:
-        specifier: ^2.1.0
-        version: 2.1.0
     devDependencies:
       '@elysiajs/eden':
         specifier: ^1.4.9
@@ -845,6 +836,15 @@ importers:
       '@yongstack/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      file-type:
+        specifier: ^22.3.0
+        version: 22.3.0
+      image-size:
+        specifier: ^2.1.0
+        version: 2.1.0
+      mime:
+        specifier: ^4.1.2
+        version: 4.1.2
     devDependencies:
       '@yongstack/testkit':
         specifier: workspace:*
@@ -3615,6 +3615,11 @@ packages:
   micromatch@4.0.8:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
     engines: {node: '>=8.6'}
+
+  mime@4.1.2:
+    resolution: {integrity: sha512-ikRzZ2RwbUVDyL9SsU0f2Phcmav4yq5r8faH5ZZKHtOZrMBLnrQOrj0uvqZ5R1uQnj+RO7Wcklw/lAf81mP9LQ==}
+    engines: {node: '>=16'}
+    hasBin: true
 
   minimatch@10.2.5:
     resolution: {integrity: sha512-MULkVLfKGYDFYejP07QOurDLLQpcjk7Fw+7jXS2R2czRQzR56yHRveU5NDJEOviH+hETZKSkIk5c+T23GjFUMg==}
@@ -6853,6 +6858,8 @@ snapshots:
     dependencies:
       braces: 3.0.3
       picomatch: 2.3.2
+
+  mime@4.1.2: {}
 
   minimatch@10.2.5:
     dependencies:
