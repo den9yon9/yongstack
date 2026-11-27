@@ -6,7 +6,7 @@
 // 让“新增字段默认不可见, 暴露必须改 schema”从口头约定变成 CI 约束。
 //
 // 范围: 只查 domains/*/src/model.ts (由 eslint.config.js 的 files 限定);
-// packages/database/src/model.ts 的基线 Omit 属 AUD-08, 有意不覆盖。
+// packages/database/src/model.ts 的基线 Omit 属于后续 schema 拆分范围, 有意不覆盖。
 'use strict'
 
 const DATABASE_PACKAGE = '@yongstack/database'

@@ -1,6 +1,6 @@
 # 架构约束：lint 是护栏，不是保证
 
-> 对应审计 `AUD-09`。自定义 ESLint 规则（`eslint-rules/`）能在 CI 拦截大多数越界写法，
+> 自定义 ESLint 规则（`eslint-rules/`）能在 CI 拦截大多数越界写法，
 > 但 AST 规则天生是 best-effort。本文列出已知绕过路径和对应的人工检查点。
 
 ## 1. 规则覆盖什么
@@ -41,10 +41,10 @@ lint 之外，关键路径还有：
 ## 4. 评审时必须人工确认的场景
 
 1. 跨域写（尤其 `tx.execute`、原生 SQL、动态表名）；
-2. 权限判断：只查权限码，不查角色码（`AUD-03`）；
+2. 权限判断：只查权限码，不查角色码；
 3. 新事务入口：必须 `withTransaction`；
 4. 用户可见文案：i18n 标记 + catalog 校验；
-5. 上传/下载路径：CSP、bucket CORS、MIME/内容校验（`AUD-11`、`AUD-20`）。
+5. 上传/下载路径：CSP、bucket CORS、MIME/内容校验。
 
 ## 5. 维护规则
 

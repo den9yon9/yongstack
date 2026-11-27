@@ -243,7 +243,7 @@ export default [
     },
   },
   {
-    // 响应/入参 DTO 一律白名单: 新增列默认不可见 (见 AUD-01)
+    // 响应/入参 DTO 一律白名单: 新增列默认不可见
     plugins: { 'response-schema': responseSchemaRule },
     files: ['domains/*/src/model.ts'],
     rules: {
